@@ -88,7 +88,6 @@ export interface PlayerComp {
   /** Movement parameters derived from encumbrance, injuries and weakness (shared with the client). */
   move: MoveParams;
   /** Real seconds before this dead player may respawn. */
-  respawnTimer: number;
 }
 export const Player = defineComponent<PlayerComp>('Player');
 

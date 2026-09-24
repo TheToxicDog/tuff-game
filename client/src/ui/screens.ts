@@ -55,6 +55,7 @@ function saveSettings(s: Settings): void {
 export class EscapeMenu {
   readonly root: HTMLElement;
   isOpen = false;
+  private readonly onClose: () => void;
 
   constructor(
     parent: HTMLElement,
@@ -126,8 +127,6 @@ export class EscapeMenu {
     this.onClose = handlers.onClose;
     parent.append(this.root);
   }
-
-  private onClose: () => void;
 
   open(): void {
     this.isOpen = true;

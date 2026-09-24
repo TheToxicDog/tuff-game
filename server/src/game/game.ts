@@ -388,7 +388,6 @@ export class Game {
       statusKey: '',
       refreshTimer: 0,
       move: { speedFactor: 1, sprintAllowed: true, staminaRegen: 1, maxStamina: 1, aimSway: 0 },
-      respawnTimer: 0,
     };
     p.move = this.players.moveParams(p);
     this.ecs.add(e, Transform, { x, y, angle: data.angle });
