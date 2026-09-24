@@ -159,6 +159,8 @@ export interface HitEvent {
   dir: number;
   kind: number;
   flags: number;
+  /** Entity that caused the hit (attacker or zombie). */
+  source: number;
 }
 
 export const SOUNDS = [
@@ -346,7 +348,7 @@ export function writeEvent(w: BinaryWriter, e: NetEvent): void {
       w.varuint(e.attacker).u16(e.item).angle16(e.angle).u8(e.hits);
       break;
     case NetEventType.Hit:
-      w.varuint(e.target).f32(e.x).f32(e.y).angle16(e.dir).u8(e.kind).u8(e.flags);
+      w.varuint(e.target).f32(e.x).f32(e.y).angle16(e.dir).u8(e.kind).u8(e.flags).varuint(e.source);
       break;
     case NetEventType.Sound:
       w.u8(e.sound).f32(e.x).f32(e.y).unit8(e.volume).varuint(e.source);
@@ -370,7 +372,7 @@ export function readEvent(r: BinaryReader): NetEvent {
     case NetEventType.Melee:
       return { type, attacker: r.varuint(), item: r.u16(), angle: r.angle16(), hits: r.u8() };
     case NetEventType.Hit:
-      return { type, target: r.varuint(), x: r.f32(), y: r.f32(), dir: r.angle16(), kind: r.u8(), flags: r.u8() };
+      return { type, target: r.varuint(), x: r.f32(), y: r.f32(), dir: r.angle16(), kind: r.u8(), flags: r.u8(), source: r.varuint() };
     case NetEventType.Sound:
       return { type, sound: r.u8(), x: r.f32(), y: r.f32(), volume: r.unit8(), source: r.varuint() };
     default:
@@ -480,6 +482,15 @@ export const OVERVIEW_CELL = 16;
 
 export type PublicServerConfig = Pick<ServerConfig, 'name' | 'motd' | 'pvp' | 'maxPlayers' | 'realSecondsPerDay'>;
 
+/** Movement parameters the client needs to predict exactly what the server simulates. */
+export interface MoveParams {
+  speedFactor: number;
+  sprintAllowed: boolean;
+  staminaRegen: number;
+  maxStamina: number;
+  aimSway: number;
+}
+
 export interface StatusView {
   health: number;
   wounds: Wound[];
@@ -492,8 +503,9 @@ export interface StatusView {
   flashlight: boolean;
   flashlightCharge: number;
   hasFlashlight: boolean;
+  /** Total carried weight in kg. */
   carried: number;
-  speedFactor: number;
+  move: MoveParams;
 }
 
 export interface ContainerView {

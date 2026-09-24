@@ -80,6 +80,8 @@ export interface ContainerObject {
   x: number;
   y: number;
   rot: number;
+  /** Rough half-size of the container's footprint, for interaction range checks. */
+  radius: number;
   buildingId: string | null;
   buildingType: BuildingType | null;
   roomType: RoomType | null;
@@ -374,6 +376,10 @@ export class CompiledWorld {
         x: pos.x,
         y: pos.y,
         rot,
+        radius:
+          def.shape === 'circle'
+            ? (def.r ?? 0.3)
+            : Math.sqrt((p.w ?? def.w ?? 1) ** 2 + (p.h ?? def.h ?? 1) ** 2) / 2,
         buildingId,
         buildingType,
         roomType,

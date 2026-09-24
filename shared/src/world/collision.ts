@@ -218,8 +218,17 @@ export class CollisionWorld {
     c.cells = [];
   }
 
-  /** Collects enabled colliders whose bounds overlap the rectangle and match `mask`. */
-  queryRect(minX: number, minY: number, maxX: number, maxY: number, mask: number, out: Collider[] = []): Collider[] {
+  /** Collects colliders whose bounds overlap the rectangle and match `mask` (enabled ones only,
+   * unless `includeDisabled` is set). */
+  queryRect(
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+    mask: number,
+    out: Collider[] = [],
+    includeDisabled = false,
+  ): Collider[] {
     const stamp = this.stampCounter++;
     const x0 = Math.floor(minX / CELL_SIZE);
     const x1 = Math.floor(maxX / CELL_SIZE);
@@ -232,7 +241,7 @@ export class CollisionWorld {
         for (const c of list) {
           if (c.stamp === stamp) continue;
           c.stamp = stamp;
-          if (!c.enabled || (c.flags & mask) === 0) continue;
+          if ((!c.enabled && !includeDisabled) || (c.flags & mask) === 0) continue;
           if (c.maxX < minX || c.minX > maxX || c.maxY < minY || c.minY > maxY) continue;
           out.push(c);
         }
