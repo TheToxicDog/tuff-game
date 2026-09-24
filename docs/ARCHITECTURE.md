@@ -35,7 +35,13 @@ validates them and answers with state.
 - **`world/compile.ts` — `CompiledWorld`** turns map elements into colliders and interactive
   objects (doors, windows, containers) and tracks their runtime state as deltas over the map
   defaults. The client compiles the same elements from streamed chunks, so prediction collides
-  with exactly what the server collides with.
+  with exactly what the server collides with. It also tracks barricade boards (a door or window
+  with boards blocks movement; two or more also block sight and bullets), picked-up furniture,
+  sleep spots, crafting stations and player structures, which compile like building parts.
+- **`world/structures.ts`** — footprints, grid/rotation snapping and placement rules for player
+  construction, shared so the client's placement ghost agrees with the server.
+- **`items/crafting.ts`** — recipe and construction requirements (ingredients by item or tag,
+  tools, stations) and which inventory stacks a recipe consumes.
 - **`network/protocol.ts`** — binary codecs for inputs and snapshots and the JSON message types.
 - **`sim/body.ts`**, **`items/inventory.ts`** — wounds, bleeding, infection, treatments, needs;
   inventory model, capacities and encumbrance. Used by the server to simulate and by the client to
@@ -88,6 +94,17 @@ validates them and answers with state.
 - **`game/loot.ts` + `inventory.ts`** — containers roll loot from their tables the first time
   anyone opens them (so the world is not generated up front) and remember their contents; every
   inventory move is validated for range, capacity and weight.
+- **`game/survival.ts`** — sleep (bed quality sets the energy recovery rate, sleeping players
+  are harder for zombies to notice, damage wakes you, and the clock fast-forwards while every
+  online player sleeps) and timed crafting/cooking next to the required station.
+- **`game/building.ts`** — barricading, construction, repair, dismantling, furniture pickup and
+  storage permissions (owner, `/trust` list, admins, and whether others may damage structures).
+  Zombies path around structures, bang on them when they block the way, and `navigation.ts`
+  rebuilds affected portals when structures appear or disappear.
+- **Editor API (`networking/http.ts`).** Admin-only endpoints list, load, validate and save maps
+  under `data/maps/` and publish one: `bootstrap.ts` stops the running `Game` with close code
+  4002 (clients reconnect on their own), builds a new one from the published map and keeps the
+  saved world deltas, populating only zones that are new.
 - **Empty server pause (§52).** With nobody online the tick loop still runs, but the world clock,
   needs, zombies and spawning do not advance.
 
@@ -97,7 +114,10 @@ The base map is static data. Everything that changes is stored as a delta:
 
 | What                      | Stored as                                              |
 | ------------------------- | ------------------------------------------------------ |
-| Doors, windows            | open / locked / broken / hit points                    |
+| Doors, windows            | open / locked / broken / hit points / barricade boards |
+| Furniture                 | picked up (removed from the map)                       |
+| Player structures         | kind, position, rotation, owner, hit points, lock      |
+| Trust lists               | whose locked storage each player may open              |
 | Containers                | contents once rolled, "searched" flag                  |
 | Corpses, dropped items    | persistent entities with expiry times                  |
 | Zombies away from players | dormant records per chunk                              |
@@ -117,8 +137,15 @@ backend makes local development zero-setup, and an in-memory backend serves test
   cabin layouts, the grocery store, gas station, hardware store and police station, terrain
   painting and Poisson-disc scattering — and `generatePrototypeTown()` assembles Pine Valley.
   `npm run generate:map` writes it to disk.
-- **Content** (`data/items`, `data/loot`, `data/world/props.json`, `data/zombies`) is validated at
-  startup and by `npm run validate:data`. Clients receive the item, prop and zombie definitions in
+- **Biomes and generation locking.** An optional biome grid (16 m cells) tells the area
+  generators (`gen/area.ts`) what to build: ground materials, street grids, parcels with
+  buildings, trees and undergrowth. Every generated element records the generator layer that made
+  it (`gen`); elements placed or edited by hand are marked `manual`, and any element can be
+  `locked`, as can terrain chunks (`terrainLocked`). Regenerating an area replaces only generated,
+  unlocked elements on painted biomes and treats everything it keeps as an obstacle.
+  `validate-map.ts` checks maps coming from the editor before they are saved.
+- **Content** (`data/items`, `data/loot`, `data/world/props.json`, `data/recipes`,
+  `data/construction`, `data/zombies`) is validated at startup and by `npm run validate:data`. Clients receive the item, prop and zombie definitions in
   the welcome message; items travel over the network as indices into that list.
 
 ## Client (`client/`)
@@ -138,4 +165,10 @@ backend makes local development zero-setup, and an in-memory backend serves test
   reads actions, so touch or gamepad input can be added as another source.
 - **Audio (§87)** — all sounds are synthesised at startup (gunshots, zombies, doors, footsteps by
   surface) and played with distance attenuation, low-pass filtering and stereo panning.
-- **UI** — plain DOM over the canvas: HUD, inventory/loot, health, map, chat, menus.
+- **UI** — plain DOM over the canvas: HUD, inventory/loot, health, map, chat, menus, the hold-E
+  action menu, crafting screen and build panel.
+- **Map editor (`src/editor/`, §33–47)** — loaded only on `/editor`. It streams the edited map
+  into the same `ClientWorld` and renderers the game uses, so what you see is what players see.
+  Every change goes through a `Transaction` that records before/after states, which makes
+  undo/redo exact even for regenerating the whole map; after each change only the affected
+  chunks are re-streamed.

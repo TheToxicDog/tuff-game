@@ -350,12 +350,12 @@ export interface ServerConfig {
     weaknessMinutes: number;
     respawnDelaySeconds: number;
   };
-  /** Optional; defaults apply when missing (see `sleepConfig`). */
+  /** Optional; defaults apply when missing (server/src/game/survival.ts). */
   sleep?: {
     /** World clock multiplier while every online player is asleep. */
     fastForward: number;
   };
-  /** Optional; defaults apply when missing (see `buildConfig`). */
+  /** Optional; defaults apply when missing (server/src/game/building.ts). */
   building?: {
     /** Whether players may damage structures they have no rights to (defaults to the PvP flag). */
     griefing?: boolean;
