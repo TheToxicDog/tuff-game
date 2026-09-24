@@ -1,0 +1,10 @@
+{
+  "name": "@tuff/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Simulation code, data types and network protocol shared by the client and server.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

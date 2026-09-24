@@ -1,0 +1,36 @@
+{
+  "name": "tuff-game",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Top-down multiplayer zombie survival sandbox that runs in the browser.",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "npm run dev -w @tuff/server",
+    "dev:client": "npm run dev -w @tuff/client",
+    "build": "npm run build -w @tuff/client && npm run build -w @tuff/server",
+    "start": "node server/dist/main.js",
+    "typecheck": "tsc -p shared --noEmit && tsc -p server --noEmit && tsc -p client --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate:data": "tsx server/src/tools/validate-data.ts",
+    "generate:map": "tsx server/src/tools/generate-map.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

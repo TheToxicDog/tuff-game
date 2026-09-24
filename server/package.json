@@ -1,0 +1,21 @@
+{
+  "name": "@tuff/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authoritative game server: simulation, networking, persistence and authentication.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@tuff/shared": "0.1.0",
+    "pg": "^8.23.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.2"
+  }
+}
