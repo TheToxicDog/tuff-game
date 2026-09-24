@@ -117,6 +117,8 @@ export interface DoorDef {
   hinge: -1 | 1;
   swing: -1 | 1;
   locked?: boolean;
+  /** Initially open (people left in a hurry). */
+  open?: boolean;
 }
 
 export type WindowKind = 'residential' | 'storefront' | 'industrial';

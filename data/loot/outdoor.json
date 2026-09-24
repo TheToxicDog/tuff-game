@@ -1,0 +1,57 @@
+[
+  {
+    "id": "car_trunk",
+    "rolls": [0, 3],
+    "empty": 0.35,
+    "entries": [
+      { "table": "bags", "weight": 5 },
+      { "item": "water_bottle", "weight": 5, "max": 3 },
+      { "table": "snacks", "weight": 4 },
+      { "table": "tools_common", "weight": 4 },
+      { "item": "gas_can_empty", "weight": 3 },
+      { "item": "gas_can", "weight": 1 },
+      { "item": "first_aid_kit", "weight": 2 },
+      { "item": "motor_oil", "weight": 2 },
+      { "item": "tire_patch", "weight": 2 },
+      { "item": "umbrella", "weight": 2 },
+      { "item": "shotgun_pump", "weight": 0.4, "loaded": [0, 1], "condition": [0.5, 1], "companionAmmo": [2, 8] }
+    ]
+  },
+  {
+    "id": "truck_bed",
+    "rolls": [0, 3],
+    "empty": 0.3,
+    "entries": [
+      { "table": "hardware", "weight": 6 },
+      { "item": "plank", "weight": 3, "max": 3 },
+      { "item": "shovel", "weight": 2, "condition": [0.4, 1] },
+      { "item": "gas_can_empty", "weight": 3 },
+      { "item": "scrap_metal", "weight": 3, "max": 3 },
+      { "item": "rope", "weight": 2 }
+    ]
+  },
+  {
+    "id": "dumpster",
+    "rolls": [0, 3],
+    "empty": 0.3,
+    "entries": [
+      { "table": "junk", "weight": 14 },
+      { "item": "garbage_bag", "weight": 4 },
+      { "item": "scrap_metal", "weight": 3 },
+      { "item": "plank", "weight": 2 },
+      { "table": "snacks", "weight": 2 },
+      { "item": "metal_pipe", "weight": 1, "condition": [0.3, 0.8] }
+    ]
+  },
+  {
+    "id": "trash_can",
+    "rolls": [0, 2],
+    "empty": 0.45,
+    "entries": [
+      { "table": "junk", "weight": 10 },
+      { "item": "ripped_cloth", "weight": 2 },
+      { "item": "newspaper", "weight": 3 },
+      { "item": "soda_can", "weight": 1 }
+    ]
+  }
+]

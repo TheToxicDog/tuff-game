@@ -21,6 +21,8 @@ export interface ItemStack {
   ammo?: number;
   /** Battery charge 0..1 for lights. */
   charge?: number;
+  /** Remaining applications for multi-use consumables. */
+  uses?: number;
   /** Contents of container items (backpacks, bags). */
   contents?: ItemStack[];
 }
@@ -134,6 +136,10 @@ export function canStack(a: ItemStack, b: ItemStack, def: ItemDef): boolean {
     b.cond === undefined &&
     a.ammo === undefined &&
     b.ammo === undefined &&
+    a.uses === undefined &&
+    b.uses === undefined &&
+    a.charge === undefined &&
+    b.charge === undefined &&
     !a.contents &&
     !b.contents
   );

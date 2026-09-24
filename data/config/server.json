@@ -1,0 +1,39 @@
+{
+  "name": "Tuff Public",
+  "motd": "Scavenge. Survive. Rebuild.",
+  "maxPlayers": 10,
+  "pvp": false,
+  "map": "prototype",
+  "realSecondsPerDay": 900,
+  "startHour": 8,
+  "zombies": {
+    "populationMultiplier": 1,
+    "distribution": {
+      "slow_walker": 55,
+      "walker": 25,
+      "fast_walker": 12,
+      "runner": 6,
+      "sprinter": 2
+    },
+    "respawnGameHours": 36,
+    "maxActive": 600,
+    "corpseLifetimeMinutes": 1440
+  },
+  "loot": {
+    "abundance": 1,
+    "houseFirearmChance": 0.32
+  },
+  "death": {
+    "dropInventory": true,
+    "xpLossFraction": 0.1,
+    "weaknessMinutes": 240,
+    "respawnDelaySeconds": 6
+  },
+  "player": {
+    "startingItems": [
+      { "item": "water_bottle", "qty": 1 },
+      { "item": "granola_bar", "qty": 1 },
+      { "item": "ripped_cloth", "qty": 2 }
+    ]
+  }
+}

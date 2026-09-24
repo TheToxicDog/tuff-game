@@ -1,0 +1,271 @@
+[
+  {
+    "id": "kitchen_cabinet",
+    "rolls": [1, 4],
+    "empty": 0.15,
+    "entries": [
+      { "table": "canned_food", "weight": 14 },
+      { "table": "dry_food", "weight": 10 },
+      { "table": "snacks", "weight": 5 },
+      { "item": "can_opener", "weight": 3 },
+      { "item": "frying_pan", "weight": 2, "condition": [0.6, 1] },
+      { "item": "coffee_mug", "weight": 2 },
+      { "item": "plastic_bag", "weight": 3, "max": 3 },
+      { "item": "garbage_bag", "weight": 2 },
+      { "item": "matches", "weight": 2 }
+    ]
+  },
+  {
+    "id": "kitchen_drawer",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "item": "kitchen_knife", "weight": 8, "condition": [0.5, 1] },
+      { "item": "can_opener", "weight": 7 },
+      { "item": "batteries", "weight": 4, "max": 4 },
+      { "item": "matches", "weight": 4 },
+      { "item": "lighter", "weight": 3 },
+      { "item": "duct_tape", "weight": 3 },
+      { "item": "zip_ties", "weight": 2, "max": 10 },
+      { "item": "adhesive_bandages", "weight": 2, "max": 3 },
+      { "item": "car_keys", "weight": 2 },
+      { "item": "flashlight", "weight": 2 }
+    ]
+  },
+  {
+    "id": "fridge",
+    "rolls": [1, 4],
+    "empty": 0.15,
+    "entries": [
+      { "table": "drinks_any", "weight": 12 },
+      { "table": "fresh_food", "weight": 8 },
+      { "item": "cheese", "weight": 3 },
+      { "item": "pickles", "weight": 2 },
+      { "item": "water_bottle", "weight": 5, "max": 3 }
+    ]
+  },
+  {
+    "id": "freezer",
+    "rolls": [0, 2],
+    "empty": 0.4,
+    "entries": [
+      { "item": "water_bottle", "weight": 4, "max": 2 },
+      { "item": "bread", "weight": 3 },
+      { "item": "soda_can", "weight": 2 },
+      { "item": "beef_jerky", "weight": 1 }
+    ]
+  },
+  {
+    "id": "oven",
+    "rolls": [0, 1],
+    "empty": 0.5,
+    "entries": [
+      { "item": "frying_pan", "weight": 6, "condition": [0.6, 1] },
+      { "item": "bread", "weight": 1 }
+    ]
+  },
+  {
+    "id": "under_sink",
+    "rolls": [1, 2],
+    "empty": 0.2,
+    "entries": [
+      { "item": "bleach", "weight": 8 },
+      { "item": "soap", "weight": 5 },
+      { "item": "garbage_bag", "weight": 5, "max": 2 },
+      { "item": "pipe_wrench", "weight": 2, "condition": [0.5, 1] },
+      { "item": "duct_tape", "weight": 3 },
+      { "item": "gloves", "weight": 2 }
+    ]
+  },
+  {
+    "id": "bathroom_cabinet",
+    "rolls": [1, 3],
+    "empty": 0.15,
+    "entries": [
+      { "table": "medical_basic", "weight": 16 },
+      { "table": "medical_rare", "weight": 3 },
+      { "item": "soap", "weight": 4 },
+      { "item": "toothpaste", "weight": 4 },
+      { "item": "shampoo", "weight": 3 },
+      { "item": "toilet_paper", "weight": 4, "max": 2 },
+      { "item": "towel", "weight": 2 }
+    ]
+  },
+  {
+    "id": "toilet_tank",
+    "rolls": [1, 1],
+    "empty": 0.93,
+    "entries": [
+      { "item": "revolver_38", "weight": 1, "loaded": [1, 1], "condition": [0.5, 0.9] },
+      { "item": "wallet", "weight": 2 }
+    ]
+  },
+  {
+    "id": "laundry",
+    "rolls": [0, 2],
+    "empty": 0.4,
+    "entries": [
+      { "item": "towel", "weight": 6 },
+      { "item": "bed_sheet", "weight": 5 },
+      { "item": "soap", "weight": 3 },
+      { "item": "wallet", "weight": 1 }
+    ]
+  },
+  {
+    "id": "nightstand",
+    "rolls": [1, 2],
+    "empty": 0.25,
+    "entries": [
+      { "table": "reading", "weight": 8 },
+      { "item": "flashlight", "weight": 5 },
+      { "item": "batteries", "weight": 4, "max": 4 },
+      { "item": "painkillers", "weight": 3 },
+      { "item": "ibuprofen", "weight": 2 },
+      { "table": "personal", "weight": 5 },
+      { "item": "candy", "weight": 2, "max": 3 },
+      { "item": "ammo_9mm", "weight": 1, "min": 3, "max": 9 }
+    ]
+  },
+  {
+    "id": "under_bed",
+    "rolls": [0, 2],
+    "empty": 0.5,
+    "entries": [
+      { "item": "baseball_bat", "weight": 4, "condition": [0.5, 1] },
+      { "table": "bags", "weight": 4 },
+      { "table": "reading", "weight": 3 },
+      { "item": "teddy_bear", "weight": 2 },
+      { "item": "shells_12ga", "weight": 1, "min": 2, "max": 6 }
+    ]
+  },
+  {
+    "id": "wardrobe",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "table": "bags", "weight": 10 },
+      { "item": "bed_sheet", "weight": 6 },
+      { "item": "towel", "weight": 4 },
+      { "item": "umbrella", "weight": 2 },
+      { "item": "baseball_bat", "weight": 2, "condition": [0.4, 1] },
+      { "item": "gloves", "weight": 2 },
+      { "table": "personal", "weight": 2 },
+      { "item": "ammo_38", "weight": 1, "min": 3, "max": 10 }
+    ]
+  },
+  {
+    "id": "dresser",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "table": "personal", "weight": 10 },
+      { "item": "bed_sheet", "weight": 4 },
+      { "item": "towel", "weight": 3 },
+      { "item": "batteries", "weight": 2, "max": 4 },
+      { "item": "flashlight", "weight": 2 },
+      { "item": "sewing_kit", "weight": 2 },
+      { "item": "playing_cards", "weight": 2 }
+    ]
+  },
+  {
+    "id": "living_room",
+    "rolls": [1, 2],
+    "empty": 0.3,
+    "entries": [
+      { "table": "reading", "weight": 6 },
+      { "table": "snacks", "weight": 6 },
+      { "item": "batteries", "weight": 5, "max": 4 },
+      { "item": "radio", "weight": 2 },
+      { "item": "playing_cards", "weight": 2 },
+      { "item": "beer_can", "weight": 3, "max": 3 },
+      { "item": "cigarettes", "weight": 2 }
+    ]
+  },
+  {
+    "id": "bookshelf",
+    "rolls": [1, 3],
+    "empty": 0.15,
+    "entries": [
+      { "table": "reading", "weight": 16 },
+      { "item": "family_photo", "weight": 2 },
+      { "item": "local_map", "weight": 2 }
+    ]
+  },
+  {
+    "id": "desk",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "item": "newspaper", "weight": 4 },
+      { "table": "reading", "weight": 3 },
+      { "item": "batteries", "weight": 4, "max": 4 },
+      { "item": "duct_tape", "weight": 2 },
+      { "item": "cell_phone", "weight": 3 },
+      { "item": "laptop", "weight": 2 },
+      { "item": "painkillers", "weight": 1 },
+      { "item": "car_keys", "weight": 2 }
+    ]
+  },
+  {
+    "id": "garage_shelf",
+    "rolls": [1, 4],
+    "empty": 0.1,
+    "entries": [
+      { "table": "tools_common", "weight": 10 },
+      { "table": "hardware", "weight": 10 },
+      { "item": "gas_can", "weight": 2 },
+      { "item": "gas_can_empty", "weight": 3 },
+      { "item": "motor_oil", "weight": 3 },
+      { "item": "spark_plug", "weight": 2, "max": 4 },
+      { "item": "shovel", "weight": 2, "condition": [0.5, 1] },
+      { "item": "crowbar", "weight": 1, "condition": [0.5, 1] },
+      { "item": "metal_pipe", "weight": 2, "condition": [0.5, 1] },
+      { "item": "propane_tank", "weight": 1 },
+      { "item": "tire_patch", "weight": 1 }
+    ]
+  },
+  {
+    "id": "workbench",
+    "rolls": [1, 3],
+    "empty": 0.15,
+    "entries": [
+      { "table": "tools_common", "weight": 12 },
+      { "table": "hardware", "weight": 8 },
+      { "item": "hatchet", "weight": 2, "condition": [0.5, 1] },
+      { "item": "pipe_wrench", "weight": 2, "condition": [0.5, 1] },
+      { "item": "whetstone", "weight": 2 },
+      { "item": "gun_cleaning_kit", "weight": 1 }
+    ]
+  },
+  {
+    "id": "toolbox",
+    "rolls": [1, 3],
+    "empty": 0.1,
+    "entries": [
+      { "item": "screwdriver", "weight": 8 },
+      { "item": "hammer", "weight": 6, "condition": [0.5, 1] },
+      { "item": "pliers", "weight": 6 },
+      { "item": "pipe_wrench", "weight": 3, "condition": [0.5, 1] },
+      { "item": "saw", "weight": 3 },
+      { "item": "nails", "weight": 5, "min": 10, "max": 40 },
+      { "item": "screws", "weight": 4, "min": 10, "max": 40 },
+      { "item": "duct_tape", "weight": 4 },
+      { "item": "multitool", "weight": 1 }
+    ]
+  },
+  {
+    "id": "gun_safe",
+    "rolls": [1, 3],
+    "empty": 0.25,
+    "entries": [
+      { "item": "shotgun_pump", "weight": 6, "loaded": [0, 1], "condition": [0.7, 1] },
+      { "item": "rifle_hunting", "weight": 5, "loaded": [0, 1], "condition": [0.7, 1] },
+      { "item": "pistol_9mm", "weight": 5, "loaded": [0, 1], "condition": [0.7, 1] },
+      { "item": "ammo_308", "weight": 5, "min": 5, "max": 20 },
+      { "item": "shells_12ga", "weight": 5, "min": 5, "max": 16 },
+      { "item": "ammo_9mm", "weight": 5, "min": 8, "max": 30 },
+      { "item": "gun_cleaning_kit", "weight": 3 },
+      { "item": "binoculars", "weight": 2 }
+    ]
+  }
+]

@@ -1,0 +1,269 @@
+[
+  {
+    "id": "grocery_canned",
+    "rolls": [2, 6],
+    "empty": 0.1,
+    "entries": [{ "table": "canned_food", "weight": 1 }]
+  },
+  {
+    "id": "grocery_dry",
+    "rolls": [2, 5],
+    "empty": 0.1,
+    "entries": [
+      { "table": "dry_food", "weight": 10 },
+      { "item": "peanut_butter", "weight": 2 }
+    ]
+  },
+  {
+    "id": "grocery_snacks",
+    "rolls": [2, 6],
+    "empty": 0.1,
+    "entries": [{ "table": "snacks", "weight": 1 }]
+  },
+  {
+    "id": "grocery_drinks",
+    "rolls": [2, 6],
+    "empty": 0.1,
+    "entries": [
+      { "table": "drinks_any", "weight": 10 },
+      { "item": "water_bottle", "weight": 6, "max": 4 },
+      { "item": "canned_juice", "weight": 2, "max": 2 }
+    ]
+  },
+  {
+    "id": "grocery_produce",
+    "rolls": [1, 4],
+    "empty": 0.25,
+    "entries": [{ "table": "fresh_food", "weight": 1 }]
+  },
+  {
+    "id": "grocery_cooler",
+    "rolls": [1, 5],
+    "empty": 0.15,
+    "entries": [
+      { "table": "drinks_any", "weight": 8 },
+      { "item": "cheese", "weight": 4, "max": 2 },
+      { "item": "juice_box", "weight": 3, "max": 3 }
+    ]
+  },
+  {
+    "id": "grocery_household",
+    "rolls": [1, 4],
+    "empty": 0.1,
+    "entries": [
+      { "item": "soap", "weight": 6, "max": 2 },
+      { "item": "toilet_paper", "weight": 6, "max": 3 },
+      { "item": "bleach", "weight": 4 },
+      { "item": "batteries", "weight": 6, "min": 2, "max": 8 },
+      { "item": "flashlight", "weight": 3 },
+      { "item": "duct_tape", "weight": 4 },
+      { "item": "matches", "weight": 4, "max": 3 },
+      { "item": "lighter", "weight": 3, "max": 2 },
+      { "item": "garbage_bag", "weight": 4, "max": 3 },
+      { "item": "plastic_bag", "weight": 5, "max": 5 },
+      { "item": "can_opener", "weight": 3 },
+      { "item": "lantern", "weight": 1 }
+    ]
+  },
+  {
+    "id": "grocery_pharmacy",
+    "rolls": [1, 4],
+    "empty": 0.15,
+    "entries": [
+      { "table": "medical_basic", "weight": 12 },
+      { "table": "medical_rare", "weight": 5 },
+      { "item": "vitamins", "weight": 3 },
+      { "item": "toothpaste", "weight": 2 }
+    ]
+  },
+  {
+    "id": "grocery_checkout",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "item": "candy", "weight": 8, "max": 5 },
+      { "item": "chocolate_bar", "weight": 6, "max": 2 },
+      { "item": "batteries", "weight": 4, "max": 4 },
+      { "item": "lighter", "weight": 4 },
+      { "item": "cigarettes", "weight": 4 },
+      { "item": "plastic_bag", "weight": 8, "max": 5 },
+      { "item": "comic_book", "weight": 2 },
+      { "item": "newspaper", "weight": 2 }
+    ]
+  },
+  {
+    "id": "stockroom",
+    "rolls": [1, 5],
+    "empty": 0.2,
+    "entries": [
+      { "table": "canned_food", "weight": 10 },
+      { "table": "dry_food", "weight": 6 },
+      { "item": "water_bottle", "weight": 6, "max": 4 },
+      { "table": "drinks_any", "weight": 4 },
+      { "item": "toilet_paper", "weight": 3, "max": 4 },
+      { "item": "garbage_bag", "weight": 3, "max": 3 },
+      { "item": "plank", "weight": 1 }
+    ]
+  },
+  {
+    "id": "store_office",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "item": "newspaper", "weight": 4 },
+      { "item": "painkillers", "weight": 3 },
+      { "item": "car_keys", "weight": 3 },
+      { "item": "flashlight", "weight": 3 },
+      { "item": "batteries", "weight": 3, "max": 4 },
+      { "item": "first_aid_kit", "weight": 2 },
+      { "item": "pistol_9mm", "weight": 1, "loaded": [0.4, 1], "condition": [0.6, 1] }
+    ]
+  },
+  {
+    "id": "employee_locker",
+    "rolls": [0, 2],
+    "empty": 0.3,
+    "entries": [
+      { "table": "snacks", "weight": 6 },
+      { "table": "personal", "weight": 6 },
+      { "item": "school_backpack", "weight": 3 },
+      { "item": "soda_can", "weight": 3 },
+      { "item": "painkillers", "weight": 2 },
+      { "item": "cigarettes", "weight": 2 }
+    ]
+  },
+  {
+    "id": "vending",
+    "rolls": [2, 5],
+    "empty": 0.2,
+    "entries": [
+      { "item": "soda_can", "weight": 8 },
+      { "item": "chocolate_bar", "weight": 5 },
+      { "item": "potato_chips", "weight": 5 },
+      { "item": "candy", "weight": 3 },
+      { "item": "energy_drink", "weight": 3 }
+    ]
+  },
+  {
+    "id": "register",
+    "rolls": [0, 1],
+    "empty": 0.6,
+    "entries": [
+      { "item": "wallet", "weight": 3 },
+      { "item": "candy", "weight": 2 }
+    ]
+  },
+  {
+    "id": "store_counter",
+    "rolls": [1, 3],
+    "empty": 0.2,
+    "entries": [
+      { "item": "cigarettes", "weight": 6, "max": 3 },
+      { "item": "lighter", "weight": 5, "max": 2 },
+      { "item": "candy", "weight": 4, "max": 3 },
+      { "item": "beef_jerky", "weight": 4, "max": 2 },
+      { "item": "local_map", "weight": 3 },
+      { "item": "batteries", "weight": 3, "max": 4 },
+      { "item": "flashlight", "weight": 2 },
+      { "item": "baseball_bat", "weight": 1, "condition": [0.6, 1] }
+    ]
+  },
+  {
+    "id": "gas_counter",
+    "rolls": [1, 3],
+    "empty": 0.15,
+    "entries": [
+      { "item": "cigarettes", "weight": 8, "max": 4 },
+      { "item": "lighter", "weight": 6, "max": 3 },
+      { "item": "candy", "weight": 4, "max": 3 },
+      { "item": "beef_jerky", "weight": 4, "max": 2 },
+      { "item": "local_map", "weight": 4 },
+      { "item": "batteries", "weight": 3, "max": 4 },
+      { "item": "revolver_38", "weight": 1, "loaded": [0.5, 1], "condition": [0.5, 1], "companionAmmo": [0, 6] },
+      { "item": "baseball_bat", "weight": 1, "condition": [0.5, 1] }
+    ]
+  },
+  {
+    "id": "gas_shelf",
+    "rolls": [2, 5],
+    "empty": 0.1,
+    "entries": [
+      { "table": "snacks", "weight": 12 },
+      { "item": "motor_oil", "weight": 4, "max": 2 },
+      { "item": "batteries", "weight": 3, "max": 4 },
+      { "item": "flashlight", "weight": 2 },
+      { "item": "duct_tape", "weight": 2 },
+      { "item": "instant_noodles", "weight": 3, "max": 3 },
+      { "item": "tire_patch", "weight": 1 }
+    ]
+  },
+  {
+    "id": "gas_cooler",
+    "rolls": [2, 6],
+    "empty": 0.1,
+    "entries": [
+      { "table": "drinks_any", "weight": 10 },
+      { "item": "energy_drink", "weight": 4, "max": 2 },
+      { "item": "sports_drink", "weight": 3 }
+    ]
+  },
+  {
+    "id": "gas_backroom",
+    "rolls": [1, 4],
+    "empty": 0.15,
+    "entries": [
+      { "item": "motor_oil", "weight": 5, "max": 3 },
+      { "item": "gas_can_empty", "weight": 4 },
+      { "item": "gas_can", "weight": 1 },
+      { "item": "spark_plug", "weight": 3, "max": 4 },
+      { "table": "tools_common", "weight": 4 },
+      { "item": "car_battery", "weight": 1 },
+      { "item": "tire_patch", "weight": 2 }
+    ]
+  },
+  {
+    "id": "hardware_tools",
+    "rolls": [2, 5],
+    "empty": 0.1,
+    "entries": [
+      { "item": "hammer", "weight": 8 },
+      { "item": "screwdriver", "weight": 8 },
+      { "item": "saw", "weight": 6 },
+      { "item": "pliers", "weight": 6 },
+      { "item": "pipe_wrench", "weight": 5 },
+      { "item": "crowbar", "weight": 4 },
+      { "item": "hatchet", "weight": 4 },
+      { "item": "shovel", "weight": 4 },
+      { "item": "machete", "weight": 2 },
+      { "item": "fire_axe", "weight": 1 },
+      { "item": "multitool", "weight": 2 },
+      { "item": "whetstone", "weight": 2 },
+      { "item": "flashlight", "weight": 3 },
+      { "item": "gloves", "weight": 3 },
+      { "item": "tool_bag", "weight": 2 }
+    ]
+  },
+  {
+    "id": "hardware_lumber",
+    "rolls": [2, 5],
+    "empty": 0.1,
+    "entries": [
+      { "item": "plank", "weight": 12, "max": 4 },
+      { "item": "nails", "weight": 6, "min": 20, "max": 100 },
+      { "item": "screws", "weight": 3, "min": 20, "max": 100 }
+    ]
+  },
+  {
+    "id": "hardware_supplies",
+    "rolls": [2, 5],
+    "empty": 0.1,
+    "entries": [
+      { "table": "hardware", "weight": 12 },
+      { "item": "rope", "weight": 4 },
+      { "item": "batteries", "weight": 4, "min": 2, "max": 8 },
+      { "item": "lantern", "weight": 2 },
+      { "item": "propane_tank", "weight": 1 },
+      { "item": "gas_can_empty", "weight": 2 }
+    ]
+  }
+]

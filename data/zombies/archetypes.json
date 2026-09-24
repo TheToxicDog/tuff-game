@@ -1,0 +1,67 @@
+[
+  {
+    "id": "slow_walker",
+    "weight": 55,
+    "walkSpeed": [0.4, 0.65],
+    "chaseSpeed": [0.85, 1.2],
+    "health": [80, 115],
+    "attackDamage": [0.85, 1.05],
+    "attackWindup": 0.62,
+    "attackCooldown": 1.45,
+    "sightRange": 20,
+    "hearing": 0.9,
+    "stability": 0.35
+  },
+  {
+    "id": "walker",
+    "weight": 25,
+    "walkSpeed": [0.55, 0.8],
+    "chaseSpeed": [1.35, 1.75],
+    "health": [85, 120],
+    "attackDamage": [0.9, 1.1],
+    "attackWindup": 0.55,
+    "attackCooldown": 1.3,
+    "sightRange": 23,
+    "hearing": 1.0,
+    "stability": 0.42
+  },
+  {
+    "id": "fast_walker",
+    "weight": 12,
+    "walkSpeed": [0.7, 0.95],
+    "chaseSpeed": [2.1, 2.7],
+    "health": [80, 110],
+    "attackDamage": [0.9, 1.1],
+    "attackWindup": 0.5,
+    "attackCooldown": 1.15,
+    "sightRange": 26,
+    "hearing": 1.1,
+    "stability": 0.4
+  },
+  {
+    "id": "runner",
+    "weight": 6,
+    "walkSpeed": [0.8, 1.1],
+    "chaseSpeed": [3.6, 4.3],
+    "health": [70, 100],
+    "attackDamage": [0.95, 1.15],
+    "attackWindup": 0.45,
+    "attackCooldown": 1.0,
+    "sightRange": 28,
+    "hearing": 1.2,
+    "stability": 0.3
+  },
+  {
+    "id": "sprinter",
+    "weight": 2,
+    "walkSpeed": [0.9, 1.2],
+    "chaseSpeed": [5.0, 5.6],
+    "health": [65, 95],
+    "attackDamage": [1.0, 1.2],
+    "attackWindup": 0.4,
+    "attackCooldown": 0.9,
+    "sightRange": 30,
+    "hearing": 1.3,
+    "stability": 0.25
+  }
+]

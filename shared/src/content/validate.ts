@@ -165,6 +165,7 @@ export function validateItems(raw: unknown, where: string, errors: ContentErrors
     c.string(o, 'icon', path, false);
     c.string(o, 'color', path, false);
     c.number(o, 'durability', path, { min: 1, required: false });
+    c.number(o, 'uses', path, { min: 1, int: true, required: false });
     if (o.nutrition !== undefined) {
       const n = c.object(o.nutrition, `${path}.nutrition`);
       if (n) {
@@ -292,6 +293,7 @@ export function validateLootTables(raw: unknown, where: string, errors: ContentE
         c.number(eo, 'max', ep, { min: 1, int: true, required: false });
         c.range(eo, 'condition', ep, false, 0);
         c.range(eo, 'loaded', ep, false, 0);
+        c.range(eo, 'companionAmmo', ep, false, 0);
       });
     }
     tables.push(o as unknown as LootTableDef);

@@ -1,0 +1,215 @@
+[
+  {
+    "id": "canned_food",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "canned_beans", "weight": 10 },
+      { "item": "canned_soup", "weight": 10 },
+      { "item": "canned_chili", "weight": 6 },
+      { "item": "canned_corn", "weight": 7 },
+      { "item": "canned_peaches", "weight": 6 },
+      { "item": "canned_tuna", "weight": 8 },
+      { "item": "canned_meat", "weight": 5 },
+      { "item": "canned_sardines", "weight": 5 },
+      { "item": "canned_juice", "weight": 3 }
+    ]
+  },
+  {
+    "id": "snacks",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "potato_chips", "weight": 8 },
+      { "item": "chocolate_bar", "weight": 8 },
+      { "item": "granola_bar", "weight": 8, "max": 3 },
+      { "item": "candy", "weight": 6, "max": 4 },
+      { "item": "cookies", "weight": 5 },
+      { "item": "beef_jerky", "weight": 4, "max": 2 },
+      { "item": "trail_mix", "weight": 4 },
+      { "item": "crackers", "weight": 5 }
+    ]
+  },
+  {
+    "id": "dry_food",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "cereal", "weight": 6 },
+      { "item": "crackers", "weight": 7 },
+      { "item": "instant_noodles", "weight": 8, "max": 3 },
+      { "item": "peanut_butter", "weight": 4 },
+      { "item": "honey", "weight": 2 },
+      { "item": "cookies", "weight": 3 },
+      { "item": "bread", "weight": 3 },
+      { "item": "pickles", "weight": 2 }
+    ]
+  },
+  {
+    "id": "fresh_food",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "apple", "weight": 6, "max": 3 },
+      { "item": "orange", "weight": 5, "max": 3 },
+      { "item": "banana", "weight": 4, "max": 3 },
+      { "item": "carrot", "weight": 4, "max": 4 },
+      { "item": "tomato", "weight": 4, "max": 3 },
+      { "item": "potato", "weight": 4, "max": 4 },
+      { "item": "cheese", "weight": 3 }
+    ]
+  },
+  {
+    "id": "drinks_any",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "water_bottle", "weight": 10, "max": 2 },
+      { "item": "soda_can", "weight": 8, "max": 3 },
+      { "item": "juice_box", "weight": 5, "max": 2 },
+      { "item": "energy_drink", "weight": 3 },
+      { "item": "sports_drink", "weight": 4 },
+      { "item": "beer_can", "weight": 4, "max": 3 }
+    ]
+  },
+  {
+    "id": "medical_basic",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "adhesive_bandages", "weight": 10, "max": 4 },
+      { "item": "bandage", "weight": 8, "max": 2 },
+      { "item": "alcohol_wipes", "weight": 7, "max": 4 },
+      { "item": "painkillers", "weight": 5 },
+      { "item": "ibuprofen", "weight": 5 },
+      { "item": "hydrogen_peroxide", "weight": 4 },
+      { "item": "vitamins", "weight": 3 }
+    ]
+  },
+  {
+    "id": "medical_rare",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "sterile_gauze", "weight": 8, "max": 3 },
+      { "item": "antiseptic", "weight": 6 },
+      { "item": "antibiotics", "weight": 4 },
+      { "item": "suture_kit", "weight": 3 },
+      { "item": "first_aid_kit", "weight": 4 },
+      { "item": "compression_bandage", "weight": 3 },
+      { "item": "splint", "weight": 3 },
+      { "item": "trauma_kit", "weight": 1 }
+    ]
+  },
+  {
+    "id": "tools_common",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "screwdriver", "weight": 8 },
+      { "item": "hammer", "weight": 6, "condition": [0.4, 1] },
+      { "item": "pliers", "weight": 5 },
+      { "item": "duct_tape", "weight": 7 },
+      { "item": "rope", "weight": 3 },
+      { "item": "saw", "weight": 3 },
+      { "item": "flashlight", "weight": 3 },
+      { "item": "batteries", "weight": 5, "max": 4 },
+      { "item": "multitool", "weight": 1 },
+      { "item": "gloves", "weight": 3 },
+      { "item": "zip_ties", "weight": 3, "max": 20 }
+    ]
+  },
+  {
+    "id": "hardware",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "nails", "weight": 10, "min": 10, "max": 60 },
+      { "item": "screws", "weight": 6, "min": 10, "max": 50 },
+      { "item": "plank", "weight": 5, "max": 3 },
+      { "item": "duct_tape", "weight": 5 },
+      { "item": "electrical_wire", "weight": 3 },
+      { "item": "glue", "weight": 3 },
+      { "item": "scrap_metal", "weight": 3, "max": 2 },
+      { "item": "zip_ties", "weight": 3, "min": 5, "max": 30 }
+    ]
+  },
+  {
+    "id": "junk",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "newspaper", "weight": 6 },
+      { "item": "empty_bottle", "weight": 6, "max": 2 },
+      { "item": "empty_can", "weight": 6, "max": 3 },
+      { "item": "coffee_mug", "weight": 3 },
+      { "item": "playing_cards", "weight": 2 },
+      { "item": "cigarettes", "weight": 3 },
+      { "item": "lighter", "weight": 3 },
+      { "item": "umbrella", "weight": 2 },
+      { "item": "cell_phone", "weight": 2 },
+      { "item": "car_keys", "weight": 2 }
+    ]
+  },
+  {
+    "id": "personal",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "wallet", "weight": 6 },
+      { "item": "wristwatch", "weight": 3 },
+      { "item": "gold_necklace", "weight": 2 },
+      { "item": "family_photo", "weight": 3 },
+      { "item": "cell_phone", "weight": 3 },
+      { "item": "car_keys", "weight": 3 },
+      { "item": "cigarettes", "weight": 2 },
+      { "item": "harmonica", "weight": 1 }
+    ]
+  },
+  {
+    "id": "reading",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "novel", "weight": 8 },
+      { "item": "comic_book", "weight": 4 },
+      { "item": "newspaper", "weight": 5 },
+      { "item": "magazine_mechanics", "weight": 2 },
+      { "item": "magazine_carpentry", "weight": 2 },
+      { "item": "local_map", "weight": 2 }
+    ]
+  },
+  {
+    "id": "bags",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "school_backpack", "weight": 10 },
+      { "item": "duffel_bag", "weight": 5 },
+      { "item": "hiking_backpack", "weight": 4 },
+      { "item": "tool_bag", "weight": 2 },
+      { "item": "plastic_bag", "weight": 5, "max": 3 },
+      { "item": "garbage_bag", "weight": 3, "max": 2 }
+    ]
+  },
+  {
+    "id": "ammo_any",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "ammo_9mm", "weight": 10, "min": 5, "max": 20 },
+      { "item": "ammo_38", "weight": 6, "min": 4, "max": 14 },
+      { "item": "shells_12ga", "weight": 7, "min": 3, "max": 10 },
+      { "item": "ammo_308", "weight": 3, "min": 3, "max": 10 }
+    ]
+  },
+  {
+    "id": "house_firearm",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "pistol_9mm", "weight": 40, "loaded": [0.2, 0.85], "condition": [0.5, 1], "companionAmmo": [4, 16] },
+      { "item": "revolver_38", "weight": 25, "loaded": [0.3, 1], "condition": [0.5, 1], "companionAmmo": [3, 12] },
+      { "item": "shotgun_pump", "weight": 25, "loaded": [0, 0.8], "condition": [0.5, 1], "companionAmmo": [2, 9] },
+      { "item": "rifle_hunting", "weight": 10, "loaded": [0, 1], "condition": [0.5, 1], "companionAmmo": [2, 10] }
+    ]
+  },
+  {
+    "id": "melee_household",
+    "rolls": [1, 1],
+    "entries": [
+      { "item": "baseball_bat", "weight": 6, "condition": [0.4, 1] },
+      { "item": "hammer", "weight": 5, "condition": [0.4, 1] },
+      { "item": "kitchen_knife", "weight": 5, "condition": [0.4, 1] },
+      { "item": "frying_pan", "weight": 3, "condition": [0.6, 1] },
+      { "item": "metal_pipe", "weight": 2, "condition": [0.5, 1] },
+      { "item": "crowbar", "weight": 2, "condition": [0.5, 1] },
+      { "item": "hatchet", "weight": 2, "condition": [0.4, 1] }
+    ]
+  }
+]

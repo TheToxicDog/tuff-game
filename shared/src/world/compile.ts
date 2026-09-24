@@ -163,7 +163,7 @@ export class CompiledWorld {
   /** Default state for an object according to the base map. */
   defaultState(id: string): ObjectState {
     const door = this.doors.get(id);
-    if (door) return { open: false, locked: door.lockedByDefault, broken: false, hp: door.maxHp };
+    if (door) return { open: !!door.def.open, locked: door.lockedByDefault, broken: false, hp: door.maxHp };
     const win = this.windows.get(id);
     if (win) return { broken: false, hp: win.maxHp };
     return { searched: false };

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "ammo_9mm",
+    "name": "9mm Rounds",
+    "description": "Loose 9mm pistol ammunition.",
+    "category": "ammo",
+    "weight": 0.012,
+    "volume": 0.004,
+    "stackSize": 60,
+    "tags": ["ammo"],
+    "icon": "rounds",
+    "color": "#b8964a",
+    "ammo": { "caliber": "9mm" }
+  },
+  {
+    "id": "ammo_38",
+    "name": ".38 Special Rounds",
+    "description": "Loose revolver cartridges.",
+    "category": "ammo",
+    "weight": 0.013,
+    "volume": 0.004,
+    "stackSize": 50,
+    "tags": ["ammo"],
+    "icon": "rounds",
+    "color": "#a88a50",
+    "ammo": { "caliber": ".38" }
+  },
+  {
+    "id": "shells_12ga",
+    "name": "12 Gauge Shells",
+    "description": "Buckshot shells for a 12 gauge shotgun.",
+    "category": "ammo",
+    "weight": 0.04,
+    "volume": 0.012,
+    "stackSize": 30,
+    "tags": ["ammo"],
+    "icon": "shells",
+    "color": "#9a3a2c",
+    "ammo": { "caliber": "12ga" }
+  },
+  {
+    "id": "ammo_308",
+    "name": ".308 Rounds",
+    "description": "Full-power rifle cartridges.",
+    "category": "ammo",
+    "weight": 0.025,
+    "volume": 0.008,
+    "stackSize": 40,
+    "tags": ["ammo"],
+    "icon": "rounds",
+    "color": "#c0a060",
+    "ammo": { "caliber": ".308" }
+  },
+  {
+    "id": "ammo_556",
+    "name": "5.56 Rounds",
+    "description": "Intermediate rifle cartridges.",
+    "category": "ammo",
+    "weight": 0.012,
+    "volume": 0.005,
+    "stackSize": 60,
+    "tags": ["ammo"],
+    "icon": "rounds",
+    "color": "#b59a58",
+    "ammo": { "caliber": "5.56" }
+  }
+]

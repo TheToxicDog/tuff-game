@@ -148,6 +148,8 @@ export interface ItemDef {
   color?: string;
   /** Maximum durability (hits or shots) for degradable items. */
   durability?: number;
+  /** Number of applications for multi-use consumables (bottles, kits). */
+  uses?: number;
   nutrition?: Nutrition;
   consume?: ConsumeDef;
   medical?: MedicalDef;
@@ -173,6 +175,8 @@ export interface LootEntry {
   condition?: [number, number];
   /** Fraction of the magazine that is loaded, for firearms. */
   loaded?: [number, number];
+  /** Loose rounds of the firearm's caliber that come with it. */
+  companionAmmo?: [number, number];
 }
 
 export interface LootTableDef {
