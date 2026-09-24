@@ -7,8 +7,8 @@ import { CHUNK_SIZE, TERRAIN_CELLS_PER_CHUNK, terrainIndex } from '@tuff/shared'
 import type { ClientWorld } from '../game/world';
 import { ATLAS_COLS, ATLAS_ROWS, buildNoiseTexture, buildTerrainAtlas, TILE_METERS } from './textures';
 
-const WINDOW_CHUNKS = 7;
-const WINDOW_CELLS = WINDOW_CHUNKS * TERRAIN_CELLS_PER_CHUNK;
+/** Chunks per side of the terrain window around the camera (the game streams 5 × 5 around you). */
+const DEFAULT_WINDOW_CHUNKS = 7;
 
 const VERTEX = /* glsl */ `#version 300 es
 in vec2 aPosition;
@@ -78,8 +78,10 @@ void main() {
 
 export class TerrainRenderer {
   readonly mesh: Mesh<Geometry, Shader>;
-  private readonly data = new Uint8Array(WINDOW_CELLS * WINDOW_CELLS * 4);
+  private readonly data: Uint8Array;
   private readonly source: BufferImageSource;
+  private readonly windowChunks: number;
+  private readonly windowCells: number;
   private originCx = Number.NaN;
   private originCy = Number.NaN;
   private dirty = true;
@@ -88,7 +90,12 @@ export class TerrainRenderer {
   constructor(
     parent: Container,
     private readonly world: ClientWorld,
+    windowChunks = DEFAULT_WINDOW_CHUNKS,
   ) {
+    this.windowChunks = windowChunks;
+    this.windowCells = windowChunks * TERRAIN_CELLS_PER_CHUNK;
+    const WINDOW_CELLS = this.windowCells;
+    this.data = new Uint8Array(WINDOW_CELLS * WINDOW_CELLS * 4);
     const atlas = Texture.from(buildTerrainAtlas());
     atlas.source.scaleMode = 'linear';
     const noise = Texture.from(buildNoiseTexture());
@@ -130,6 +137,8 @@ export class TerrainRenderer {
   }
 
   update(centerX: number, centerY: number): void {
+    const WINDOW_CHUNKS = this.windowChunks;
+    const WINDOW_CELLS = this.windowCells;
     const cx = Math.floor(centerX / CHUNK_SIZE) - Math.floor(WINDOW_CHUNKS / 2);
     const cy = Math.floor(centerY / CHUNK_SIZE) - Math.floor(WINDOW_CHUNKS / 2);
     if (cx !== this.originCx || cy !== this.originCy) {

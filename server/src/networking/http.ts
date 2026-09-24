@@ -1,11 +1,13 @@
 // HTTP: the auth API, a status endpoint and static hosting of the built client. The WebSocket
 // game connection is upgraded from the same server on /ws.
 
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { WebSocketServer } from 'ws';
+import { MAP_ID_PATTERN, validateMap, type MapData } from '@tuff/shared';
 import { AuthError, type AuthService } from '../authentication/auth-service';
+import type { LoadedContent } from '../content/loader';
 import type { Game } from '../game/game';
 import { ClientSession } from '../game/session';
 
@@ -24,9 +26,16 @@ const MIME: Record<string, string> = {
   '.webmanifest': 'application/manifest+json',
 };
 
+/** The live game, which the editor can replace by republishing the map. */
+export interface GameHost {
+  game: Game;
+  publishMap(map: MapData): Promise<void>;
+}
+
 export interface HttpOptions {
   auth: AuthService;
-  game: Game;
+  host: GameHost;
+  content: LoadedContent;
   /** Directory of the built client (client/dist); static hosting is skipped if missing. */
   staticDir: string | null;
   /** Trust X-Forwarded-For (behind a reverse proxy). */
@@ -52,6 +61,9 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   });
   res.end(json);
 }
+
+/** Largest map the editor may upload. */
+const MAX_MAP_BYTES = 48 * 1024 * 1024;
 
 async function readJson(req: IncomingMessage, limit = 4096): Promise<Record<string, unknown>> {
   return new Promise((resolvePromise, reject) => {
@@ -84,7 +96,8 @@ function bearer(req: IncomingMessage): string | undefined {
 }
 
 export function createGameHttpServer(options: HttpOptions): { server: Server; wss: WebSocketServer } {
-  const { auth, game } = options;
+  const { auth, host, content } = options;
+  const mapsDir = join(content.dataDir, 'maps');
   const staticRoot = options.staticDir && existsSync(options.staticDir) ? resolve(options.staticDir) : null;
 
   const server = createServer(async (req, res) => {
@@ -118,7 +131,12 @@ export function createGameHttpServer(options: HttpOptions): { server: Server; ws
             });
           return;
         }
+        if (url.pathname.startsWith('/api/editor/')) {
+          await editorApi(req, res, url);
+          return;
+        }
         if (req.method === 'GET' && url.pathname === '/api/status') {
+          const game = host.game;
           const s = game.summary();
           sendJson(res, 200, {
             name: game.config.name,
@@ -135,7 +153,7 @@ export function createGameHttpServer(options: HttpOptions): { server: Server; ws
         return;
       }
       if (url.pathname === '/healthz') {
-        sendJson(res, 200, { ok: true, ...game.summary() });
+        sendJson(res, 200, { ok: true, ...host.game.summary() });
         return;
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -176,10 +194,95 @@ export function createGameHttpServer(options: HttpOptions): { server: Server; ws
       return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => {
+      const game = host.game;
       const session = new ClientSession(ws, clientIp(req, options.trustProxy), game);
       game.attachSession(session);
     });
   });
+
+  // --- Map editor API (design plan §38: restricted to admins) ------------------------------------
+
+  async function editorApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+    const account = await auth.authenticate(bearer(req));
+    if (!account) {
+      sendJson(res, 401, { error: 'invalid_session', message: 'Not logged in.' });
+      return;
+    }
+    if (!account.isAdmin) {
+      sendJson(res, 403, { error: 'forbidden', message: 'The map editor is for admins (TUFF_ADMINS).' });
+      return;
+    }
+    const route = url.pathname.slice('/api/editor/'.length);
+    const id = url.searchParams.get('id') ?? '';
+    const file = () => join(mapsDir, `${id}.json`);
+    if (req.method === 'GET' && route === 'content') {
+      sendJson(res, 200, { content: content.bundle, liveMap: content.config.map });
+      return;
+    }
+    if (req.method === 'GET' && route === 'maps') {
+      const maps = existsSync(mapsDir)
+        ? readdirSync(mapsDir)
+            .filter((f) => f.endsWith('.json'))
+            .map((f) => {
+              const stat = statSync(join(mapsDir, f));
+              return { id: f.slice(0, -5), bytes: stat.size, modified: stat.mtimeMs };
+            })
+        : [];
+      if (!maps.some((m) => m.id === host.game.map.id)) maps.push({ id: host.game.map.id, bytes: 0, modified: 0 });
+      sendJson(res, 200, { maps, liveMap: host.game.map.id });
+      return;
+    }
+    if (route === 'map' && !MAP_ID_PATTERN.test(id)) {
+      sendJson(res, 400, { error: 'bad_id', message: 'Invalid map id.' });
+      return;
+    }
+    if (req.method === 'GET' && route === 'map') {
+      // The live map may exist only in memory (generated on first start).
+      const map = existsSync(file())
+        ? (JSON.parse(readFileSync(file(), 'utf8')) as MapData)
+        : id === host.game.map.id
+          ? host.game.map
+          : null;
+      if (!map) sendJson(res, 404, { error: 'not_found', message: `No map "${id}".` });
+      else sendJson(res, 200, { map });
+      return;
+    }
+    if (req.method === 'PUT' && route === 'map') {
+      const body = await readJson(req, MAX_MAP_BYTES);
+      const map = body.map as MapData;
+      const problems = validateMap(map, content.registry);
+      if (problems.length === 0 && map.id !== id) problems.push('The map id does not match the file name.');
+      if (problems.length > 0) {
+        sendJson(res, 422, { error: 'invalid_map', message: problems[0], problems });
+        return;
+      }
+      mkdirSync(mapsDir, { recursive: true });
+      const tmp = `${file()}.tmp`;
+      writeFileSync(tmp, JSON.stringify(map));
+      renameSync(tmp, file());
+      console.log(`[editor] ${account.displayName} saved map "${id}"`);
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+    if (req.method === 'POST' && route === 'publish') {
+      if (!MAP_ID_PATTERN.test(id) || !existsSync(file())) {
+        sendJson(res, 404, { error: 'not_found', message: 'Save the map before publishing it.' });
+        return;
+      }
+      const map = JSON.parse(readFileSync(file(), 'utf8')) as MapData;
+      const problems = validateMap(map, content.registry);
+      if (problems.length > 0) {
+        sendJson(res, 422, { error: 'invalid_map', message: problems[0], problems });
+        return;
+      }
+      console.log(`[editor] ${account.displayName} published map "${id}"`);
+      await host.publishMap(map);
+      sendJson(res, 200, { ok: true, live: id });
+      return;
+    }
+    sendJson(res, 404, { error: 'not_found', message: 'Unknown editor endpoint.' });
+  }
+
   return { server, wss };
 }
 

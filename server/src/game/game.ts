@@ -23,6 +23,7 @@ import {
   hashString,
   INTERACT_RANGE,
   isInsideBuilding,
+  MAP_RELOAD_CODE,
   MAX_CHAT_LENGTH,
   NetEventType,
   NO_SLOT,
@@ -197,6 +198,10 @@ export class Game {
       const n = this.spawner.populate(new Rng(this.map.seed ^ 0x2b2b));
       this.meta.populated = true;
       this.log(`Distributed ${n} zombies across ${this.map.zones.length} zones.`);
+    } else {
+      // Zones added since the world was first populated (a republished map) get their zombies now.
+      const n = this.spawner.populate(new Rng(this.map.seed ^ 0x2b2b ^ this.map.zones.length), true);
+      if (n > 0) this.log(`Distributed ${n} zombies across new zones.`);
     }
     this.world.changes.meta = { ...this.meta };
     await this.save();
@@ -227,10 +232,13 @@ export class Game {
     this.loopTimer = setTimeout(loop, 0);
   }
 
-  async stop(): Promise<void> {
+  async stop(reason = 'Server is shutting down.', code = 1001): Promise<void> {
     if (this.loopTimer) clearTimeout(this.loopTimer);
     this.loopTimer = null;
-    for (const s of [...this.sessions]) s.close('Server is shutting down.', 1001);
+    for (const s of [...this.sessions]) {
+      if (code === MAP_RELOAD_CODE) s.send({ t: 'mapReload', reason });
+      s.close(reason, code);
+    }
     this.spawner.sleepAll();
     await this.save();
   }

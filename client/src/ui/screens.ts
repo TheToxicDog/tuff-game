@@ -62,7 +62,15 @@ export class EscapeMenu {
   constructor(
     parent: HTMLElement,
     private readonly settings: Settings,
-    handlers: { onChange: (s: Settings) => void; onLogout: () => void; onClose: () => void; onHelp: () => void; serverName: string },
+    handlers: {
+      onChange: (s: Settings) => void;
+      onLogout: () => void;
+      onClose: () => void;
+      onHelp: () => void;
+      serverName: string;
+      /** Set when the game was launched from the map editor ("Play from here"). */
+      onEditor?: () => void;
+    },
   ) {
     const slider = (label: string, key: 'volume' | 'ambience') => {
       const value = h('span', { class: 'muted' }, `${Math.round(settings[key] * 100)}`);
@@ -102,7 +110,12 @@ export class EscapeMenu {
         h('span', { class: 'panel-title' }, 'Paused — the world is not'),
         h('span', { class: 'fine' }, handlers.serverName),
       ),
-      h('div', { class: 'stack' }, h('button', { class: 'btn primary', on: { click: () => this.close() } }, 'Resume')),
+      h(
+        'div',
+        { class: 'stack' },
+        h('button', { class: 'btn primary', on: { click: () => this.close() } }, 'Resume'),
+        handlers.onEditor ? h('button', { class: 'btn', on: { click: () => handlers.onEditor!() } }, 'Back to the map editor') : null,
+      ),
       h('div', { class: 'section-title' }, h('span', null, 'Audio')),
       slider('Master volume', 'volume'),
       slider('Ambience', 'ambience'),

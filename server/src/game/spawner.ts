@@ -31,12 +31,16 @@ export class Spawner {
     for (const [k, z] of zones) this.zones.set(k, z);
   }
 
-  /** Distributes each zone's initial population across the map (first launch only). */
-  populate(rng: Rng): number {
+  /**
+   * Distributes each zone's initial population across the map (first launch only, or with
+   * `onlyNew` for zones that have no state yet — added when a map is republished).
+   */
+  populate(rng: Rng, onlyNew = false): number {
     const game = this.game;
     const mult = game.config.zombies.populationMultiplier;
     let total = 0;
     for (const zone of game.world.map.zones) {
+      if (onlyNew && this.zones.has(zone.id)) continue;
       const count = Math.round(zone.zombies * mult);
       let placed = 0;
       const buildings = game.world.buildingsIn(zone.rect);
@@ -141,6 +145,11 @@ export class Spawner {
     for (const rec of list) {
       if (this.game.ecs.count(Zombie) >= max) {
         remaining.push(rec);
+        continue;
+      }
+      // The map may have changed under a dormant zombie (a republished map, a new wall).
+      if (!this.game.world.isWalkable(rec.x, rec.y, 0.3)) {
+        this.onZombieKilled(rec.zone);
         continue;
       }
       this.game.spawnZombie(rec);

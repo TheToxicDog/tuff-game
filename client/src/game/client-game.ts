@@ -93,6 +93,11 @@ import { VisibilityPolygon } from './visibility';
 import { ClientWorld } from './world';
 
 const STEP = INPUT_STEP_SECONDS;
+
+/** Set by the map editor's "Play from here": `?tp=x,y&editor=<map id>`. */
+const LAUNCH = new URLSearchParams(location.search);
+const PLAY_FROM = LAUNCH.get('tp')?.split(',').map(Number).filter(Number.isFinite) as [number, number] | undefined;
+const EDITOR_MAP = LAUNCH.get('editor');
 const MAX_STEPS_PER_FRAME = 8;
 const VIEW_RADIUS = 46;
 /** Holding Interact this long opens the action menu instead of doing the primary action. */
@@ -207,6 +212,7 @@ export class ClientGame implements GameContext {
   private buildRot = 0;
   private buildChoice: BuildChoice | null = null;
   private menuOpened = false;
+  private teleported = false;
   private mapView: MapView | null = null;
   private readonly mapInfo: WelcomeMessage['map'];
 
@@ -355,6 +361,12 @@ export class ClientGame implements GameContext {
         this.menu.close();
         this.hud.showHint();
       },
+      onEditor: EDITOR_MAP
+        ? () => {
+            const p = this.position;
+            location.href = `/editor?map=${encodeURIComponent(EDITOR_MAP!)}&x=${Math.round(p.x)}&y=${Math.round(p.y)}`;
+          }
+        : undefined,
     });
 
     this.keyboard = new KeyboardMouseSource(renderer.app.canvas);
@@ -628,6 +640,11 @@ export class ClientGame implements GameContext {
           zombiesNear: (x, y, r) => this.zombiesNear(x, y, r),
         });
         this.prediction.hooks = this.predictionHooks();
+        // "Play from here" in the editor: jump to where the designer was looking (admins only).
+        if (PLAY_FROM?.length === 2 && !this.teleported) {
+          this.teleported = true;
+          this.send({ t: 'chat', text: `/tp ${PLAY_FROM[0]} ${PLAY_FROM[1]}` });
+        }
         this.selectedSlot = snap.self.slot;
         this.crouchOn = snap.self.crouching;
         this.seq = Math.max(this.seq, snap.ackSeq);

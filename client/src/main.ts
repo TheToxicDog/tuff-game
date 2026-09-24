@@ -24,6 +24,12 @@ function guardUnload(e: BeforeUnloadEvent): void {
 }
 
 async function main(): Promise<void> {
+  if (location.pathname.startsWith('/editor')) {
+    // The editor is its own bundle chunk: players never download it.
+    const { startEditor } = await import('./editor/main');
+    await startEditor(gameHost, uiRoot);
+    return;
+  }
   let session: { token: string } | null = null;
   try {
     session = await currentAccount();
