@@ -39,14 +39,21 @@ export function publicAccount(a: AccountRecord): PublicAccount {
 const DUMMY_HASH = 'scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64');
 
 export class AuthService {
-  private readonly ipLimiter = new RateLimiter(20, 60_000);
-  private readonly userLimiter = new RateLimiter(8, 5 * 60_000);
-  private readonly registerLimiter = new RateLimiter(5, 60 * 60_000);
+  private readonly ipLimiter: RateLimiter;
+  private readonly userLimiter: RateLimiter;
+  private readonly registerLimiter: RateLimiter;
 
+  /** `rateLimit: false` is for load tests against an in-process server only. */
   constructor(
     private readonly storage: Storage,
     private readonly adminUsernames: Set<string> = new Set(),
-  ) {}
+    options: { rateLimit?: boolean } = {},
+  ) {
+    const on = options.rateLimit !== false;
+    this.ipLimiter = new RateLimiter(on ? 20 : Infinity, 60_000);
+    this.userLimiter = new RateLimiter(on ? 8 : Infinity, 5 * 60_000);
+    this.registerLimiter = new RateLimiter(on ? 5 : Infinity, 60 * 60_000);
+  }
 
   validateUsername(username: unknown): string {
     if (typeof username !== 'string' || !USERNAME.test(username)) {

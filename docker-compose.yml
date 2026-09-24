@@ -1,0 +1,35 @@
+# Game server + PostgreSQL. `docker compose up --build`, then open http://localhost:7777.
+# Put admin usernames in TUFF_ADMINS (comma separated) to enable /tp, /time, /give, … in chat.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: tuff
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tuff}
+      POSTGRES_DB: tuff
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tuff -d tuff']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  game:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://tuff:${POSTGRES_PASSWORD:-tuff}@db:5432/tuff
+      TUFF_ADMINS: ${TUFF_ADMINS:-}
+      TUFF_SERVER_NAME: ${TUFF_SERVER_NAME:-Tuff}
+      TUFF_PVP: ${TUFF_PVP:-false}
+    ports:
+      - '7777:7777'
+    restart: unless-stopped
+
+volumes:
+  pgdata:

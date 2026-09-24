@@ -128,6 +128,23 @@ describe('multiplayer foundation', () => {
     game.despawnEntity(zid);
   });
 
+  it('treats a wound with a bandage from the inventory', async () => {
+    const c = bots.find((b) => b.username === 'carol')!;
+    const game = server.game;
+    const p = game.ecs.get(c.entityId, Player)!;
+    const wound = p.body.wounds.find((w) => w.type !== 'bruise' && w.type !== 'fracture') ?? p.body.wounds[0];
+    expect(wound).toBeDefined();
+    wound.bandage = 0;
+    p.inventory.pockets.push({ uid: 515151, id: 'bandage', qty: 1 });
+    p.inventoryDirty = true;
+    c.send({ t: 'use', uid: 515151, woundId: wound.id });
+    await c.waitFor(() => c.last('progress')?.label === 'Treating Bandage', 2000, 'treatment to start');
+    // Standing still while the dressing is applied.
+    await c.act(3, {});
+    await c.waitFor(() => !!c.last('status')?.status.wounds.find((w) => w.id === wound.id && w.bandage > 0), 3000, 'dressed wound');
+    expect(p.inventory.pockets.some((s) => s.uid === 515151)).toBe(false);
+  });
+
   it('searches containers and moves loot into the inventory', async () => {
     const a = bots[0];
     const game = server.game;

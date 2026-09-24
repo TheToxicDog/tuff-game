@@ -26,6 +26,7 @@ export class Bot {
   tick = 0;
   ackSeq = 0;
   snapshots = 0;
+  bytesIn = 0;
   private seq = 0;
   private closed = false;
 
@@ -72,6 +73,7 @@ export class Bot {
   }
 
   private onMessage(data: Buffer, isBinary: boolean): void {
+    this.bytesIn += data.length;
     if (isBinary) {
       const r = new BinaryReader(data);
       if (r.u8() !== ServerBinary.Snapshot) return;

@@ -25,6 +25,8 @@ export interface ServerOptions {
   adminUsernames?: string[];
   autosaveSeconds?: number;
   quiet?: boolean;
+  /** Login/registration rate limits (default on). Only in-process load tests turn them off. */
+  rateLimit?: boolean;
 }
 
 export function loadMap(content: LoadedContent): MapData {
@@ -48,7 +50,9 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   const content = options.content ?? loadContent();
   const map = options.map ?? loadMap(content);
   await options.storage.init();
-  const auth = new AuthService(options.storage, new Set((options.adminUsernames ?? []).map((u) => u.toLowerCase())));
+  const auth = new AuthService(options.storage, new Set((options.adminUsernames ?? []).map((u) => u.toLowerCase())), {
+    rateLimit: options.rateLimit,
+  });
   const game = new Game(content, map, options.storage, {
     autosaveSeconds: options.autosaveSeconds,
     log: options.quiet ? () => undefined : undefined,

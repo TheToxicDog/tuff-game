@@ -24,7 +24,8 @@
     "validate:data": "tsx server/src/tools/validate-data.ts",
     "generate:map": "tsx server/src/tools/generate-map.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "load-test": "tsx server/src/tools/load-test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
