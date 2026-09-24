@@ -138,9 +138,7 @@ export function emptyChanges(): WorldChanges {
 }
 
 export function changeCount(c: WorldChanges): number {
-  return (
-    (c.meta ? 1 : 0) + c.objects.size + c.containers.size + c.entities.size + c.chunks.size + c.zones.size + c.buildings.size
-  );
+  return (c.meta ? 1 : 0) + c.objects.size + c.containers.size + c.entities.size + c.chunks.size + c.zones.size + c.buildings.size;
 }
 
 export class DuplicateUsernameError extends Error {

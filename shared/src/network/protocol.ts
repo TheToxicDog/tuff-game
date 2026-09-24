@@ -567,7 +567,7 @@ export type ClientMessage =
   | { t: 'hello'; token: string; protocol: number }
   | { t: 'ping'; id: number }
   | { t: 'chat'; text: string }
-  | { t: 'interact'; target: string }
+  | { t: 'interact'; target: string; action?: 'toggle' | 'lock' }
   | { t: 'open'; target: string }
   | { t: 'close' }
   | { t: 'move'; uid: number; from: InvLocation; to: InvLocation; qty?: number }

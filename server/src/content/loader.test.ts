@@ -8,13 +8,7 @@ describe('content data', () => {
   it('loads and validates every data file', () => {
     expect(content.bundle.items.length).toBeGreaterThanOrEqual(100);
     expect(content.lootTables.size).toBeGreaterThan(40);
-    expect(content.bundle.zombies.map((z) => z.id)).toEqual([
-      'slow_walker',
-      'walker',
-      'fast_walker',
-      'runner',
-      'sprinter',
-    ]);
+    expect(content.bundle.zombies.map((z) => z.id)).toEqual(['slow_walker', 'walker', 'fast_walker', 'runner', 'sprinter']);
   });
 
   it('meets the first-playable weapon targets', () => {

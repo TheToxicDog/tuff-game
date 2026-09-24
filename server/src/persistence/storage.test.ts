@@ -77,9 +77,25 @@ describe.each(backends)('%s storage', (name, make) => {
     await storage.init();
     try {
       const id = randomUUID();
-      await storage.createAccount({ id, username: 'Rick', displayName: 'Rick', passwordHash: 'h', createdAt: 1, lastLoginAt: null, isAdmin: false });
+      await storage.createAccount({
+        id,
+        username: 'Rick',
+        displayName: 'Rick',
+        passwordHash: 'h',
+        createdAt: 1,
+        lastLoginAt: null,
+        isAdmin: false,
+      });
       await expect(
-        storage.createAccount({ id: randomUUID(), username: 'rick', displayName: 'rick', passwordHash: 'h', createdAt: 1, lastLoginAt: null, isAdmin: false }),
+        storage.createAccount({
+          id: randomUUID(),
+          username: 'rick',
+          displayName: 'rick',
+          passwordHash: 'h',
+          createdAt: 1,
+          lastLoginAt: null,
+          isAdmin: false,
+        }),
       ).rejects.toBeInstanceOf(DuplicateUsernameError);
       expect((await storage.findAccountByUsername('RICK'))?.id).toBe(id);
       await storage.touchLogin(id, 1234);

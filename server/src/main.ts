@@ -15,7 +15,11 @@ import { findDataDir } from './content/loader';
 import { createStorage } from './persistence';
 
 const env = process.env;
-const list = (v: string | undefined) => (v ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+const list = (v: string | undefined) =>
+  (v ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
 async function main(): Promise<void> {
   const storage = createStorage(env);

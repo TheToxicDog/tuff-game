@@ -8,7 +8,9 @@ try {
   for (const item of items) byCategory.set(item.category, (byCategory.get(item.category) ?? 0) + 1);
   console.log(`Content OK (hash ${content.bundle.hash})`);
   console.log(`  ${items.length} items: ${[...byCategory].map(([k, v]) => `${k} ${v}`).join(', ')}`);
-  console.log(`  ${content.lootTables.size} loot tables, ${content.bundle.props.length} props, ${content.bundle.zombies.length} zombie archetypes`);
+  console.log(
+    `  ${content.lootTables.size} loot tables, ${content.bundle.props.length} props, ${content.bundle.zombies.length} zombie archetypes`,
+  );
 } catch (err) {
   console.error((err as Error).message);
   process.exit(1);

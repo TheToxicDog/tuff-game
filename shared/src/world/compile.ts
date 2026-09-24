@@ -350,7 +350,15 @@ export class CompiledWorld {
     if (def.shape !== 'none' && flags !== 0) {
       const collider =
         def.shape === 'circle'
-          ? this.collision.add({ shape: ShapeKind.Circle, x: pos.x, y: pos.y, r: def.r ?? 0.3, flags, material: def.material, objectId: p.id })
+          ? this.collision.add({
+              shape: ShapeKind.Circle,
+              x: pos.x,
+              y: pos.y,
+              r: def.r ?? 0.3,
+              flags,
+              material: def.material,
+              objectId: p.id,
+            })
           : this.collision.add({
               shape: ShapeKind.Box,
               x: pos.x,
@@ -376,10 +384,7 @@ export class CompiledWorld {
         x: pos.x,
         y: pos.y,
         rot,
-        radius:
-          def.shape === 'circle'
-            ? (def.r ?? 0.3)
-            : Math.sqrt((p.w ?? def.w ?? 1) ** 2 + (p.h ?? def.h ?? 1) ** 2) / 2,
+        radius: def.shape === 'circle' ? (def.r ?? 0.3) : Math.sqrt((p.w ?? def.w ?? 1) ** 2 + (p.h ?? def.h ?? 1) ** 2) / 2,
         buildingId,
         buildingType,
         roomType,
@@ -428,14 +433,7 @@ export interface WallSegment {
  * Splits a wall into solid segments around the openings (doors, windows) that lie on it. Segment
  * ends at the wall's original endpoints are extended by half the thickness so corners close.
  */
-export function splitWall(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  thickness: number,
-  openings: readonly Opening[],
-): WallSegment[] {
+export function splitWall(x1: number, y1: number, x2: number, y2: number, thickness: number, openings: readonly Opening[]): WallSegment[] {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);

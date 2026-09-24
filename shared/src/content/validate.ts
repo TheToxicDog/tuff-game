@@ -13,18 +13,7 @@ import {
 
 type Obj = Record<string, unknown>;
 
-const MATERIALS = [
-  'brick',
-  'concrete',
-  'wood',
-  'drywall',
-  'metal',
-  'glass',
-  'foliage',
-  'fabric',
-  'plastic',
-  'stone',
-];
+const MATERIALS = ['brick', 'concrete', 'wood', 'drywall', 'metal', 'glass', 'foliage', 'fabric', 'plastic', 'stone'];
 
 export class ContentErrors {
   readonly errors: string[] = [];

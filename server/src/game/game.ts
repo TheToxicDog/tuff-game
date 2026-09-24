@@ -4,6 +4,7 @@
 
 import {
   BinaryWriter,
+  Block,
   bleedRate,
   buildingPolygon,
   CHUNK_SIZE,
@@ -64,17 +65,7 @@ import {
   changeCount,
 } from '../persistence/storage';
 import { Combat } from './combat';
-import {
-  Body,
-  Corpse,
-  GroundItem,
-  Player,
-  Replicated,
-  Transform,
-  Zombie,
-  type PlayerComp,
-  type TimedAction,
-} from './components';
+import { Body, Corpse, GroundItem, Player, Replicated, Transform, Zombie, type PlayerComp, type TimedAction } from './components';
 import { InventoryService, isBodyPart } from './inventory';
 import { LagHistory } from './lag-history';
 import { LootGenerator, newUid } from './loot';
@@ -159,7 +150,12 @@ export class Game {
     this.clock = new WorldClock(this.meta.minutes, this.config.realSecondsPerDay);
     this.overview = {
       roads: map.roads.filter((r) => r.kind !== 'driveway').map((r) => ({ points: r.points, width: r.width, kind: r.kind })),
-      buildings: map.buildings.map((b) => ({ id: b.id, type: b.type, name: b.name, poly: buildingPolygon(b).map((v) => Math.round(v * 10) / 10) })),
+      buildings: map.buildings.map((b) => ({
+        id: b.id,
+        type: b.type,
+        name: b.name,
+        poly: buildingPolygon(b).map((v) => Math.round(v * 10) / 10),
+      })),
     };
     this.ecs.onDestroy((e) => this.spatial.delete(e));
   }
@@ -275,7 +271,14 @@ export class Game {
         realSecondsPerDay: this.config.realSecondsPerDay,
       },
       content: this.loaded.bundle,
-      map: { id: this.map.id, name: this.map.name, width: this.map.width, height: this.map.height, spawns: this.map.spawns, zones: this.map.zones },
+      map: {
+        id: this.map.id,
+        name: this.map.name,
+        width: this.map.width,
+        height: this.map.height,
+        spawns: this.map.spawns,
+        zones: this.map.zones,
+      },
       tick: this.tick,
       tickRate: SERVER_TICK_RATE,
       worldMinutes: this.minutes,
@@ -303,7 +306,9 @@ export class Game {
         const t = this.ecs.get(session.entity, Transform);
         if (p && t) {
           const data = this.characterData(p, t.x, t.y);
-          void this.storage.saveCharacters([{ accountId: p.accountId, data }]).catch((err) => console.error('[game] save on disconnect failed', err));
+          void this.storage
+            .saveCharacters([{ accountId: p.accountId, data }])
+            .catch((err) => console.error('[game] save on disconnect failed', err));
         }
         this.despawnEntity(session.entity);
         session.entity = 0;
@@ -395,7 +400,8 @@ export class Game {
     session.deadCharacter = null;
     session.viewX = x;
     session.viewY = y;
-    const isNew = data.inventory.pockets.length === 0 && data.inventory.slots.every((s) => !s) && !data.inventory.back && data.stats.lifeMinutes === 0;
+    const isNew =
+      data.inventory.pockets.length === 0 && data.inventory.slots.every((s) => !s) && !data.inventory.back && data.stats.lifeMinutes === 0;
     if (isNew) this.inventory.giveStartingItems(e, p);
     return e;
   }
@@ -472,7 +478,8 @@ export class Game {
         if (typeof msg.uid !== 'number') return;
         {
           const found = this.findLoc(p, msg.uid);
-          if (found) error = this.inventory.move(e, p, msg.uid, found, { kind: 'floor' }, typeof msg.qty === 'number' ? msg.qty : undefined);
+          if (found)
+            error = this.inventory.move(e, p, msg.uid, found, { kind: 'floor' }, typeof msg.qty === 'number' ? msg.qty : undefined);
           if (p.openContainer === 'floor') this.sendFloor(e, p);
         }
         break;
@@ -524,14 +531,111 @@ export class Game {
   private chat(session: ClientSession, raw: unknown): void {
     if (!session.account || typeof raw !== 'string') return;
     // Strip control characters; the client renders chat as plain text.
-    const text = raw.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, MAX_CHAT_LENGTH);
+    const text = raw
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .trim()
+      .slice(0, MAX_CHAT_LENGTH);
     if (!text) return;
     if (text === '/who' || text === '/players') {
       const names = [...this.sessions].filter((s) => s.account).map((s) => s.account!.displayName);
       session.send({ t: 'chat', from: '', text: `Online (${names.length}): ${names.join(', ')}`, system: true });
       return;
     }
+    if (text.startsWith('/')) {
+      const reply = session.account.isAdmin ? this.adminCommand(session, text) : 'Unknown command. Try /who.';
+      session.send({ t: 'chat', from: '', text: reply, system: true });
+      return;
+    }
     this.broadcast({ t: 'chat', from: session.account.displayName, text });
+  }
+
+  /** Admin tools for testing and running a server (design plan §92: admin tools). */
+  private adminCommand(session: ClientSession, text: string): string {
+    const [cmd, ...args] = text.slice(1).split(/\s+/);
+    const e = session.entity;
+    const p = e ? this.ecs.get(e, Player) : undefined;
+    const t = e ? this.ecs.get(e, Transform) : undefined;
+    const num = (i: number, fallback: number) => (Number.isFinite(Number(args[i])) && args[i] !== undefined ? Number(args[i]) : fallback);
+    switch (cmd) {
+      case 'help':
+        return 'Admin: /tp x y · /time hour · /give item [qty] · /heal · /zombies n · /clear [radius] · /save';
+      case 'tp': {
+        if (!p || !t) return 'You are not in the world.';
+        const x = Math.max(1, Math.min(this.map.width - 1, num(0, t.x)));
+        const y = Math.max(1, Math.min(this.map.height - 1, num(1, t.y)));
+        p.sim.x = t.x = x;
+        p.sim.y = t.y = y;
+        this.spatial.set(e, x, y);
+        session.viewX = x;
+        session.viewY = y;
+        return `Teleported to ${x.toFixed(0)}, ${y.toFixed(0)}.`;
+      }
+      case 'time': {
+        const hour = Math.max(0, Math.min(23.99, num(0, 12)));
+        const day = Math.floor(this.clock.totalMinutes / 1440);
+        this.clock.totalMinutes = day * 1440 + hour * 60 + (hour * 60 < this.clock.totalMinutes % 1440 ? 1440 : 0);
+        return `Time set to ${String(Math.floor(hour)).padStart(2, '0')}:${String(Math.round((hour % 1) * 60)).padStart(2, '0')}.`;
+      }
+      case 'give': {
+        if (!p || !t) return 'You are not in the world.';
+        const def = this.content.findItem(args[0] ?? '');
+        if (!def) return `Unknown item "${args[0] ?? ''}".`;
+        const qty = Math.max(1, Math.min(def.stackSize, Math.floor(num(1, 1))));
+        const stack: ItemStack = { uid: newUid(), id: def.id, qty };
+        if (def.firearm) stack.ammo = def.firearm.magazine;
+        if (def.uses) stack.uses = def.uses;
+        if (def.light) stack.charge = 1;
+        if (def.durability) stack.cond = 1;
+        if (!this.inventory.autoPlace(p, stack)) this.spawnGroundItem(t.x, t.y, stack);
+        this.flushInventory(p);
+        return `Gave ${qty} × ${def.name}.`;
+      }
+      case 'heal':
+        if (!p) return 'You are not in the world.';
+        p.body = createBody();
+        p.needs = createNeeds();
+        p.weaknessUntil = 0;
+        p.statusDirty = true;
+        p.refreshTimer = 0;
+        return 'Healed.';
+      case 'zombies': {
+        if (!t) return 'You are not in the world.';
+        const n = Math.max(1, Math.min(40, Math.floor(num(0, 5))));
+        const zone =
+          this.map.zones.find(
+            (z) => t.x >= z.rect[0] && t.y >= z.rect[1] && t.x <= z.rect[0] + z.rect[2] && t.y <= z.rect[1] + z.rect[3],
+          ) ?? this.map.zones[0];
+        let spawned = 0;
+        for (let i = 0; i < n * 6 && spawned < n; i++) {
+          const a = this.rng.range(-Math.PI, Math.PI);
+          const d = this.rng.range(8, 16);
+          const x = t.x + Math.cos(a) * d;
+          const y = t.y + Math.sin(a) * d;
+          if (this.world.compiled.collision.overlapsCircle(x, y, 0.4, Block.Zombie)) continue;
+          const arch = this.content.zombies[Math.floor(this.rng.next() * this.content.zombies.length)];
+          this.spawnZombie({ x, y, arch: arch.id, look: this.rng.nextU32(), zone: zone?.id ?? '', hp: 1 });
+          spawned++;
+        }
+        return `Spawned ${spawned} zombies.`;
+      }
+      case 'clear': {
+        if (!t) return 'You are not in the world.';
+        const radius = Math.max(1, Math.min(120, num(0, 40)));
+        let removed = 0;
+        for (const z of this.ecs.query(Zombie, Transform)) {
+          const zt = this.ecs.get(z, Transform)!;
+          if (Math.hypot(zt.x - t.x, zt.y - t.y) > radius) continue;
+          this.despawnEntity(z);
+          removed++;
+        }
+        return `Removed ${removed} zombies.`;
+      }
+      case 'save':
+        void this.save();
+        return 'Saving the world.';
+      default:
+        return `Unknown command /${cmd}. Try /help.`;
+    }
   }
 
   private respawn(session: ClientSession): void {
@@ -634,7 +738,10 @@ export class Game {
     const container = this.world.compiled.containers.get(target);
     if (!container) return null;
     if (p.action) this.cancelAction(p);
-    this.startAction(e, p, { kind: 'search', label: `Searching ${container.name}`, duration: container.searchTime, target });
+    // The first search is slow (rummaging); reopening something already searched is quick.
+    const searched = this.world.compiled.effectiveState(target).searched;
+    const duration = searched ? Math.min(0.6, container.searchTime * 0.3) : container.searchTime;
+    this.startAction(e, p, { kind: 'search', label: `${searched ? 'Opening' : 'Searching'} ${container.name}`, duration, target });
     this.soundAt('search', container.x, container.y, 0.35, e);
     this.noise.emit(container.x, container.y, 2, e);
     return null;
@@ -832,13 +939,24 @@ export class Game {
       session.viewX = t.x;
       session.viewY = t.y;
       session.send({ t: 'died', cause, stats, respawnIn: this.config.death.respawnDelaySeconds });
-      void this.storage.saveCharacters([{ accountId: p.accountId, data }]).catch((err) => console.error('[game] save on death failed', err));
+      void this.storage
+        .saveCharacters([{ accountId: p.accountId, data }])
+        .catch((err) => console.error('[game] save on death failed', err));
     }
     this.broadcast({ t: 'chat', from: '', text: `${p.name} died. (${cause})`, system: true });
     this.broadcastPlayers();
   }
 
-  private spawnCorpse(x: number, y: number, angle: number, look: number, name: string, player: boolean, items: ItemStack[], lifetime: number): number {
+  private spawnCorpse(
+    x: number,
+    y: number,
+    angle: number,
+    look: number,
+    name: string,
+    player: boolean,
+    items: ItemStack[],
+    lifetime: number,
+  ): number {
     const e = this.ecs.create();
     const id = `c${newUid()}`;
     this.ecs.add(e, Transform, { x, y, angle });
@@ -854,7 +972,18 @@ export class Game {
     const t = this.ecs.get(e, Transform);
     const r = this.ecs.get(e, Replicated);
     if (!c || !t || !r) return;
-    this.world.changes.entities.set(c.id, { kind: 'corpse', id: c.id, x: t.x, y: t.y, angle: t.angle, look: r.look, name: c.name, player: c.player, items: c.items, expiresAt: c.expiresAt });
+    this.world.changes.entities.set(c.id, {
+      kind: 'corpse',
+      id: c.id,
+      x: t.x,
+      y: t.y,
+      angle: t.angle,
+      look: r.look,
+      name: c.name,
+      player: c.player,
+      items: c.items,
+      expiresAt: c.expiresAt,
+    });
   }
 
   private removeCorpse(e: number): void {
@@ -995,7 +1124,20 @@ export class Game {
     const r = this.ecs.get(e, Replicated);
     const t = this.ecs.get(e, Transform);
     if (!r || !t) return null;
-    const base: NetEntity = { id: e, kind: r.kind, x: t.x, y: t.y, angle: t.angle, anim: 0, flags: 0, item: 0, health: 1, look: r.look, extra: r.extra, name: r.name };
+    const base: NetEntity = {
+      id: e,
+      kind: r.kind,
+      x: t.x,
+      y: t.y,
+      angle: t.angle,
+      anim: 0,
+      flags: 0,
+      item: 0,
+      health: 1,
+      look: r.look,
+      extra: r.extra,
+      name: r.name,
+    };
     switch (r.kind) {
       case EntityKind.Player: {
         const p = this.ecs.get(e, Player)!;
@@ -1090,7 +1232,10 @@ export class Game {
     for (const id of despawns) session.known.delete(id);
 
     const w = this.writer.reset();
-    w.u8(ServerBinary.Snapshot).u32(this.tick).f64(this.minutes).u32(p?.lastSeq ?? 0);
+    w.u8(ServerBinary.Snapshot)
+      .u32(this.tick)
+      .f64(this.minutes)
+      .u32(p?.lastSeq ?? 0);
     writeSelfState(w, p ? p.sim : null);
     const events = this.events.filter((ev) => {
       if (Math.hypot(ev.x - vx, ev.y - vy) > ev.radius) return false;

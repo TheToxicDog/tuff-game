@@ -33,17 +33,7 @@ export const BODY_PART_NAMES: Record<BodyPart, string> = {
   rightFoot: 'Right Foot',
 };
 
-export const WOUND_TYPES = [
-  'scratch',
-  'cut',
-  'deep_cut',
-  'puncture',
-  'bite',
-  'bruise',
-  'gunshot',
-  'fracture',
-  'burn',
-] as const;
+export const WOUND_TYPES = ['scratch', 'cut', 'deep_cut', 'puncture', 'bite', 'bruise', 'gunshot', 'fracture', 'burn'] as const;
 export type WoundType = (typeof WOUND_TYPES)[number];
 
 interface WoundTemplate {
@@ -61,11 +51,27 @@ interface WoundTemplate {
 export const WOUND_TEMPLATES: Record<WoundType, WoundTemplate> = {
   scratch: { name: 'Scratch', bleed: [0.05, 0.14], clot: 0.004, pain: 8, contamination: 0.25, healMinutes: 10 * 60, damage: [3, 6] },
   cut: { name: 'Laceration', bleed: [0.18, 0.32], clot: 0.0014, pain: 18, contamination: 0.2, healMinutes: 30 * 60, damage: [6, 11] },
-  deep_cut: { name: 'Deep Laceration', bleed: [0.4, 0.6], clot: 0.0005, pain: 32, contamination: 0.3, healMinutes: 60 * 60, damage: [11, 17] },
+  deep_cut: {
+    name: 'Deep Laceration',
+    bleed: [0.4, 0.6],
+    clot: 0.0005,
+    pain: 32,
+    contamination: 0.3,
+    healMinutes: 60 * 60,
+    damage: [11, 17],
+  },
   puncture: { name: 'Puncture', bleed: [0.25, 0.45], clot: 0.0008, pain: 26, contamination: 0.4, healMinutes: 40 * 60, damage: [8, 14] },
   bite: { name: 'Bite', bleed: [0.35, 0.6], clot: 0.0004, pain: 42, contamination: 0.85, healMinutes: 80 * 60, damage: [12, 19] },
   bruise: { name: 'Bruise', bleed: [0, 0], clot: 0, pain: 10, contamination: 0, healMinutes: 12 * 60, damage: [2, 5] },
-  gunshot: { name: 'Gunshot Wound', bleed: [0.5, 0.8], clot: 0.0003, pain: 55, contamination: 0.45, healMinutes: 110 * 60, damage: [18, 32] },
+  gunshot: {
+    name: 'Gunshot Wound',
+    bleed: [0.5, 0.8],
+    clot: 0.0003,
+    pain: 55,
+    contamination: 0.45,
+    healMinutes: 110 * 60,
+    damage: [18, 32],
+  },
   fracture: { name: 'Fracture', bleed: [0, 0], clot: 0, pain: 60, contamination: 0, healMinutes: 200 * 60, damage: [8, 14] },
   burn: { name: 'Burn', bleed: [0, 0], clot: 0, pain: 38, contamination: 0.3, healMinutes: 60 * 60, damage: [5, 12] },
 };
@@ -141,13 +147,7 @@ export function randomBodyPart(rng: Rng): BodyPart {
 }
 
 /** Adds a wound and applies its immediate damage. Returns the wound. */
-export function inflictWound(
-  body: BodyState,
-  part: BodyPart,
-  type: WoundType,
-  rng: Rng,
-  damageScale = 1,
-): Wound {
+export function inflictWound(body: BodyState, part: BodyPart, type: WoundType, rng: Rng, damageScale = 1): Wound {
   const t = WOUND_TEMPLATES[type];
   const wound: Wound = {
     id: body.nextWoundId++,
@@ -251,13 +251,7 @@ export function updateBleeding(body: BodyState, dtReal: number): number {
  * Game-time update: healing, infection, dressing wear, needs and their consequences.
  * `rng` is used for infection onset.
  */
-export function updateBodyGameTime(
-  body: BodyState,
-  needs: NeedsState,
-  dtMinutes: number,
-  now: number,
-  rng: Rng,
-): void {
+export function updateBodyGameTime(body: BodyState, needs: NeedsState, dtMinutes: number, now: number, rng: Rng): void {
   const hours = dtMinutes / 60;
   needs.hunger = clamp(needs.hunger - hours * (100 / 44), 0, 100);
   needs.thirst = clamp(needs.thirst - hours * (100 / 30), 0, 100);
@@ -441,7 +435,6 @@ export function woundSummary(w: Wound): { bleeding: string; contamination: strin
   return {
     bleeding: bleed < 0.02 ? 'None' : bleed < 0.15 ? 'Light' : bleed < 0.35 ? 'Moderate' : 'Heavy',
     contamination: w.infection > 0.05 ? 'Infected' : w.contamination < 0.15 ? 'Low' : w.contamination < 0.5 ? 'Moderate' : 'High',
-    healing:
-      w.infection > 0.1 ? 'Stalled' : w.bandage > 0 && w.dirty < 0.75 ? (w.severity < 0.3 ? 'Nearly healed' : 'Good') : 'Poor',
+    healing: w.infection > 0.1 ? 'Stalled' : w.bandage > 0 && w.dirty < 0.75 ? (w.severity < 0.3 ? 'Nearly healed' : 'Good') : 'Poor',
   };
 }

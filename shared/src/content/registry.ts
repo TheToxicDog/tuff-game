@@ -1,11 +1,4 @@
-import type {
-  ContentBundle,
-  FirearmDef,
-  ItemDef,
-  MeleeDef,
-  PropDef,
-  ZombieArchetypeDef,
-} from './types';
+import type { ContentBundle, FirearmDef, ItemDef, MeleeDef, PropDef, ZombieArchetypeDef } from './types';
 
 /** Lookup tables over loaded content. Item indices are stable for a given bundle and are used as
  * compact network ids. */

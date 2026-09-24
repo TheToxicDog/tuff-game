@@ -112,7 +112,10 @@ export function createGameHttpServer(options: HttpOptions): { server: Server; ws
         if (req.method === 'GET' && url.pathname === '/api/session') {
           const account = await auth.authenticate(bearer(req));
           if (!account) sendJson(res, 401, { error: 'invalid_session', message: 'Not logged in.' });
-          else sendJson(res, 200, { account: { id: account.id, username: account.username, displayName: account.displayName, isAdmin: account.isAdmin } });
+          else
+            sendJson(res, 200, {
+              account: { id: account.id, username: account.username, displayName: account.displayName, isAdmin: account.isAdmin },
+            });
           return;
         }
         if (req.method === 'GET' && url.pathname === '/api/status') {

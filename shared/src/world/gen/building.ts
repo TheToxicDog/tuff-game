@@ -6,17 +6,7 @@
 
 import type { Rng } from '../../math/rng';
 import type { Material } from '../collision';
-import type {
-  BuildingDef,
-  BuildingType,
-  DoorKind,
-  FloorMaterial,
-  PropInstance,
-  RoofDef,
-  RoomDef,
-  RoomType,
-  WindowKind,
-} from '../map';
+import type { BuildingDef, BuildingType, DoorKind, FloorMaterial, PropInstance, RoofDef, RoomDef, RoomType, WindowKind } from '../map';
 
 export type Side = 'n' | 's' | 'e' | 'w';
 
@@ -149,7 +139,13 @@ export class BuildingBuilder {
   }
 
   /** Places a prop without any overlap checks. */
-  prop(type: string, x: number, y: number, rot: number, opts: { w?: number; h?: number; loot?: string; size?: PropSize; variant?: number } = {}): PropInstance {
+  prop(
+    type: string,
+    x: number,
+    y: number,
+    rot: number,
+    opts: { w?: number; h?: number; loot?: string; size?: PropSize; variant?: number } = {},
+  ): PropInstance {
     const p: PropInstance = { id: `${this.def.id}.p${++this.propCount}`, type, x, y, rot };
     if (opts.w !== undefined) p.w = opts.w;
     if (opts.h !== undefined) p.h = opts.h;
@@ -185,7 +181,8 @@ export class BuildingBuilder {
     rng: Rng,
     opts: { loot?: string; tall?: boolean; gap?: number; along?: number; w?: number; h?: number } = {},
   ): PropInstance | null {
-    const inset = (room.x === 0 || room.y === 0 || room.x + room.w >= this.w || room.y + room.h >= this.h ? EXTERIOR_WALL : INTERIOR_WALL) / 2;
+    const inset =
+      (room.x === 0 || room.y === 0 || room.x + room.w >= this.w || room.y + room.h >= this.h ? EXTERIOR_WALL : INTERIOR_WALL) / 2;
     const gap = opts.gap ?? 0.05;
     const horizontal = side === 'n' || side === 's';
     const span = horizontal ? room.w : room.h;
@@ -231,7 +228,13 @@ export class BuildingBuilder {
   }
 
   /** Places a free-standing prop somewhere inside a room, away from walls. */
-  inRoom(room: RoomDef, type: string, size: PropSize, rng: Rng, opts: { rot?: number; loot?: string; margin?: number } = {}): PropInstance | null {
+  inRoom(
+    room: RoomDef,
+    type: string,
+    size: PropSize,
+    rng: Rng,
+    opts: { rot?: number; loot?: string; margin?: number } = {},
+  ): PropInstance | null {
     const margin = opts.margin ?? 0.8;
     for (let i = 0; i < 16; i++) {
       const rot = opts.rot ?? (rng.chance(0.5) ? 0 : Math.PI / 2);

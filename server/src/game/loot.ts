@@ -91,7 +91,9 @@ export class LootGenerator {
       const rng = new Rng(hash32(this.worldSeed, hashString(buildingId), 0x6a11));
       if (rng.chance(this.config.loot.houseFirearmChance)) {
         const hiding = [...world.compiled.containers.values()].filter(
-          (c) => c.buildingId === buildingId && ['nightstand', 'wardrobe', 'dresser', 'bed_single', 'bed_double', 'garage_shelf', 'gun_safe', 'desk'].includes(c.propType),
+          (c) =>
+            c.buildingId === buildingId &&
+            ['nightstand', 'wardrobe', 'dresser', 'bed_single', 'bed_double', 'garage_shelf', 'gun_safe', 'desk'].includes(c.propType),
         );
         if (hiding.length > 0) {
           const spot = rng.pick(hiding);
@@ -115,7 +117,19 @@ export function mergeStacks(content: ContentRegistry, stacks: ItemStack[]): Item
   for (const s of stacks) {
     const def = content.findItem(s.id);
     const plain = s.cond === undefined && s.ammo === undefined && s.uses === undefined && s.charge === undefined && !s.contents;
-    const match = plain && def && def.stackSize > 1 ? out.find((o) => o.id === s.id && o.cond === undefined && o.ammo === undefined && o.uses === undefined && o.charge === undefined && !o.contents && o.qty < def.stackSize) : undefined;
+    const match =
+      plain && def && def.stackSize > 1
+        ? out.find(
+            (o) =>
+              o.id === s.id &&
+              o.cond === undefined &&
+              o.ammo === undefined &&
+              o.uses === undefined &&
+              o.charge === undefined &&
+              !o.contents &&
+              o.qty < def.stackSize,
+          )
+        : undefined;
     if (match && def) {
       const moved = Math.min(s.qty, def.stackSize - match.qty);
       match.qty += moved;

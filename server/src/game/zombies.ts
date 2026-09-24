@@ -2,15 +2,7 @@
 // movement and obstacles, investigation of noises, chasing with pathfinding, telegraphed attacks,
 // banging on doors and windows, stagger and knockdown.
 
-import {
-  angleDelta,
-  approachAngle,
-  Block,
-  daylight,
-  PLAYER_RADIUS,
-  ZOMBIE_RADIUS,
-  ZombieAnim,
-} from '@tuff/shared';
+import { angleDelta, approachAngle, Block, daylight, PLAYER_RADIUS, ZOMBIE_RADIUS, ZombieAnim } from '@tuff/shared';
 import { Player, Transform, Zombie, type Transform as TransformT, type ZombieComp } from './components';
 import type { Game } from './game';
 import { NAV_CELL } from './navigation';
@@ -39,6 +31,11 @@ export function zombieAnim(z: ZombieComp): number {
     case 'bang':
       return ZombieAnim.Bang;
   }
+}
+
+/** True while a zombie is actively engaged with its target. */
+function isEngaged(z: ZombieComp): boolean {
+  return z.state === 'chase' || z.state === 'attack' || z.state === 'stagger';
 }
 
 export class ZombieSystem {
@@ -101,7 +98,7 @@ export class ZombieSystem {
       const speed = Math.hypot(p.sim.vx, p.sim.vy);
       if (speed < 0.3) range *= 0.8;
       if (p.sim.sprinting) range *= 1.2;
-      const tracking = z.state === 'chase' && z.target === id;
+      const tracking = z.target === id && isEngaged(z);
       if (tracking) range *= 1.4;
       if (d > range) continue;
       const close = d < 2.2;
@@ -120,7 +117,8 @@ export class ZombieSystem {
       return;
     }
     const target = ecs.get(bestId, Transform)!;
-    if (z.state === 'chase' && z.target === bestId) {
+    if (z.target === bestId && isEngaged(z)) {
+      // Already after this player (chasing, mid-attack or staggered): just keep tracking.
       z.lostTimer = 0;
       z.goalX = target.x;
       z.goalY = target.y;
@@ -143,7 +141,8 @@ export class ZombieSystem {
   }
 
   startChase(e: number, z: ZombieComp, target: number): void {
-    if (z.state === 'down' || z.state === 'rise') return;
+    // Never interrupt a fall or an attack that is already winding up.
+    if (z.state === 'down' || z.state === 'rise' || (z.state === 'attack' && z.target === target)) return;
     const t = this.game.ecs.get(target, Transform);
     if (!t) return;
     const wasChasing = z.state === 'chase';

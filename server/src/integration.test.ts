@@ -24,7 +24,15 @@ beforeAll(async () => {
   ];
   const map = structuredClone(loadMap(content));
   map.spawns = [{ x: 22, y: 327 }];
-  server = await startServer({ port: 0, host: '127.0.0.1', storage: new MemoryStorage(), content, map, quiet: true, autosaveSeconds: 3600 });
+  server = await startServer({
+    port: 0,
+    host: '127.0.0.1',
+    storage: new MemoryStorage(),
+    content,
+    map,
+    quiet: true,
+    autosaveSeconds: 3600,
+  });
   base = `http://127.0.0.1:${server.port}`;
 });
 
@@ -91,13 +99,44 @@ describe('multiplayer foundation', () => {
     expect(a.self!.magAmmo).toBeLessThan(15);
   });
 
+  it('zombies notice, chase and wound a player standing in the open', async () => {
+    const c = await connect('carol');
+    const game = server.game;
+    const p = game.ecs.get(c.entityId, Player)!;
+    const t = game.ecs.get(c.entityId, Transform)!;
+    // Move Carol away from the others so the zombie has only one target.
+    for (let dx = 30; dx < 80; dx += 2) {
+      if (game.world.isWalkable(t.x + dx, t.y, 0.5) && game.world.isWalkable(t.x + dx + 4, t.y, 0.5)) {
+        p.sim.x = t.x = t.x + dx;
+        break;
+      }
+    }
+    game.spatial.set(c.entityId, t.x, t.y);
+    const zid = game.spawnZombie({ x: t.x + 4, y: t.y, arch: 'walker', look: 11, zone: 'none', hp: 1 });
+    game.ecs.get(zid, Transform)!.angle = Math.PI;
+    await c.act(0.2, {});
+    const deadline = Date.now() + 15_000;
+    while (p.body.health >= 100 && Date.now() < deadline) await c.act(0.25, {});
+    expect(p.body.health).toBeLessThan(100);
+    expect(p.body.wounds.length).toBeGreaterThan(0);
+    await c.waitFor(
+      () => c.events.some((e) => e.type === NetEventType.Hit && e.target === c.entityId && e.source === zid),
+      2000,
+      'hit event',
+    );
+    await c.waitFor(() => !!c.last('status') && c.last('status')!.status.wounds.length > 0, 2000, 'status with wounds');
+    game.despawnEntity(zid);
+  });
+
   it('searches containers and moves loot into the inventory', async () => {
     const a = bots[0];
     const game = server.game;
     const p = game.ecs.get(a.entityId, Player)!;
     const t = game.ecs.get(a.entityId, Transform)!;
     // Pick the closest world container and stand next to it.
-    const containers = [...game.world.compiled.containers.values()].sort((c1, c2) => Math.hypot(c1.x - t.x, c1.y - t.y) - Math.hypot(c2.x - t.x, c2.y - t.y));
+    const containers = [...game.world.compiled.containers.values()].sort(
+      (c1, c2) => Math.hypot(c1.x - t.x, c1.y - t.y) - Math.hypot(c2.x - t.x, c2.y - t.y),
+    );
     let target: (typeof containers)[number] | undefined;
     let spot: { x: number; y: number } | undefined;
     for (const c of containers) {
@@ -121,7 +160,11 @@ describe('multiplayer foundation', () => {
     await a.waitFor(() => !!a.last('container')?.container, 4000, 'container contents');
     expect(a.last('container')!.container!.items[0].id).toBe('canned_beans');
     a.send({ t: 'move', uid: 424242, from: { kind: 'container', id: target!.id }, to: { kind: 'pockets' } });
-    await a.waitFor(() => !!a.last('inventory')?.inventory.pockets.some((s: ItemStack) => s.id === 'canned_beans'), 2000, 'beans in pockets');
+    await a.waitFor(
+      () => !!a.last('inventory')?.inventory.pockets.some((s: ItemStack) => s.id === 'canned_beans'),
+      2000,
+      'beans in pockets',
+    );
     expect(game.world.containers.get(target!.id)!.items).toHaveLength(0);
   });
 
@@ -142,12 +185,33 @@ describe('multiplayer foundation', () => {
     const game = server.game;
     const p = game.ecs.get(bot.entityId, Player)!;
     p.body.health = 0.5;
-    p.body.wounds.push({ id: 99, part: 'torso', type: 'bite', severity: 1, bleeding: 1, bandage: 0, dirty: 0, disinfected: false, contamination: 0.8, infection: 0, sutured: false, splinted: false, age: 0 });
+    p.body.wounds.push({
+      id: 99,
+      part: 'torso',
+      type: 'bite',
+      severity: 1,
+      bleeding: 1,
+      bandage: 0,
+      dirty: 0,
+      disinfected: false,
+      contamination: 0.8,
+      infection: 0,
+      sutured: false,
+      splinted: false,
+      age: 0,
+    });
     await bot.waitFor(() => !!bot.last('died'), 3000, 'death');
     expect(bot.last('died')!.cause).toMatch(/Bled out/);
-    await bot.waitFor(() => [...bot.entities.values()].some((e) => e.kind === EntityKind.Corpse && (e.flags & CorpseFlags.Player) !== 0), 2000, 'player corpse');
+    await bot.waitFor(
+      () => [...bot.entities.values()].some((e) => e.kind === EntityKind.Corpse && (e.flags & CorpseFlags.Player) !== 0),
+      2000,
+      'player corpse',
+    );
     // Everything the player carried is on the body.
-    const bodies = game.ecs.query(Corpse).map((c) => game.ecs.get(c, Corpse)!).filter((c) => c.player);
+    const bodies = game.ecs
+      .query(Corpse)
+      .map((c) => game.ecs.get(c, Corpse)!)
+      .filter((c) => c.player);
     expect(bodies).toHaveLength(1);
     expect(bodies[0].items.some((s) => s.id === 'canned_beans')).toBe(true);
     expect(bodies[0].items.some((s) => s.id === 'pistol_9mm')).toBe(true);

@@ -160,24 +160,24 @@ visibility must remain controlled so players cannot zoom impossibly far out.
 
 ## 4. Desktop Controls
 
-| Input       | Action                  |
-| ----------- | ----------------------- |
-| WASD        | Movement                |
-| Mouse       | Aim                     |
-| Left Click  | Fire / melee attack     |
-| Right Click | Precision aim           |
-| E           | Interact                |
-| R           | Reload                  |
-| Shift       | Sprint                  |
-| Ctrl        | Crouch                  |
-| Tab         | Inventory               |
-| F           | Flashlight              |
-| 1–5         | Quick slots             |
-| Q           | Quick melee / shove     |
-| G           | Context throwable       |
-| M           | Map                     |
+| Input       | Action                   |
+| ----------- | ------------------------ |
+| WASD        | Movement                 |
+| Mouse       | Aim                      |
+| Left Click  | Fire / melee attack      |
+| Right Click | Precision aim            |
+| E           | Interact                 |
+| R           | Reload                   |
+| Shift       | Sprint                   |
+| Ctrl        | Crouch                   |
+| Tab         | Inventory                |
+| F           | Flashlight               |
+| 1–5         | Quick slots              |
+| Q           | Quick melee / shove      |
+| G           | Context throwable        |
+| M           | Map                      |
 | B           | Build/Fortification mode |
-| Escape      | Menu                    |
+| Escape      | Menu                     |
 
 Everything should use an abstract input-action system. Code should understand `Move`, `Aim`,
 `Attack`, `PrecisionAim`, `Interact`, `Reload`, `Sprint`, `Crouch`, `QuickMelee`, `UseItem`,
@@ -382,18 +382,18 @@ natural variation. Suggested distribution (server-configurable):
 **Sound**: every noisy action produces a sound event. Example relative noise (tuning units, not
 meters):
 
-| Source         | Noise |
-| -------------- | ----- |
-| Footsteps      | 4     |
-| Opening door   | 7     |
-| Breaking window| 25    |
-| Melee hit      | 12    |
-| Suppressed gun | 35    |
-| Handgun        | 80    |
-| Shotgun        | 130   |
-| Rifle          | 150   |
-| Car horn       | 250   |
-| Alarm          | 350   |
+| Source          | Noise |
+| --------------- | ----- |
+| Footsteps       | 4     |
+| Opening door    | 7     |
+| Breaking window | 25    |
+| Melee hit       | 12    |
+| Suppressed gun  | 35    |
+| Handgun         | 80    |
+| Shotgun         | 130   |
+| Rifle           | 150   |
+| Car horn        | 250   |
+| Alarm           | 350   |
 
 ## 14. Zombie Investigation
 
@@ -498,13 +498,13 @@ inspect another cupboard.
 
 Opening a container reveals it quickly. Searching complicated storage can take slightly longer:
 
-| Container       | Time    |
-| --------------- | ------- |
-| Kitchen drawer  | 0.2 sec |
-| Cabinet         | 0.3 sec |
-| Closet          | 0.6 sec |
-| Large dumpster  | 1.0 sec |
-| Vehicle trunk   | 0.4 sec |
+| Container      | Time    |
+| -------------- | ------- |
+| Kitchen drawer | 0.2 sec |
+| Cabinet        | 0.3 sec |
+| Closet         | 0.6 sec |
+| Large dumpster | 1.0 sec |
+| Vehicle trunk  | 0.4 sec |
 
 Avoid excessive timers. The game should remain fast.
 
@@ -539,12 +539,12 @@ cooking equipment, animal supplies, fishing equipment, crafting materials, junk,
 
 ## 30. Item Production Targets
 
-| Stage       | Items    |
-| ----------- | -------- |
-| Prototype   | 100–150  |
-| Early Alpha | 250–350  |
-| Beta        | 500–700  |
-| Mature game | 1,000+   |
+| Stage       | Items   |
+| ----------- | ------- |
+| Prototype   | 100–150 |
+| Early Alpha | 250–350 |
+| Beta        | 500–700 |
+| Mature game | 1,000+  |
 
 The architecture should comfortably support several thousand.
 
@@ -776,12 +776,12 @@ have different growth times.
 
 Initial domestic animals: chicken, goat, pig, cow. Animals need food, water and an enclosure.
 
-| Animal  | Outputs      |
-| ------- | ------------ |
-| Chicken | Eggs, meat   |
-| Goat    | Milk, meat   |
-| Cow     | Milk, meat   |
-| Pig     | Meat         |
+| Animal  | Outputs    |
+| ------- | ---------- |
+| Chicken | Eggs, meat |
+| Goat    | Milk, meat |
+| Cow     | Milk, meat |
+| Pig     | Meat       |
 
 ## 62. Breeding
 
@@ -1058,19 +1058,19 @@ gradually become a functioning settlement. That transformation should be visible
 ## 90. Development Roadmap
 
 - **Phase 0 — Technical Foundation**: TypeScript monorepo, PixiJS renderer, ECS, input abstraction,
-  WebSocket communication, authentication, PostgreSQL, chunk streaming. *Success condition: two
-  browser windows can connect and move synchronized characters through the same world.*
+  WebSocket communication, authentication, PostgreSQL, chunk streaming. _Success condition: two
+  browser windows can connect and move synchronized characters through the same world._
 - **Phase 1 — Movement and Combat**: camera, mouse look-ahead, collisions, zombies, melee, firearms,
-  ammunition, hit detection, health, death. *Success condition: fighting zombies is genuinely
-  enjoyable before any complicated survival mechanics exist.*
+  ammunition, hit detection, health, death. _Success condition: fighting zombies is genuinely
+  enjoyable before any complicated survival mechanics exist._
 - **Phase 2 — Inventory and Loot**: items, backpacks, containers, transfer UI, item spawning, loot
-  tables, grocery store prototype. *Success condition: players can enter a grocery store, search
-  shelves, load a backpack and bring items home. This is the first true vertical slice.*
+  tables, grocery store prototype. _Success condition: players can enter a grocery store, search
+  shelves, load a backpack and bring items home. This is the first true vertical slice._
 - **Phase 3 — Map System**: chunks, terrain, roads, buildings, interiors, biome system, editor.
-  *Success condition: designer can create a town entirely through the browser editor.*
+  _Success condition: designer can create a town entirely through the browser editor._
 - **Phase 4 — Procedural Tools**: road generator, parcel generator, building generation, interior
-  generation, prop scattering, biome generation, generation locking. *Success condition: designer can
-  generate a neighborhood, modify it manually and save it permanently.*
+  generation, prop scattering, biome generation, generation locking. _Success condition: designer can
+  generate a neighborhood, modify it manually and save it permanently._
 - **Phase 5 — Survival**: hunger, thirst, fatigue, wounds, medical treatment, healing, food, cooking.
 - **Phase 6 — Persistence**: persistent containers, dropped items, destroyed structures, player
   construction, corpses, world delta storage.

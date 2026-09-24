@@ -65,7 +65,13 @@ export class Combat {
     const oy = s.y + Math.sin(s.aim) * muzzle;
     const range = firearm.range;
     const cond = this.heldCondition(p);
-    const candidates = this.targetsNear(shooter, s.x + Math.cos(s.aim) * range * 0.5, s.y + Math.sin(s.aim) * range * 0.5, range * 0.55 + 4, input.viewTick);
+    const candidates = this.targetsNear(
+      shooter,
+      s.x + Math.cos(s.aim) * range * 0.5,
+      s.y + Math.sin(s.aim) * range * 0.5,
+      range * 0.55 + 4,
+      input.viewTick,
+    );
     const pellets: ShotPellet[] = [];
     const brokenWindows = new Set<string>();
     for (const angle of angles) {
@@ -105,7 +111,18 @@ export class Combat {
         // Top-down headshots: rounds passing close to the centre of the silhouette hit the head.
         const headshot = h.perp < h.target.radius * 0.38;
         const mult = headshot ? (firearm.headshotMultiplier ?? 2) : 1;
-        this.damageTarget(h.target, damage * falloff * mult, dx, dy, firearm.knockback, HitKind.Bullet, shooter, headshot ? HitFlags.Headshot : 0, ox + dx * h.t, oy + dy * h.t);
+        this.damageTarget(
+          h.target,
+          damage * falloff * mult,
+          dx,
+          dy,
+          firearm.knockback,
+          HitKind.Bullet,
+          shooter,
+          headshot ? HitFlags.Headshot : 0,
+          ox + dx * h.t,
+          oy + dy * h.t,
+        );
         penetrated++;
         damage *= 0.65;
         lastHit = h.t;
@@ -118,11 +135,24 @@ export class Combat {
     }
     for (const id of brokenWindows) game.damageObject(id, 999, shooter, 'window_break');
     game.noise.emit(s.x, s.y, firearm.noise, shooter);
-    game.event({ type: NetEventType.Shot, shooter, item: game.content.itemIndex(weapon.itemId!) + 1, x: ox, y: oy, pellets }, s.x, s.y, 260);
+    game.event(
+      { type: NetEventType.Shot, shooter, item: game.content.itemIndex(weapon.itemId!) + 1, x: ox, y: oy, pellets },
+      s.x,
+      s.y,
+      260,
+    );
     this.wearHeld(p, 1);
   }
 
-  melee(attacker: number, p: PlayerComp, s: PlayerSimState, weapon: WeaponProfile, angle: number, input: PlayerInput, shove: boolean): void {
+  melee(
+    attacker: number,
+    p: PlayerComp,
+    s: PlayerSimState,
+    weapon: WeaponProfile,
+    angle: number,
+    input: PlayerInput,
+    shove: boolean,
+  ): void {
     const def: MeleeDef = shove ? SHOVE : weapon.melee!;
     const game = this.game;
     const collision = game.world.compiled.collision;
@@ -148,7 +178,19 @@ export class Combat {
         const knockChance = def.knockdown * (1 - t.zombie.arch.stability * 0.6) * (exhausted ? 0.45 : 1);
         if (game.rng.chance(knockChance)) flags |= HitFlags.Knockdown;
       }
-      this.damageTarget(t, damage, dx / len, dy / len, knockback, kind, attacker, flags, t.x - (dx / len) * t.radius, t.y - (dy / len) * t.radius, shove ? 0.6 : 0.35);
+      this.damageTarget(
+        t,
+        damage,
+        dx / len,
+        dy / len,
+        knockback,
+        kind,
+        attacker,
+        flags,
+        t.x - (dx / len) * t.radius,
+        t.y - (dy / len) * t.radius,
+        shove ? 0.6 : 0.35,
+      );
     }
     // Swinging at a door or window damages it.
     if (targets.length === 0 && !shove) {
@@ -203,7 +245,12 @@ export class Combat {
     z.knockY += dirY * knockback;
     const dir = Math.atan2(dirY, dirX);
     if (z.hp <= 0) {
-      game.event({ type: NetEventType.Hit, target: id, x: hx, y: hy, dir, kind, flags: flags | HitFlags.Kill, source: attacker }, hx, hy, 80);
+      game.event(
+        { type: NetEventType.Hit, target: id, x: hx, y: hy, dir, kind, flags: flags | HitFlags.Kill, source: attacker },
+        hx,
+        hy,
+        80,
+      );
       game.killZombie(id, attacker, dir);
       return;
     }
@@ -226,13 +273,29 @@ export class Combat {
     game.event({ type: NetEventType.Hit, target: id, x: hx, y: hy, dir, kind, flags, source: attacker }, hx, hy, 80);
   }
 
-  private damagePlayerPvp(id: number, p: PlayerComp, damage: number, dirX: number, dirY: number, kind: number, attacker: number, hx: number, hy: number): void {
+  private damagePlayerPvp(
+    id: number,
+    p: PlayerComp,
+    damage: number,
+    dirX: number,
+    dirY: number,
+    kind: number,
+    attacker: number,
+    hx: number,
+    hy: number,
+  ): void {
     const game = this.game;
-    const type: WoundType = kind === HitKind.Bullet ? 'gunshot' : kind === HitKind.Sharp ? 'cut' : kind === HitKind.Shove ? 'bruise' : 'bruise';
+    const type: WoundType =
+      kind === HitKind.Bullet ? 'gunshot' : kind === HitKind.Sharp ? 'cut' : kind === HitKind.Shove ? 'bruise' : 'bruise';
     const scale = kind === HitKind.Bullet ? damage / 30 : damage / 25;
     inflictWound(p.body, randomBodyPart(game.rng), type, game.rng, Math.max(0.3, scale));
     p.statusDirty = true;
-    game.event({ type: NetEventType.Hit, target: id, x: hx, y: hy, dir: Math.atan2(dirY, dirX), kind, flags: 0, source: attacker }, hx, hy, 80);
+    game.event(
+      { type: NetEventType.Hit, target: id, x: hx, y: hy, dir: Math.atan2(dirY, dirX), kind, flags: 0, source: attacker },
+      hx,
+      hy,
+      80,
+    );
     game.soundAt('player_hurt', hx, hy, 0.8, id);
     if (p.body.health <= 0) game.killPlayer(id, `Killed by ${game.ecs.get(attacker, Player)?.name ?? 'another survivor'}`);
   }
@@ -254,7 +317,16 @@ export class Combat {
     p.statusDirty = true;
     const dir = Math.atan2(pt.y - zt.y, pt.x - zt.x);
     game.event(
-      { type: NetEventType.Hit, target, x: pt.x, y: pt.y, dir, kind: type === 'bite' ? HitKind.Bite : type === 'bruise' ? HitKind.Blunt : HitKind.Scratch, flags: 0, source: zombie },
+      {
+        type: NetEventType.Hit,
+        target,
+        x: pt.x,
+        y: pt.y,
+        dir,
+        kind: type === 'bite' ? HitKind.Bite : type === 'bruise' ? HitKind.Blunt : HitKind.Scratch,
+        flags: 0,
+        source: zombie,
+      },
       pt.x,
       pt.y,
       80,

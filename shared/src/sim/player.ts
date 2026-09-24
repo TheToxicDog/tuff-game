@@ -166,13 +166,7 @@ export function firearmSpread(state: PlayerSimState, firearm: FirearmDef, aimSwa
 }
 
 /** Deterministic per-pellet spread offsets for a shot. */
-export function shotAngles(
-  entityId: number,
-  seq: number,
-  aim: number,
-  spread: number,
-  pellets: number,
-): number[] {
+export function shotAngles(entityId: number, seq: number, aim: number, spread: number, pellets: number): number[] {
   const angles: number[] = [];
   for (let p = 0; p < pellets; p++) {
     const a = hashToUnit(hash32(entityId, seq, p, 0x51));
@@ -329,10 +323,7 @@ export function stepPlayer(s: PlayerSimState, input: PlayerInput, env: PlayerSte
     const diff = Math.abs(angleDelta(Math.atan2(my, mx), s.aim));
     if (diff > Math.PI / 3) {
       const t = (diff - Math.PI / 3) / (Math.PI / 3);
-      speed *=
-        t <= 1
-          ? lerp(1, MOVEMENT.strafeFactor, t)
-          : lerp(MOVEMENT.strafeFactor, MOVEMENT.backpedalFactor, Math.min(1, t - 1));
+      speed *= t <= 1 ? lerp(1, MOVEMENT.strafeFactor, t) : lerp(MOVEMENT.strafeFactor, MOVEMENT.backpedalFactor, Math.min(1, t - 1));
     }
   }
   if (s.action === PlayerAction.Melee || s.action === PlayerAction.Shove) speed *= 0.72;

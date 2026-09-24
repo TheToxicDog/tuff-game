@@ -22,17 +22,7 @@ export const BLOCK_MOVEMENT = Block.Player | Block.Zombie;
 export const BLOCK_ALL = Block.Player | Block.Zombie | Block.Sight | Block.Bullet;
 
 /** Surface material, used for impact effects, sounds and penetration. */
-export type Material =
-  | 'brick'
-  | 'concrete'
-  | 'wood'
-  | 'drywall'
-  | 'metal'
-  | 'glass'
-  | 'foliage'
-  | 'fabric'
-  | 'plastic'
-  | 'stone';
+export type Material = 'brick' | 'concrete' | 'wood' | 'drywall' | 'metal' | 'glass' | 'foliage' | 'fabric' | 'plastic' | 'stone';
 
 export const ShapeKind = {
   Circle: 0,
@@ -102,7 +92,7 @@ const CELL_SIZE = 4;
 const KEY_OFFSET = 32768;
 
 function cellKey(cx: number, cy: number): number {
-  return (cx + KEY_OFFSET) + (cy + KEY_OFFSET) * 65536;
+  return cx + KEY_OFFSET + (cy + KEY_OFFSET) * 65536;
 }
 
 export class CollisionWorld {
@@ -254,13 +244,7 @@ export class CollisionWorld {
    * Pushes a circle out of every overlapping collider matching `mask`.
    * Returns the corrected position and the collider that pushed hardest (for "blocked by" logic).
    */
-  resolveCircle(
-    x: number,
-    y: number,
-    r: number,
-    mask: number,
-    iterations = 3,
-  ): { x: number; y: number; blocker: Collider | null } {
+  resolveCircle(x: number, y: number, r: number, mask: number, iterations = 3): { x: number; y: number; blocker: Collider | null } {
     let blocker: Collider | null = null;
     let deepest = 0;
     const candidates: Collider[] = [];
@@ -319,14 +303,7 @@ export class CollisionWorld {
   }
 
   /** All hits along a ray, nearest first (used by penetrating bullets). */
-  raycastAll(
-    ox: number,
-    oy: number,
-    dx: number,
-    dy: number,
-    maxDistance: number,
-    mask: number,
-  ): RayHit[] {
+  raycastAll(ox: number, oy: number, dx: number, dy: number, maxDistance: number, mask: number): RayHit[] {
     const hits: RayHit[] = [];
     const seen = new Set<number>();
     this.traverse(ox, oy, dx, dy, maxDistance, (list) => {
@@ -370,18 +347,8 @@ export class CollisionWorld {
     const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
     const tDeltaX = stepX !== 0 ? Math.abs(CELL_SIZE / dx) : Infinity;
     const tDeltaY = stepY !== 0 ? Math.abs(CELL_SIZE / dy) : Infinity;
-    let tMaxX =
-      stepX > 0
-        ? ((cx + 1) * CELL_SIZE - ox) / dx
-        : stepX < 0
-          ? (cx * CELL_SIZE - ox) / dx
-          : Infinity;
-    let tMaxY =
-      stepY > 0
-        ? ((cy + 1) * CELL_SIZE - oy) / dy
-        : stepY < 0
-          ? (cy * CELL_SIZE - oy) / dy
-          : Infinity;
+    let tMaxX = stepX > 0 ? ((cx + 1) * CELL_SIZE - ox) / dx : stepX < 0 ? (cx * CELL_SIZE - ox) / dx : Infinity;
+    let tMaxY = stepY > 0 ? ((cy + 1) * CELL_SIZE - oy) / dy : stepY < 0 ? (cy * CELL_SIZE - oy) / dy : Infinity;
     // Colliders span several cells; a hit may lie beyond the current cell, so candidate hits are
     // only accepted as final once the traversal has passed their distance.
     for (let guard = 0; guard < 4096; guard++) {
@@ -527,15 +494,7 @@ export function rayCollider(ox: number, oy: number, dx: number, dy: number, c: C
 }
 
 /** Distance along a unit ray to a circle, or null. Origins inside the circle return null. */
-export function rayCircle(
-  ox: number,
-  oy: number,
-  dx: number,
-  dy: number,
-  cx: number,
-  cy: number,
-  r: number,
-): number | null {
+export function rayCircle(ox: number, oy: number, dx: number, dy: number, cx: number, cy: number, r: number): number | null {
   const fx = ox - cx;
   const fy = oy - cy;
   const b = fx * dx + fy * dy;

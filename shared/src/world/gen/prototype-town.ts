@@ -90,7 +90,12 @@ class TownBuilder {
     for (let i = 0; i + 1 < points.length; i++) {
       const [ax, ay] = points[i];
       const [bx, by] = points[i + 1];
-      this.keepOut.push({ minX: Math.min(ax, bx) - 0.8, minY: Math.min(ay, by) - 0.8, maxX: Math.max(ax, bx) + 0.8, maxY: Math.max(ay, by) + 0.8 });
+      this.keepOut.push({
+        minX: Math.min(ax, bx) - 0.8,
+        minY: Math.min(ay, by) - 0.8,
+        maxX: Math.max(ax, bx) + 0.8,
+        maxY: Math.max(ay, by) + 0.8,
+      });
     }
   }
 
@@ -165,19 +170,103 @@ export function generatePrototypeTown(seed = 1337): MapData {
   t.reserveBox(468, 403, 622, 607);
 
   // --- Roads ---------------------------------------------------------------------------------
-  const route9West = t.road('country', [[0, 334], [40, 331], [90, 320], [130, 307], [165, 300]], 7.5, 0);
-  const route9 = t.road('main', [[165, 300], [590, 300]], 8, 2.2);
-  const route9East = t.road('country', [[590, 300], [615, 297], [640, 290]], 7.5, 0);
+  const route9West = t.road(
+    'country',
+    [
+      [0, 334],
+      [40, 331],
+      [90, 320],
+      [130, 307],
+      [165, 300],
+    ],
+    7.5,
+    0,
+  );
+  const route9 = t.road(
+    'main',
+    [
+      [165, 300],
+      [590, 300],
+    ],
+    8,
+    2.2,
+  );
+  const route9East = t.road(
+    'country',
+    [
+      [590, 300],
+      [615, 297],
+      [640, 290],
+    ],
+    7.5,
+    0,
+  );
   const elmX = 240;
   const mapleX = 322;
   const oakY = 132;
   const birchY = 440;
-  const elmNorth = t.road('street', [[elmX, oakY], [elmX, 300]], 7, 1.8, { markings: false });
-  const elmSouth = t.road('street', [[elmX, 300], [elmX, birchY]], 7, 1.8, { markings: false });
-  const maple = t.road('street', [[mapleX, oakY], [mapleX, 300]], 7, 1.8, { markings: false });
-  const oak = t.road('street', [[elmX, oakY], [mapleX, oakY]], 6.5, 1.8, { markings: false });
-  const birch = t.road('street', [[elmX, birchY], [338, birchY]], 7, 1.8, { markings: false });
-  const trail = t.road('dirt', [[281, oakY - 4], [283, 104], [280, 78], [275, 52], [270, 30]], 4, 0);
+  const elmNorth = t.road(
+    'street',
+    [
+      [elmX, oakY],
+      [elmX, 300],
+    ],
+    7,
+    1.8,
+    { markings: false },
+  );
+  const elmSouth = t.road(
+    'street',
+    [
+      [elmX, 300],
+      [elmX, birchY],
+    ],
+    7,
+    1.8,
+    { markings: false },
+  );
+  const maple = t.road(
+    'street',
+    [
+      [mapleX, oakY],
+      [mapleX, 300],
+    ],
+    7,
+    1.8,
+    { markings: false },
+  );
+  const oak = t.road(
+    'street',
+    [
+      [elmX, oakY],
+      [mapleX, oakY],
+    ],
+    6.5,
+    1.8,
+    { markings: false },
+  );
+  const birch = t.road(
+    'street',
+    [
+      [elmX, birchY],
+      [338, birchY],
+    ],
+    7,
+    1.8,
+    { markings: false },
+  );
+  const trail = t.road(
+    'dirt',
+    [
+      [281, oakY - 4],
+      [283, 104],
+      [280, 78],
+      [275, 52],
+      [270, 30],
+    ],
+    4,
+    0,
+  );
   for (const r of [route9West, route9East]) t.terrain.line(r.points, r.width / 2 + 1.6, 'gravel');
   t.terrain.line(trail.points, 3, 'dirt');
   // Cul-de-sac bulb at the end of Birch Court.
@@ -206,10 +295,18 @@ export function generatePrototypeTown(seed = 1337): MapData {
   for (const lx of [268, 310]) {
     const north = generateHouse(t.nextBuildingId(), rng);
     const yN = birchY - birch.width / 2 - birch.sidewalk - rng.range(6.5, 8.5) - north.h / 2;
-    houseRecords.push({ def: t.place(north, lx, yN, rotationFacing('s')), front: 's', streetEdge: birchY - birch.width / 2 - birch.sidewalk });
+    houseRecords.push({
+      def: t.place(north, lx, yN, rotationFacing('s')),
+      front: 's',
+      streetEdge: birchY - birch.width / 2 - birch.sidewalk,
+    });
     const south = generateHouse(t.nextBuildingId(), rng);
     const yS = birchY + birch.width / 2 + birch.sidewalk + rng.range(6.5, 8.5) + south.h / 2;
-    houseRecords.push({ def: t.place(south, lx, yS, rotationFacing('n')), front: 'n', streetEdge: birchY + birch.width / 2 + birch.sidewalk });
+    houseRecords.push({
+      def: t.place(south, lx, yS, rotationFacing('n')),
+      front: 'n',
+      streetEdge: birchY + birch.width / 2 + birch.sidewalk,
+    });
   }
 
   // Driveways, walkways, mailboxes, cars and yard details for every house.
@@ -219,7 +316,11 @@ export function generatePrototypeTown(seed = 1337): MapData {
   const fenceX = (curbX(elmX, 1, elmNorth) + curbX(mapleX, -1, maple)) / 2;
   let prevY = 142;
   for (const ly of [...lotCenters.map((y) => y + 15), 292]) {
-    if (rng.chance(0.8)) t.fence(rng.pick(['wood', 'chainlink', 'wood']), [[fenceX, prevY], [fenceX, Math.min(ly, 291)]]);
+    if (rng.chance(0.8))
+      t.fence(rng.pick(['wood', 'chainlink', 'wood']), [
+        [fenceX, prevY],
+        [fenceX, Math.min(ly, 291)],
+      ]);
     prevY = ly + 1.5;
   }
   for (const rec of houseRecords.slice(0, 8)) {
@@ -297,8 +398,20 @@ export function generatePrototypeTown(seed = 1337): MapData {
     const north = Math.round((x - 185) / 30) % 2 === 0;
     t.prop('streetlight', x, north ? northEdge + 0.6 : southEdge - 0.6, 0);
   }
-  for (const [x, y] of [[elmX + 5.6, 212], [mapleX - 5.6, 180], [elmX - 5.6, 380]] as [number, number][]) t.prop('streetlight', x, y, 0);
-  for (const [x, y] of [[elmX + 5, 150], [mapleX - 5, 260], [elmX - 5, 330], [470, northEdge + 0.8], [262, birchY + 5]] as [number, number][]) t.prop('fire_hydrant', x, y, 0);
+  for (const [x, y] of [
+    [elmX + 5.6, 212],
+    [mapleX - 5.6, 180],
+    [elmX - 5.6, 380],
+  ] as [number, number][])
+    t.prop('streetlight', x, y, 0);
+  for (const [x, y] of [
+    [elmX + 5, 150],
+    [mapleX - 5, 260],
+    [elmX - 5, 330],
+    [470, northEdge + 0.8],
+    [262, birchY + 5],
+  ] as [number, number][])
+    t.prop('fire_hydrant', x, y, 0);
   t.prop('bench', 470, southEdge - 1, 0);
 
   // Abandoned and crashed cars on Route 9.
@@ -424,17 +537,40 @@ function decorateHouse(t: TownBuilder, def: BuildingDef, rng: Rng): void {
   const driveLocalX = garageDoor ? garageDoor.x : def.w - 1.6;
   const driveStart = localToWorld(tr, driveLocalX, def.h + (garageDoor ? 0 : -3));
   const driveEnd = { x: driveStart.x + front.x * 10.5, y: driveStart.y + front.y * 10.5 };
-  const drive = t.road('driveway', [[round2(driveStart.x), round2(driveStart.y)], [round2(driveEnd.x), round2(driveEnd.y)]], 3.2, 0);
+  const drive = t.road(
+    'driveway',
+    [
+      [round2(driveStart.x), round2(driveStart.y)],
+      [round2(driveEnd.x), round2(driveEnd.y)],
+    ],
+    3.2,
+    0,
+  );
   void drive;
   if (rng.chance(0.5)) {
     const cx = driveStart.x + front.x * (garageDoor ? 4 : 6);
     const cy = driveStart.y + front.y * (garageDoor ? 4 : 6);
-    t.prop(rng.pick(['car_sedan', 'car_compact', 'car_suv', 'car_pickup']), cx, cy, Math.atan2(front.y, front.x) + (rng.chance(0.5) ? Math.PI : 0), { variant: rng.int(0, 999) });
+    t.prop(
+      rng.pick(['car_sedan', 'car_compact', 'car_suv', 'car_pickup']),
+      cx,
+      cy,
+      Math.atan2(front.y, front.x) + (rng.chance(0.5) ? Math.PI : 0),
+      { variant: rng.int(0, 999) },
+    );
   }
   // Front walkway.
   if (frontDoor) {
     const start = localToWorld(tr, frontDoor.x, def.h);
-    t.road('driveway', [[round2(start.x), round2(start.y)], [round2(start.x + front.x * 9), round2(start.y + front.y * 9)]], 1.2, 0, { surface: 'concrete' });
+    t.road(
+      'driveway',
+      [
+        [round2(start.x), round2(start.y)],
+        [round2(start.x + front.x * 9), round2(start.y + front.y * 9)],
+      ],
+      1.2,
+      0,
+      { surface: 'concrete' },
+    );
   }
   // Mailbox and trash can at the curb.
   const curb = localToWorld(tr, driveLocalX + 2.4, def.h + 9.5);
@@ -455,12 +591,18 @@ function decorateHouse(t: TownBuilder, def: BuildingDef, rng: Rng): void {
     const lx = rng.chance(0.5) ? -rng.range(2.5, 5) : def.w + rng.range(2.5, 5);
     const ly = rng.range(-9, def.h + 5);
     const p = localToWorld(tr, lx, ly);
-    if (t.isFree(p.x, p.y, 1)) t.prop(rng.chance(0.6) ? 'tree_oak' : 'tree_birch', p.x, p.y, rng.range(0, 6.28), { variant: rng.int(0, 999) });
+    if (t.isFree(p.x, p.y, 1))
+      t.prop(rng.chance(0.6) ? 'tree_oak' : 'tree_birch', p.x, p.y, rng.range(0, 6.28), { variant: rng.int(0, 999) });
   }
   if (rng.chance(0.3)) {
     const p = localToWorld(tr, rng.range(1, def.w - 1), -rng.range(3, 6));
     t.prop(rng.pick(['leaves', 'trash_pile', 'picnic_table']), p.x, p.y, rng.range(0, 6.28));
   }
   // Keep the yard around the drive clear of scattered trees.
-  t.reserveBox(Math.min(driveStart.x, driveEnd.x) - 2, Math.min(driveStart.y, driveEnd.y) - 2, Math.max(driveStart.x, driveEnd.x) + 2, Math.max(driveStart.y, driveEnd.y) + 2);
+  t.reserveBox(
+    Math.min(driveStart.x, driveEnd.x) - 2,
+    Math.min(driveStart.y, driveEnd.y) - 2,
+    Math.max(driveStart.x, driveEnd.x) + 2,
+    Math.max(driveStart.y, driveEnd.y) + 2,
+  );
 }

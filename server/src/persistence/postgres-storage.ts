@@ -108,7 +108,9 @@ export class PostgresStorage implements Storage {
     const client = await this.pool.connect();
     try {
       await client.query('SELECT pg_advisory_lock(727274)');
-      await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (id integer PRIMARY KEY, name text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`);
+      await client.query(
+        `CREATE TABLE IF NOT EXISTS schema_migrations (id integer PRIMARY KEY, name text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`,
+      );
       const applied = new Set((await client.query<{ id: number }>('SELECT id FROM schema_migrations')).rows.map((r) => r.id));
       for (const m of MIGRATIONS) {
         if (applied.has(m.id)) continue;
@@ -225,10 +227,9 @@ export class PostgresStorage implements Storage {
     try {
       await client.query('BEGIN');
       if (changes.meta) {
-        await client.query(
-          'INSERT INTO world_meta (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data',
-          [JSON.stringify(changes.meta)],
-        );
+        await client.query('INSERT INTO world_meta (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data', [
+          JSON.stringify(changes.meta),
+        ]);
       }
       for (const key of Object.keys(WORLD_TABLES) as (keyof typeof WORLD_TABLES)[]) {
         const table = WORLD_TABLES[key];

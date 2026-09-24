@@ -3,7 +3,7 @@
 const KEY_OFFSET = 32768;
 
 function key(cx: number, cy: number): number {
-  return (cx + KEY_OFFSET) + (cy + KEY_OFFSET) * 65536;
+  return cx + KEY_OFFSET + (cy + KEY_OFFSET) * 65536;
 }
 
 export class SpatialHash {

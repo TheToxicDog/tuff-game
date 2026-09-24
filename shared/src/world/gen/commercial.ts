@@ -117,7 +117,10 @@ export function generateGrocery(id: string, rng: Rng, opts: GroceryOptions = {})
   }
   // Refrigerated displays along the back wall of the sales floor.
   for (let x = 7; x < w - 8; x += 3.3) {
-    b.prop('cooler_display', x, backD + 0.62, 0, { size: { w: 3.0, h: 0.85 }, loot: rng.chance(0.3) ? 'grocery_drinks' : 'grocery_cooler' });
+    b.prop('cooler_display', x, backD + 0.62, 0, {
+      size: { w: 3.0, h: 0.85 },
+      loot: rng.chance(0.3) ? 'grocery_drinks' : 'grocery_cooler',
+    });
   }
   // Freezers and the pharmacy corner along the right wall.
   b.prop('freezer_chest', w - 1.7, floorTop + 2, Math.PI / 2, { size: { w: 2.0, h: 0.9 } });
@@ -162,7 +165,15 @@ export function generateGrocery(id: string, rng: Rng, opts: GroceryOptions = {})
 export function generateGasStation(id: string, rng: Rng): BuildingBuilder {
   const w = 14;
   const h = 10;
-  const b = new BuildingBuilder(id, 'gas_station', w, h, { material: 'brick', color: '#9a8a78' }, { style: 'flat', color: '#6a6660', axis: 'x' }, 'Gas-N-Go');
+  const b = new BuildingBuilder(
+    id,
+    'gas_station',
+    w,
+    h,
+    { material: 'brick', color: '#9a8a78' },
+    { style: 'flat', color: '#6a6660', axis: 'x' },
+    'Gas-N-Go',
+  );
   b.exteriorWalls('brick');
   const backD = 3.6;
   const storage = b.room('storage', 0, 0, 9, backD, 'concrete', 'Storage');
@@ -197,7 +208,15 @@ export function generateGasStation(id: string, rng: Rng): BuildingBuilder {
 export function generateHardwareStore(id: string, rng: Rng): BuildingBuilder {
   const w = 28;
   const h = 22;
-  const b = new BuildingBuilder(id, 'hardware', w, h, { material: 'metal', color: '#7a8478' }, { style: 'flat', color: '#4e5450', axis: 'x' }, 'Miller Hardware');
+  const b = new BuildingBuilder(
+    id,
+    'hardware',
+    w,
+    h,
+    { material: 'metal', color: '#7a8478' },
+    { style: 'flat', color: '#4e5450', axis: 'x' },
+    'Miller Hardware',
+  );
   b.exteriorWalls('concrete');
   const backD = 6;
   const storage = b.room('storage', 0, 0, 20, backD, 'concrete', 'Warehouse');
@@ -241,7 +260,15 @@ export function generateHardwareStore(id: string, rng: Rng): BuildingBuilder {
 export function generatePoliceStation(id: string, rng: Rng): BuildingBuilder {
   const w = 32;
   const h = 24;
-  const b = new BuildingBuilder(id, 'police', w, h, { material: 'brick', color: '#7a5a4a' }, { style: 'flat', color: '#4a4a4c', axis: 'x' }, 'Police Department');
+  const b = new BuildingBuilder(
+    id,
+    'police',
+    w,
+    h,
+    { material: 'brick', color: '#7a5a4a' },
+    { style: 'flat', color: '#4a4a4c', axis: 'x' },
+    'Police Department',
+  );
   b.exteriorWalls('brick');
   const hallY = 13;
   const frontY = 16;

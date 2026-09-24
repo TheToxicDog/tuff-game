@@ -83,7 +83,10 @@ export function generateHouse(id: string, rng: Rng, opts: HouseOptions = {}): Bu
   b.door(rng.range(1, livingW - 1), frontY, 'h', 'wood', rng, { open: rng.chance(0.7) });
   b.door(livingW, frontY + rng.range(0.9, frontD - 0.9), 'v', 'wood', rng, { open: rng.chance(0.6) });
   for (const r of back) {
-    b.door(r.x + r.w / 2 + rng.range(-r.w / 4, r.w / 4), hallY, 'h', 'wood', rng, { open: rng.chance(0.45), w: r.type === 'bathroom' ? 0.75 : 0.85 });
+    b.door(r.x + r.w / 2 + rng.range(-r.w / 4, r.w / 4), hallY, 'h', 'wood', rng, {
+      open: rng.chance(0.45),
+      w: r.type === 'bathroom' ? 0.75 : 0.85,
+    });
   }
   if (garageRoom) {
     b.door(main, frontY + frontD / 2, 'v', 'wood', rng, { open: rng.chance(0.3) });
@@ -108,14 +111,17 @@ export function generateHouse(id: string, rng: Rng, opts: HouseOptions = {}): Bu
   // --- Furniture -------------------------------------------------------------------------------
   furnishLiving(b, living, rng);
   furnishKitchen(b, kitchen, rng);
-  back.forEach((r, i) => (r.type === 'bathroom' ? furnishBathroom(b, r, rng) : furnishBedroom(b, r, rng, i === 0 || r.name === 'Master Bedroom')));
+  back.forEach((r, i) =>
+    r.type === 'bathroom' ? furnishBathroom(b, r, rng) : furnishBedroom(b, r, rng, i === 0 || r.name === 'Master Bedroom'),
+  );
   if (rng.chance(0.4)) b.againstWall(hall, 'n', 'plant_pot', { w: 0.45, h: 0.45 }, rng);
   if (garageRoom) furnishGarage(b, garageRoom, rng);
   return b;
 }
 
 function furnishLiving(b: BuildingBuilder, room: RoomDef, rng: Rng): void {
-  if (room.w > 3.6 && room.h > 3) b.prop('rug', room.x + room.w / 2, room.y + room.h / 2, 0, { w: Math.min(3, room.w - 1.6), h: Math.min(2, room.h - 1.6) });
+  if (room.w > 3.6 && room.h > 3)
+    b.prop('rug', room.x + room.w / 2, room.y + room.h / 2, 0, { w: Math.min(3, room.w - 1.6), h: Math.min(2, room.h - 1.6) });
   const couch = b.againstWall(room, 'n', 'couch', { w: 2.1, h: 0.9 }, rng, { along: room.w / 2 });
   if (couch) b.inRoom(room, 'coffee_table', { w: 1.2, h: 0.6 }, rng, { rot: 0, margin: 1.2 });
   b.againstWall(room, rng.chance(0.5) ? 'w' : 's', 'tv_stand', { w: 1.5, h: 0.45 }, rng);
@@ -174,7 +180,8 @@ function furnishBedroom(b: BuildingBuilder, room: RoomDef, rng: Rng, master: boo
     const left = { x: bed.x - side - 0.25, y: ny - 0.225, w: 0.5, h: 0.45 };
     if (b.isFree(left, false) && left.x > room.x) b.prop('nightstand', bed.x - side, ny, 0, { size: { w: 0.5, h: 0.45 } });
     const right = { x: bed.x + side - 0.25, y: ny - 0.225, w: 0.5, h: 0.45 };
-    if (double && b.isFree(right, false) && right.x + right.w < room.x + room.w) b.prop('nightstand', bed.x + side, ny, 0, { size: { w: 0.5, h: 0.45 } });
+    if (double && b.isFree(right, false) && right.x + right.w < room.x + room.w)
+      b.prop('nightstand', bed.x + side, ny, 0, { size: { w: 0.5, h: 0.45 } });
   }
   const sides = rng.shuffle(['e', 'w', 's'] as const);
   b.againstWall(room, sides[0], 'wardrobe', { w: 1.2, h: 0.6 }, rng, { tall: true });
@@ -215,7 +222,15 @@ export function houseDef(id: string, rng: Rng, x: number, y: number, rot: number
 export function generateShed(id: string, rng: Rng): BuildingBuilder {
   const w = rng.pick([3.5, 4, 4.5]);
   const h = rng.pick([3, 3.5]);
-  const b = new BuildingBuilder(id, 'shed', w, h, { material: 'wood', color: rng.pick(['#7a6a52', '#6a5a4a', '#8a7a62']) }, { style: 'gable', color: rng.pick(ROOF_COLORS), axis: 'x' }, 'Shed');
+  const b = new BuildingBuilder(
+    id,
+    'shed',
+    w,
+    h,
+    { material: 'wood', color: rng.pick(['#7a6a52', '#6a5a4a', '#8a7a62']) },
+    { style: 'gable', color: rng.pick(ROOF_COLORS), axis: 'x' },
+    'Shed',
+  );
   b.exteriorWalls('wood');
   const room = b.room('storage', 0, 0, w, h, 'darkwood', 'Shed');
   b.door(w / 2, h - EXTERIOR_WALL / 2, 'h', 'wood', rng, { locked: rng.chance(0.35), swing: -1, w: 0.9 });
@@ -229,7 +244,15 @@ export function generateShed(id: string, rng: Rng): BuildingBuilder {
 export function generateCabin(id: string, rng: Rng): BuildingBuilder {
   const w = 9;
   const h = 7.5;
-  const b = new BuildingBuilder(id, 'house', w, h, { material: 'wood', color: '#6a5440' }, { style: 'gable', color: '#3e3a36', axis: 'x' }, 'Cabin');
+  const b = new BuildingBuilder(
+    id,
+    'house',
+    w,
+    h,
+    { material: 'wood', color: '#6a5440' },
+    { style: 'gable', color: '#3e3a36', axis: 'x' },
+    'Cabin',
+  );
   b.exteriorWalls('wood');
   const splitX = 5.4;
   const main = b.room('living', 0, 0, splitX, h, 'darkwood', 'Cabin');

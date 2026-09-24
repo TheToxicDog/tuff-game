@@ -107,12 +107,7 @@ export function canSprintWithWeight(content: ContentRegistry, inv: PlayerInvento
 }
 
 /** Capacity of a location, or null when it has no volume limit (quick slots, floor). */
-export function capacityOf(
-  content: ContentRegistry,
-  inv: PlayerInventory,
-  loc: InvLocation,
-  containerVolume?: number,
-): Usage | null {
+export function capacityOf(content: ContentRegistry, inv: PlayerInventory, loc: InvLocation, containerVolume?: number): Usage | null {
   switch (loc.kind) {
     case 'pockets':
       return { volume: POCKETS.volume, weight: POCKETS.maxWeight };
@@ -206,6 +201,14 @@ export function hasToolTag(content: ContentRegistry, inv: PlayerInventory, tag: 
     if (!found && content.findItem(s.id)?.tags?.includes(tag)) found = true;
   });
   return found;
+}
+
+/** Natural quick slot for an item: 0 primary (long guns), 1 secondary (handguns), 2 melee, 3 medical, 4 utility. */
+export function preferredSlot(def: ItemDef): number | null {
+  if (def.firearm) return def.tags?.includes('handgun') ? 1 : 0;
+  if (def.melee) return 2;
+  if (def.light) return 4;
+  return null;
 }
 
 export function reserveAmmo(content: ContentRegistry, inv: PlayerInventory, caliber: string): number {

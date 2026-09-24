@@ -135,7 +135,10 @@ export class PlayerSystem {
       }
       if (p.body.health <= 0) {
         const bled = bleedRate(p.body) > 0.02;
-        game.killPlayer(e, bled ? 'Bled out' : p.needs.thirst < 5 ? 'Died of dehydration' : p.needs.hunger < 5 ? 'Starved' : 'Succumbed to injuries');
+        game.killPlayer(
+          e,
+          bled ? 'Bled out' : p.needs.thirst < 5 ? 'Died of dehydration' : p.needs.hunger < 5 ? 'Starved' : 'Succumbed to injuries',
+        );
       }
     }
   }

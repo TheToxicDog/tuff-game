@@ -14,6 +14,7 @@ import {
   hasToolTag,
   INTERACT_RANGE,
   POCKETS,
+  preferredSlot,
   QUICK_SLOT_COUNT,
   stackVolume,
   stackWeight,
@@ -57,7 +58,11 @@ export class InventoryService {
   private playerList(p: PlayerComp, kind: 'pockets' | 'backpack'): ListRef | null {
     const inv = p.inventory;
     if (kind === 'pockets') {
-      return { items: inv.pockets, capacity: { volume: POCKETS.volume, weight: POCKETS.maxWeight }, onChange: () => (p.inventoryDirty = true) };
+      return {
+        items: inv.pockets,
+        capacity: { volume: POCKETS.volume, weight: POCKETS.maxWeight },
+        onChange: () => (p.inventoryDirty = true),
+      };
     }
     if (!inv.back) return null;
     const cap = capacityOf(this.content, inv, { kind: 'backpack' });
@@ -205,12 +210,7 @@ export class InventoryService {
   }
 
   /** Finds a stack at a location and returns handles to remove or update it. */
-  private takeFrom(
-    e: number,
-    p: PlayerComp,
-    uid: number,
-    loc: Loc,
-  ): { stack: ItemStack; remove: () => void; changed: () => void } | null {
+  private takeFrom(e: number, p: PlayerComp, uid: number, loc: Loc): { stack: ItemStack; remove: () => void; changed: () => void } | null {
     const inv = p.inventory;
     switch (loc.kind) {
       case 'pockets':
@@ -345,9 +345,16 @@ export class InventoryService {
     if (!stacks) return 'That container is out of reach.';
     let skipped = 0;
     for (const s of stacks) {
-      const err = this.move(e, p, s.uid, containerId === 'floor' ? { kind: 'floor' } : { kind: 'container', id: containerId }, { kind: 'backpack' });
+      const err = this.move(e, p, s.uid, containerId === 'floor' ? { kind: 'floor' } : { kind: 'container', id: containerId }, {
+        kind: 'backpack',
+      });
       if (err === null) continue;
-      if (this.move(e, p, s.uid, containerId === 'floor' ? { kind: 'floor' } : { kind: 'container', id: containerId }, { kind: 'pockets' }) === null) continue;
+      if (
+        this.move(e, p, s.uid, containerId === 'floor' ? { kind: 'floor' } : { kind: 'container', id: containerId }, {
+          kind: 'pockets',
+        }) === null
+      )
+        continue;
       skipped++;
     }
     return skipped > 0 ? `${skipped} item${skipped === 1 ? '' : 's'} did not fit.` : null;
@@ -425,11 +432,20 @@ export class InventoryService {
     if (def.medical && !def.nutrition) {
       // Check there is something to treat before starting the timer.
       const probe = structuredClone(p.body);
-      const ok = def.medical.treatments.some((t) => applyTreatment(probe, t, def.medical!.quality, this.game.minutes, def.medical!.duration ?? 240, woundId).ok);
+      const ok = def.medical.treatments.some(
+        (t) => applyTreatment(probe, t, def.medical!.quality, this.game.minutes, def.medical!.duration ?? 240, woundId).ok,
+      );
       if (!ok) return applyTreatment(probe, def.medical.treatments[0], 1, this.game.minutes, 0, woundId).message;
     }
     const verb = def.category === 'drink' ? 'Drinking' : def.category === 'food' ? 'Eating' : def.medical ? 'Treating' : 'Using';
-    this.game.startAction(e, p, { kind: 'consume', label: `${verb} ${def.name}`, duration: def.consume?.time ?? 3, target: '', uid, woundId });
+    this.game.startAction(e, p, {
+      kind: 'consume',
+      label: `${verb} ${def.name}`,
+      duration: def.consume?.time ?? 3,
+      target: '',
+      uid,
+      woundId,
+    });
     return null;
   }
 
@@ -455,7 +471,7 @@ export class InventoryService {
         applyTreatment(p.body, t, def.medical!.quality, this.game.minutes, def.medical!.duration ?? 240, woundId),
       );
       const ok = results.filter((r) => r.ok);
-      message = ok.length > 0 ? ok.map((r) => r.message).join(' ') : results[0]?.message ?? null;
+      message = ok.length > 0 ? ok.map((r) => r.message).join(' ') : (results[0]?.message ?? null);
       if (ok.length === 0) return message;
       this.game.sound('bandage', e, 0.6);
     }
@@ -572,14 +588,6 @@ function sameLoc(a: Loc, b: Loc): boolean {
   if (a.kind === 'slot' && b.kind === 'slot') return a.index === b.index;
   if (a.kind === 'container' && b.kind === 'container') return a.id === b.id;
   return true;
-}
-
-/** Natural quick slot for an item: 0 primary (long guns), 1 secondary (handguns), 2 melee, 3 medical, 4 utility. */
-export function preferredSlot(def: ItemDef): number | null {
-  if (def.firearm) return def.tags?.includes('handgun') ? 1 : 0;
-  if (def.melee) return 2;
-  if (def.light) return 4;
-  return null;
 }
 
 export function isBodyPart(v: unknown): boolean {

@@ -65,8 +65,7 @@ export class Noise2D {
     let frequency = 1;
     let norm = 0;
     for (let o = 0; o < octaves; o++) {
-      sum +=
-        amplitude * this.noise(x * frequency, y * frequency, periodX * frequency, periodY * frequency);
+      sum += amplitude * this.noise(x * frequency, y * frequency, periodX * frequency, periodY * frequency);
       norm += amplitude;
       amplitude *= 0.5;
       frequency *= 2;

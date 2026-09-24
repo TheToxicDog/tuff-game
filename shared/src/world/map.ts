@@ -158,16 +158,7 @@ export interface RoofDef {
   axis: 'x' | 'y';
 }
 
-export type BuildingType =
-  | 'house'
-  | 'grocery'
-  | 'gas_station'
-  | 'police'
-  | 'hardware'
-  | 'shed'
-  | 'garage'
-  | 'restaurant'
-  | 'office';
+export type BuildingType = 'house' | 'grocery' | 'gas_station' | 'police' | 'hardware' | 'shed' | 'garage' | 'restaurant' | 'office';
 
 export interface BuildingDef {
   id: string;
@@ -339,12 +330,7 @@ export function worldToLocal(t: Transform2D, wx: number, wy: number): { x: numbe
 /** World-space corners of a building footprint as a flat polygon. */
 export function buildingPolygon(b: BuildingDef): number[] {
   const t = buildingTransform(b);
-  const corners = [
-    localToWorld(t, 0, 0),
-    localToWorld(t, b.w, 0),
-    localToWorld(t, b.w, b.h),
-    localToWorld(t, 0, b.h),
-  ];
+  const corners = [localToWorld(t, 0, 0), localToWorld(t, b.w, 0), localToWorld(t, b.w, b.h), localToWorld(t, 0, b.h)];
   return corners.flatMap((c) => [c.x, c.y]);
 }
 

@@ -113,7 +113,16 @@ export class Bot {
     for (let b = 0; b < batches && !this.closed; b++) {
       const inputs: PlayerInput[] = [];
       for (let i = 0; i < 3; i++) {
-        inputs.push({ seq: ++this.seq, moveX: 0, moveY: 0, aim: 0, buttons: 0, slot: NO_SLOT, ...input, viewTick: Math.max(0, this.tick - 2) });
+        inputs.push({
+          seq: ++this.seq,
+          moveX: 0,
+          moveY: 0,
+          aim: 0,
+          buttons: 0,
+          slot: NO_SLOT,
+          ...input,
+          viewTick: Math.max(0, this.tick - 2),
+        });
       }
       this.ws.send(encodeInputs(inputs));
       await sleep(50);

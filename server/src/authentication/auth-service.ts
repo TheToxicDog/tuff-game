@@ -114,7 +114,10 @@ export class AuthService {
     if (typeof token !== 'string' || token.length < 20 || token.length > 100) return null;
     const session = await this.storage.getSession(hashToken(token));
     if (!session || session.expiresAt <= Date.now()) return null;
-    return this.storage.getAccount(session.accountId);
+    const account = await this.storage.getAccount(session.accountId);
+    // Admin rights follow the server's current admin list.
+    if (account && this.adminUsernames.has(account.username.toLowerCase())) account.isAdmin = true;
+    return account;
   }
 
   async logout(token: unknown): Promise<void> {

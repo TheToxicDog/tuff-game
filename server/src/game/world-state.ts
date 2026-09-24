@@ -65,7 +65,9 @@ export class WorldState {
     for (const b of map.buildings) {
       const before = new Set([...this.compiled.doors.keys(), ...this.compiled.windows.keys(), ...this.compiled.containers.keys()]);
       this.compiled.addBuilding(b);
-      const owned = [...this.compiled.doors.keys(), ...this.compiled.windows.keys(), ...this.compiled.containers.keys()].filter((id) => !before.has(id));
+      const owned = [...this.compiled.doors.keys(), ...this.compiled.windows.keys(), ...this.compiled.containers.keys()].filter(
+        (id) => !before.has(id),
+      );
       const keys = this.index(buildingBounds(b), (e) => e.buildings.push(b));
       for (const k of keys) {
         let list = this.buildingsByChunk.get(k);
@@ -85,7 +87,9 @@ export class WorldState {
       this.compiled.addFence(f);
       const xs = f.points.map((pt) => pt[0]);
       const ys = f.points.map((pt) => pt[1]);
-      this.index({ minX: Math.min(...xs) - 1, minY: Math.min(...ys) - 1, maxX: Math.max(...xs) + 1, maxY: Math.max(...ys) + 1 }, (e) => e.fences.push(f));
+      this.index({ minX: Math.min(...xs) - 1, minY: Math.min(...ys) - 1, maxX: Math.max(...xs) + 1, maxY: Math.max(...ys) + 1 }, (e) =>
+        e.fences.push(f),
+      );
     }
     for (const r of map.roads) this.index(roadBounds(r), (e) => e.roads.push(r));
   }

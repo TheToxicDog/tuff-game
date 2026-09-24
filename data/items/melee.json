@@ -11,7 +11,20 @@
     "icon": "bat",
     "color": "#9c7a4f",
     "durability": 140,
-    "melee": { "damage": 32, "reach": 1.65, "arc": 110, "windup": 0.2, "recovery": 0.42, "stamina": 0.07, "knockback": 4.2, "maxTargets": 2, "noise": 12, "damageType": "blunt", "knockdown": 0.3, "structureDamage": 1.2 }
+    "melee": {
+      "damage": 32,
+      "reach": 1.65,
+      "arc": 110,
+      "windup": 0.2,
+      "recovery": 0.42,
+      "stamina": 0.07,
+      "knockback": 4.2,
+      "maxTargets": 2,
+      "noise": 12,
+      "damageType": "blunt",
+      "knockdown": 0.3,
+      "structureDamage": 1.2
+    }
   },
   {
     "id": "kitchen_knife",
@@ -25,7 +38,21 @@
     "icon": "knife",
     "color": "#b7b9bb",
     "durability": 70,
-    "melee": { "damage": 27, "reach": 1.05, "arc": 60, "windup": 0.09, "recovery": 0.24, "stamina": 0.03, "knockback": 1.2, "maxTargets": 1, "noise": 6, "damageType": "sharp", "knockdown": 0.02, "structureDamage": 0.3, "equipTime": 0.2 }
+    "melee": {
+      "damage": 27,
+      "reach": 1.05,
+      "arc": 60,
+      "windup": 0.09,
+      "recovery": 0.24,
+      "stamina": 0.03,
+      "knockback": 1.2,
+      "maxTargets": 1,
+      "noise": 6,
+      "damageType": "sharp",
+      "knockdown": 0.02,
+      "structureDamage": 0.3,
+      "equipTime": 0.2
+    }
   },
   {
     "id": "hammer",
@@ -39,7 +66,20 @@
     "icon": "hammer",
     "color": "#6d5a44",
     "durability": 180,
-    "melee": { "damage": 28, "reach": 1.2, "arc": 75, "windup": 0.14, "recovery": 0.34, "stamina": 0.045, "knockback": 2.2, "maxTargets": 1, "noise": 12, "damageType": "blunt", "knockdown": 0.1, "structureDamage": 1.4 }
+    "melee": {
+      "damage": 28,
+      "reach": 1.2,
+      "arc": 75,
+      "windup": 0.14,
+      "recovery": 0.34,
+      "stamina": 0.045,
+      "knockback": 2.2,
+      "maxTargets": 1,
+      "noise": 12,
+      "damageType": "blunt",
+      "knockdown": 0.1,
+      "structureDamage": 1.4
+    }
   },
   {
     "id": "crowbar",
@@ -53,7 +93,20 @@
     "icon": "crowbar",
     "color": "#7a2e2a",
     "durability": 400,
-    "melee": { "damage": 30, "reach": 1.45, "arc": 95, "windup": 0.18, "recovery": 0.38, "stamina": 0.06, "knockback": 3.2, "maxTargets": 1, "noise": 12, "damageType": "blunt", "knockdown": 0.18, "structureDamage": 2.8 }
+    "melee": {
+      "damage": 30,
+      "reach": 1.45,
+      "arc": 95,
+      "windup": 0.18,
+      "recovery": 0.38,
+      "stamina": 0.06,
+      "knockback": 3.2,
+      "maxTargets": 1,
+      "noise": 12,
+      "damageType": "blunt",
+      "knockdown": 0.18,
+      "structureDamage": 2.8
+    }
   },
   {
     "id": "machete",
@@ -67,7 +120,20 @@
     "icon": "machete",
     "color": "#8f9396",
     "durability": 120,
-    "melee": { "damage": 42, "reach": 1.45, "arc": 100, "windup": 0.15, "recovery": 0.34, "stamina": 0.055, "knockback": 2.4, "maxTargets": 2, "noise": 9, "damageType": "sharp", "knockdown": 0.08, "structureDamage": 0.8 }
+    "melee": {
+      "damage": 42,
+      "reach": 1.45,
+      "arc": 100,
+      "windup": 0.15,
+      "recovery": 0.34,
+      "stamina": 0.055,
+      "knockback": 2.4,
+      "maxTargets": 2,
+      "noise": 9,
+      "damageType": "sharp",
+      "knockdown": 0.08,
+      "structureDamage": 0.8
+    }
   },
   {
     "id": "hatchet",
@@ -81,7 +147,20 @@
     "icon": "hatchet",
     "color": "#8a5b36",
     "durability": 140,
-    "melee": { "damage": 38, "reach": 1.25, "arc": 80, "windup": 0.16, "recovery": 0.36, "stamina": 0.055, "knockback": 2.2, "maxTargets": 1, "noise": 10, "damageType": "sharp", "knockdown": 0.08, "structureDamage": 2.2 }
+    "melee": {
+      "damage": 38,
+      "reach": 1.25,
+      "arc": 80,
+      "windup": 0.16,
+      "recovery": 0.36,
+      "stamina": 0.055,
+      "knockback": 2.2,
+      "maxTargets": 1,
+      "noise": 10,
+      "damageType": "sharp",
+      "knockdown": 0.08,
+      "structureDamage": 2.2
+    }
   },
   {
     "id": "fire_axe",
@@ -95,7 +174,21 @@
     "icon": "axe",
     "color": "#b0302a",
     "durability": 220,
-    "melee": { "damage": 72, "reach": 1.7, "arc": 110, "windup": 0.36, "recovery": 0.6, "stamina": 0.12, "knockback": 4.8, "maxTargets": 2, "noise": 13, "damageType": "sharp", "knockdown": 0.35, "structureDamage": 3.8, "equipTime": 0.5 }
+    "melee": {
+      "damage": 72,
+      "reach": 1.7,
+      "arc": 110,
+      "windup": 0.36,
+      "recovery": 0.6,
+      "stamina": 0.12,
+      "knockback": 4.8,
+      "maxTargets": 2,
+      "noise": 13,
+      "damageType": "sharp",
+      "knockdown": 0.35,
+      "structureDamage": 3.8,
+      "equipTime": 0.5
+    }
   },
   {
     "id": "shovel",
@@ -109,7 +202,21 @@
     "icon": "shovel",
     "color": "#6b6a5a",
     "durability": 160,
-    "melee": { "damage": 30, "reach": 1.8, "arc": 115, "windup": 0.26, "recovery": 0.5, "stamina": 0.085, "knockback": 4.6, "maxTargets": 2, "noise": 13, "damageType": "blunt", "knockdown": 0.3, "structureDamage": 1.0, "equipTime": 0.45 }
+    "melee": {
+      "damage": 30,
+      "reach": 1.8,
+      "arc": 115,
+      "windup": 0.26,
+      "recovery": 0.5,
+      "stamina": 0.085,
+      "knockback": 4.6,
+      "maxTargets": 2,
+      "noise": 13,
+      "damageType": "blunt",
+      "knockdown": 0.3,
+      "structureDamage": 1.0,
+      "equipTime": 0.45
+    }
   },
   {
     "id": "metal_pipe",
@@ -123,7 +230,20 @@
     "icon": "pipe",
     "color": "#72767a",
     "durability": 300,
-    "melee": { "damage": 29, "reach": 1.55, "arc": 100, "windup": 0.2, "recovery": 0.44, "stamina": 0.07, "knockback": 3.6, "maxTargets": 2, "noise": 14, "damageType": "blunt", "knockdown": 0.22, "structureDamage": 1.3 }
+    "melee": {
+      "damage": 29,
+      "reach": 1.55,
+      "arc": 100,
+      "windup": 0.2,
+      "recovery": 0.44,
+      "stamina": 0.07,
+      "knockback": 3.6,
+      "maxTargets": 2,
+      "noise": 14,
+      "damageType": "blunt",
+      "knockdown": 0.22,
+      "structureDamage": 1.3
+    }
   },
   {
     "id": "pipe_wrench",
@@ -137,7 +257,20 @@
     "icon": "wrench",
     "color": "#9a3024",
     "durability": 280,
-    "melee": { "damage": 31, "reach": 1.25, "arc": 80, "windup": 0.18, "recovery": 0.4, "stamina": 0.06, "knockback": 3.0, "maxTargets": 1, "noise": 12, "damageType": "blunt", "knockdown": 0.15, "structureDamage": 1.4 }
+    "melee": {
+      "damage": 31,
+      "reach": 1.25,
+      "arc": 80,
+      "windup": 0.18,
+      "recovery": 0.4,
+      "stamina": 0.06,
+      "knockback": 3.0,
+      "maxTargets": 1,
+      "noise": 12,
+      "damageType": "blunt",
+      "knockdown": 0.15,
+      "structureDamage": 1.4
+    }
   },
   {
     "id": "frying_pan",
@@ -151,7 +284,20 @@
     "icon": "pan",
     "color": "#303234",
     "durability": 200,
-    "melee": { "damage": 22, "reach": 1.15, "arc": 90, "windup": 0.15, "recovery": 0.36, "stamina": 0.05, "knockback": 3.2, "maxTargets": 1, "noise": 16, "damageType": "blunt", "knockdown": 0.14, "structureDamage": 0.6 }
+    "melee": {
+      "damage": 22,
+      "reach": 1.15,
+      "arc": 90,
+      "windup": 0.15,
+      "recovery": 0.36,
+      "stamina": 0.05,
+      "knockback": 3.2,
+      "maxTargets": 1,
+      "noise": 16,
+      "damageType": "blunt",
+      "knockdown": 0.14,
+      "structureDamage": 0.6
+    }
   },
   {
     "id": "nightstick",
@@ -165,7 +311,20 @@
     "icon": "baton",
     "color": "#1e1f22",
     "durability": 260,
-    "melee": { "damage": 23, "reach": 1.3, "arc": 85, "windup": 0.12, "recovery": 0.3, "stamina": 0.04, "knockback": 2.8, "maxTargets": 1, "noise": 10, "damageType": "blunt", "knockdown": 0.14, "structureDamage": 0.7 }
+    "melee": {
+      "damage": 23,
+      "reach": 1.3,
+      "arc": 85,
+      "windup": 0.12,
+      "recovery": 0.3,
+      "stamina": 0.04,
+      "knockback": 2.8,
+      "maxTargets": 1,
+      "noise": 10,
+      "damageType": "blunt",
+      "knockdown": 0.14,
+      "structureDamage": 0.7
+    }
   },
   {
     "id": "improvised_spear",
@@ -179,6 +338,19 @@
     "icon": "spear",
     "color": "#8c7250",
     "durability": 45,
-    "melee": { "damage": 34, "reach": 2.05, "arc": 38, "windup": 0.2, "recovery": 0.42, "stamina": 0.06, "knockback": 2.8, "maxTargets": 2, "noise": 7, "damageType": "sharp", "knockdown": 0.05, "structureDamage": 0.3 }
+    "melee": {
+      "damage": 34,
+      "reach": 2.05,
+      "arc": 38,
+      "windup": 0.2,
+      "recovery": 0.42,
+      "stamina": 0.06,
+      "knockback": 2.8,
+      "maxTargets": 2,
+      "noise": 7,
+      "damageType": "sharp",
+      "knockdown": 0.05,
+      "structureDamage": 0.3
+    }
   }
 ]
