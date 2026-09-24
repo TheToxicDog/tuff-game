@@ -25,35 +25,54 @@ import { TerrainPainter } from './terrain';
 
 export const PROTOTYPE_SIZE = 640;
 
-interface Box {
+/** Cell size of the keep-out index. */
+const KEEP_OUT_CELL = 16;
+
+export interface Box {
   minX: number;
   minY: number;
   maxX: number;
   maxY: number;
 }
 
-class TownBuilder {
+/**
+ * Collects generated roads, buildings, props and fences, keeps track of where things already are
+ * and paints terrain. The prototype town uses it directly; the editor's area generator seeds it
+ * with the map's existing (kept) content so new content avoids it.
+ */
+export class TownBuilder {
   readonly rng: Rng;
-  readonly terrain = new TerrainPainter(PROTOTYPE_SIZE, PROTOTYPE_SIZE, 'grass');
+  readonly terrain: TerrainPainter;
   readonly roads: RoadDef[] = [];
   readonly buildings: BuildingDef[] = [];
   readonly props: PropInstance[] = [];
   readonly fences: FenceDef[] = [];
   readonly zones: ZoneDef[] = [];
-  /** Areas where scattered props must not go. */
+  /** Areas where scattered props must not go (indexed by `keepOutGrid` for fast lookups). */
   readonly keepOut: Box[] = [];
+  private readonly keepOutGrid = new Map<number, Box[]>();
+  /** Roads that already exist on the map: avoided like generated ones, but not emitted. */
+  readonly existingRoads: RoadDef[] = [];
   private propId = 0;
   private roadId = 0;
   private buildingId = 0;
   private fenceId = 0;
 
-  constructor(readonly seed: number) {
+  constructor(
+    readonly seed: number,
+    opts: { terrain?: TerrainPainter; prefix?: string } = {},
+  ) {
     this.rng = new Rng(seed);
+    this.terrain = opts.terrain ?? new TerrainPainter(PROTOTYPE_SIZE, PROTOTYPE_SIZE, 'grass');
+    this.prefix = opts.prefix ?? '';
   }
+
+  /** Prepended to generated ids so regenerated content never reuses an old id. */
+  private readonly prefix: string;
 
   road(kind: RoadDef['kind'], points: [number, number][], width: number, sidewalk: number, opts: Partial<RoadDef> = {}): RoadDef {
     const road: RoadDef = {
-      id: `r${++this.roadId}`,
+      id: `${this.prefix}r${++this.roadId}`,
       kind,
       points,
       width,
@@ -67,30 +86,30 @@ class TownBuilder {
   }
 
   nextBuildingId(): string {
-    return `b${++this.buildingId}`;
+    return `${this.prefix}b${++this.buildingId}`;
   }
 
   place(builder: BuildingBuilder, x: number, y: number, rot: number): BuildingDef {
     const def = builder.finish(x, y, rot);
     this.buildings.push(def);
     const bounds = buildingBounds(def);
-    this.keepOut.push({ minX: bounds.minX - 1.5, minY: bounds.minY - 1.5, maxX: bounds.maxX + 1.5, maxY: bounds.maxY + 1.5 });
+    this.addKeepOut({ minX: bounds.minX - 1.5, minY: bounds.minY - 1.5, maxX: bounds.maxX + 1.5, maxY: bounds.maxY + 1.5 });
     this.terrain.rect(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 'concrete');
     return def;
   }
 
   prop(type: string, x: number, y: number, rot = 0, extra: Partial<PropInstance> = {}): PropInstance {
-    const p: PropInstance = { id: `p${++this.propId}`, type, x: round2(x), y: round2(y), rot: round3(rot), ...extra };
+    const p: PropInstance = { id: `${this.prefix}p${++this.propId}`, type, x: round2(x), y: round2(y), rot: round3(rot), ...extra };
     this.props.push(p);
     return p;
   }
 
   fence(kind: FenceDef['kind'], points: [number, number][]): void {
-    this.fences.push({ id: `f${++this.fenceId}`, kind, points });
+    this.fences.push({ id: `${this.prefix}f${++this.fenceId}`, kind, points });
     for (let i = 0; i + 1 < points.length; i++) {
       const [ax, ay] = points[i];
       const [bx, by] = points[i + 1];
-      this.keepOut.push({
+      this.addKeepOut({
         minX: Math.min(ax, bx) - 0.8,
         minY: Math.min(ay, by) - 0.8,
         maxX: Math.max(ax, bx) + 0.8,
@@ -100,25 +119,43 @@ class TownBuilder {
   }
 
   reserveBox(minX: number, minY: number, maxX: number, maxY: number): void {
-    this.keepOut.push({ minX, minY, maxX, maxY });
+    this.addKeepOut({ minX, minY, maxX, maxY });
+  }
+
+  private addKeepOut(b: Box): void {
+    this.keepOut.push(b);
+    for (let cy = Math.floor(b.minY / KEEP_OUT_CELL); cy <= Math.floor(b.maxY / KEEP_OUT_CELL); cy++) {
+      for (let cx = Math.floor(b.minX / KEEP_OUT_CELL); cx <= Math.floor(b.maxX / KEEP_OUT_CELL); cx++) {
+        const key = cy * 65536 + cx;
+        let list = this.keepOutGrid.get(key);
+        if (!list) this.keepOutGrid.set(key, (list = []));
+        list.push(b);
+      }
+    }
   }
 
   isFree(x: number, y: number, margin = 0): boolean {
-    for (const b of this.keepOut) {
-      if (x >= b.minX - margin && x <= b.maxX + margin && y >= b.minY - margin && y <= b.maxY + margin) return false;
+    for (let cy = Math.floor((y - margin) / KEEP_OUT_CELL); cy <= Math.floor((y + margin) / KEEP_OUT_CELL); cy++) {
+      for (let cx = Math.floor((x - margin) / KEEP_OUT_CELL); cx <= Math.floor((x + margin) / KEEP_OUT_CELL); cx++) {
+        for (const b of this.keepOutGrid.get(cy * 65536 + cx) ?? []) {
+          if (x >= b.minX - margin && x <= b.maxX + margin && y >= b.minY - margin && y <= b.maxY + margin) return false;
+        }
+      }
     }
-    for (const r of this.roads) {
-      if (distanceToPolyline(x, y, r.points) < r.width / 2 + r.sidewalk + 1.2 + margin) return false;
+    for (const list of [this.roads, this.existingRoads]) {
+      for (const r of list) {
+        if (distanceToPolyline(x, y, r.points) < r.width / 2 + r.sidewalk + 1.2 + margin) return false;
+      }
     }
     return true;
   }
 }
 
-function round2(v: number): number {
+export function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
-function round3(v: number): number {
+export function round3(v: number): number {
   return Math.round(v * 1000) / 1000;
 }
 
@@ -139,7 +176,7 @@ export function distanceToPolyline(x: number, y: number, points: [number, number
 }
 
 /** Unit vector of a building's local +y (its front) in world space. */
-function frontVector(rot: number): { x: number; y: number } {
+export function frontVector(rot: number): { x: number; y: number } {
   return { x: -Math.sin(rot), y: Math.cos(rot) };
 }
 
@@ -509,7 +546,7 @@ export function generatePrototypeTown(seed = 1337): MapData {
   return map;
 }
 
-function parkingRow(
+export function parkingRow(
   t: TownBuilder,
   x0: number,
   y: number,
@@ -528,7 +565,8 @@ function parkingRow(
   }
 }
 
-function decorateHouse(t: TownBuilder, def: BuildingDef, rng: Rng): void {
+/** Driveway, walkway, mailbox, bins, a parked car, bushes and yard trees around a house. */
+export function decorateHouse(t: TownBuilder, def: BuildingDef, rng: Rng): void {
   const tr = buildingTransform(def);
   const front = frontVector(def.rot);
   const garageDoor = def.doors.find((d) => d.kind === 'garage');

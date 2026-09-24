@@ -1,7 +1,16 @@
 // Terrain painting on the 1 m material grid, with conversion to the chunked map format.
 
 import { CHUNK_SIZE } from '../../constants';
-import { chunkKey, encodeTerrainChunk, terrainIndex, type TerrainLayer, type TerrainMaterial } from '../map';
+import {
+  chunkKey,
+  decodeTerrainChunk,
+  encodeTerrainChunk,
+  parseChunkKey,
+  TERRAIN_MATERIALS,
+  terrainIndex,
+  type TerrainLayer,
+  type TerrainMaterial,
+} from '../map';
 
 export class TerrainPainter {
   readonly cells: Uint8Array;
@@ -12,6 +21,39 @@ export class TerrainPainter {
     readonly fill: TerrainMaterial,
   ) {
     this.cells = new Uint8Array(width * height).fill(terrainIndex(fill));
+  }
+
+  /** A painter holding a map's existing terrain, so generators can repaint parts of it. */
+  static fromLayer(layer: TerrainLayer, width: number, height: number): TerrainPainter {
+    const painter = new TerrainPainter(width, height, TERRAIN_MATERIALS[layer.fill] ?? 'grass');
+    for (const [key, encoded] of Object.entries(layer.chunks)) {
+      const [cx, cy] = parseChunkKey(key);
+      const cells = decodeTerrainChunk(encoded);
+      for (let y = 0; y < CHUNK_SIZE; y++) {
+        const wy = cy * CHUNK_SIZE + y;
+        if (wy < 0 || wy >= height) continue;
+        for (let x = 0; x < CHUNK_SIZE; x++) {
+          const wx = cx * CHUNK_SIZE + x;
+          if (wx < 0 || wx >= width) continue;
+          painter.cells[wy * width + wx] = cells[y * CHUNK_SIZE + x];
+        }
+      }
+    }
+    return painter;
+  }
+
+  /** The encoded material grid of one chunk. */
+  encodeChunk(cx: number, cy: number): string {
+    const fill = terrainIndex(this.fill);
+    const buf = new Uint8Array(CHUNK_SIZE * CHUNK_SIZE);
+    for (let y = 0; y < CHUNK_SIZE; y++) {
+      for (let x = 0; x < CHUNK_SIZE; x++) {
+        const wx = cx * CHUNK_SIZE + x;
+        const wy = cy * CHUNK_SIZE + y;
+        buf[y * CHUNK_SIZE + x] = wx < this.width && wy < this.height ? this.cells[wy * this.width + wx] : fill;
+      }
+    }
+    return encodeTerrainChunk(buf);
   }
 
   get(x: number, y: number): number {
