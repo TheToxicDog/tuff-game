@@ -1,16 +1,22 @@
 // Mouse-directed camera (design plan §3): the view leans toward where the player aims, more when
-// precision aiming, less indoors, with smooth damping and mouse-wheel zoom clamped to 0.75–1.5×.
+// precision aiming, less indoors, with smooth damping and mouse-wheel zoom clamped to 1.0–2.0×.
+// The range sits closer than the plan's original 0.75–1.5× because playtesting found the view
+// too far out: the widest zoom now shows about as much as the old default did.
 
 import { clamp, damp, PIXELS_PER_METER } from '@tuff/shared';
 
-export const MIN_ZOOM = 0.75;
-export const MAX_ZOOM = 1.5;
+export const MIN_ZOOM = 1.0;
+export const MAX_ZOOM = 2.0;
+export const DEFAULT_ZOOM = 1.4;
 
 export class Camera {
   x = 0;
   y = 0;
-  zoom = 1.15;
-  targetZoom = 1.15;
+  zoom = DEFAULT_ZOOM;
+  targetZoom = DEFAULT_ZOOM;
+  /** Zoom limits; the map editor widens them. */
+  minZoom = MIN_ZOOM;
+  maxZoom = MAX_ZOOM;
   /** Screen shake amplitude (meters) and time. */
   private shake = 0;
   private shakeTime = 0;
@@ -34,7 +40,7 @@ export class Camera {
   }
 
   addZoom(steps: number): void {
-    this.targetZoom = clamp(this.targetZoom * Math.pow(0.9, steps), MIN_ZOOM, MAX_ZOOM);
+    this.targetZoom = clamp(this.targetZoom * Math.pow(0.9, steps), this.minZoom, this.maxZoom);
   }
 
   /** Camera shake, e.g. from firing or being hit. */

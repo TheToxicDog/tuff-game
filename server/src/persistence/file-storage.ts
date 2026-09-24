@@ -40,6 +40,8 @@ export class FileStorage extends MemoryStorage {
       state.chunks = objectToMap(world.chunks);
       state.zones = objectToMap(world.zones);
       state.buildings = objectToMap(world.buildings);
+      state.structures = objectToMap(world.structures);
+      state.trust = objectToMap(world.trust);
     }
     this.state = state;
   }
@@ -76,6 +78,8 @@ export class FileStorage extends MemoryStorage {
           chunks: mapToObject(s.chunks),
           zones: mapToObject(s.zones),
           buildings: mapToObject(s.buildings),
+          structures: mapToObject(s.structures),
+          trust: mapToObject(s.trust),
         };
         break;
     }

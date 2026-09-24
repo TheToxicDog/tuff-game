@@ -3,7 +3,7 @@
 // their collision worlds match exactly.
 
 import type { ContentRegistry } from '../content/registry';
-import type { BlockName, PropDef } from '../content/types';
+import type { BlockName, PropDef, StationKind } from '../content/types';
 import { Block, BLOCK_ALL, type Collider, CollisionWorld, ShapeKind, type Material } from './collision';
 import {
   buildingBounds,
@@ -20,6 +20,7 @@ import {
   type WindowDef,
   type WindowKind,
 } from './map';
+import { structureBounds, structureShape, type StructureDef, type StructureShape } from './structures';
 
 /** Mutable runtime state of a world object. Only values that differ from the defaults are stored. */
 export interface ObjectState {
@@ -30,12 +31,23 @@ export interface ObjectState {
   hp?: number;
   /** A container that has been searched at least once. */
   searched?: boolean;
+  /** Planks nailed across a door or window (design plan §54). */
+  boards?: number;
+  /** Remaining health of those planks. */
+  boardHp?: number;
+  /** Furniture that has been picked up and carried away. */
+  removed?: boolean;
+  /** Game minute a fire burns until. */
+  until?: number;
 }
 
 export interface DoorObject {
   kind: 'door';
   id: string;
+  /** Owning building, or structure for player-built doors. */
   buildingId: string;
+  /** Set for doors in player structures. */
+  structureId: string | null;
   def: DoorDef;
   doorKind: DoorKind;
   /** Centre of the doorway in world space. */
@@ -74,6 +86,7 @@ export interface ContainerObject {
   id: string;
   propType: string;
   name: string;
+  /** Loot table rolled on first open; empty for player storage. */
   loot: string;
   searchTime: number;
   volume: number;
@@ -85,9 +98,62 @@ export interface ContainerObject {
   buildingId: string | null;
   buildingType: BuildingType | null;
   roomType: RoomType | null;
+  /** Player storage: owning account and structure. */
+  owner: string | null;
+  structureId: string | null;
 }
 
-export type WorldObject = DoorObject | WindowObject | ContainerObject;
+/** A bed, couch or bunk (base map furniture or placed furniture). */
+export interface SleepSpot {
+  id: string;
+  name: string;
+  quality: number;
+  x: number;
+  y: number;
+  radius: number;
+}
+
+/** A crafting station: a stove, a workbench or a fire. */
+export interface StationObject {
+  id: string;
+  kind: StationKind;
+  name: string;
+  x: number;
+  y: number;
+  radius: number;
+  /** Fires only work while lit (see ObjectState.until). */
+  fire: boolean;
+}
+
+/** Base-map furniture that can be picked up. */
+export interface MovableObject {
+  kind: 'movable';
+  id: string;
+  propType: string;
+  name: string;
+  x: number;
+  y: number;
+  rot: number;
+  radius: number;
+  buildingId: string | null;
+  colliders: Collider[];
+}
+
+/** A player-built structure. */
+export interface StructureObject {
+  kind: 'structure';
+  id: string;
+  def: StructureDef;
+  shape: StructureShape;
+  x: number;
+  y: number;
+  rot: number;
+  radius: number;
+  maxHp: number;
+  colliders: Collider[];
+}
+
+export type WorldObject = DoorObject | WindowObject | ContainerObject | StructureObject | MovableObject;
 
 export const DOOR_HP: Record<DoorKind, number> = {
   wood: 70,
@@ -96,6 +162,8 @@ export const DOOR_HP: Record<DoorKind, number> = {
   metal: 320,
   garage: 220,
   cell: 500,
+  plank: 160,
+  gate: 110,
 };
 
 export const WINDOW_HP: Record<WindowKind, number> = {
@@ -103,6 +171,10 @@ export const WINDOW_HP: Record<WindowKind, number> = {
   storefront: 30,
   industrial: 22,
 };
+
+/** Barricades: planks per door or window and health per plank. */
+export const MAX_BOARDS = 4;
+export const BOARD_HP = 45;
 
 export const DOOR_THICKNESS = 0.09;
 
@@ -118,7 +190,8 @@ export function blockFlags(names: readonly BlockName[]): number {
 }
 
 export function doorColliderFlags(kind: DoorKind): number {
-  // Glass doors stop people and bullets but not sight.
+  // Glass doors, cell doors and gates stop people and bullets (gates: people) but not sight.
+  if (kind === 'gate') return Block.Player | Block.Zombie;
   return kind === 'glass' || kind === 'cell' ? Block.Player | Block.Zombie | Block.Bullet : BLOCK_ALL;
 }
 
@@ -144,6 +217,10 @@ export class CompiledWorld {
   readonly doors = new Map<string, DoorObject>();
   readonly windows = new Map<string, WindowObject>();
   readonly containers = new Map<string, ContainerObject>();
+  readonly beds = new Map<string, SleepSpot>();
+  readonly stations = new Map<string, StationObject>();
+  readonly movables = new Map<string, MovableObject>();
+  readonly structures = new Map<string, StructureObject>();
   readonly buildings = new Map<string, CompiledBuilding>();
   private readonly elements = new Map<string, CompiledElement>();
   private readonly states = new Map<string, ObjectState>();
@@ -154,8 +231,18 @@ export class CompiledWorld {
     return this.elements.has(id);
   }
 
+  /** Ids of the interactive objects an element owns (doors, windows, containers, furniture). */
+  elementObjects(id: string): readonly string[] {
+    return this.elements.get(id)?.objects ?? [];
+  }
+
   object(id: string): WorldObject | undefined {
-    return this.doors.get(id) ?? this.windows.get(id) ?? this.containers.get(id);
+    return this.doors.get(id) ?? this.windows.get(id) ?? this.containers.get(id) ?? this.structures.get(id) ?? this.movables.get(id);
+  }
+
+  /** True for ids that can carry state (including furniture that has been carried away). */
+  hasObject(id: string): boolean {
+    return this.object(id) !== undefined;
   }
 
   stateOf(id: string): ObjectState {
@@ -165,10 +252,12 @@ export class CompiledWorld {
   /** Default state for an object according to the base map. */
   defaultState(id: string): ObjectState {
     const door = this.doors.get(id);
-    if (door) return { open: !!door.def.open, locked: door.lockedByDefault, broken: false, hp: door.maxHp };
+    if (door) return { open: !!door.def.open, locked: door.lockedByDefault, broken: false, hp: door.maxHp, boards: 0, boardHp: 0 };
     const win = this.windows.get(id);
-    if (win) return { broken: false, hp: win.maxHp };
-    return { searched: false };
+    if (win) return { broken: false, hp: win.maxHp, boards: 0, boardHp: 0 };
+    const s = this.structures.get(id);
+    if (s) return { hp: s.maxHp, locked: false, until: 0, searched: false };
+    return { searched: false, removed: false, locked: false };
   }
 
   /** Effective state = defaults overlaid with stored deltas. */
@@ -181,6 +270,10 @@ export class CompiledWorld {
       broken: s.broken ?? d.broken ?? false,
       hp: s.hp ?? d.hp ?? 0,
       searched: s.searched ?? d.searched ?? false,
+      boards: s.boards ?? d.boards ?? 0,
+      boardHp: s.boardHp ?? d.boardHp ?? 0,
+      removed: s.removed ?? d.removed ?? false,
+      until: s.until ?? d.until ?? 0,
     };
   }
 
@@ -196,13 +289,26 @@ export class CompiledWorld {
 
   private syncCollider(id: string): void {
     const s = this.effectiveState(id);
+    const movable = this.movables.get(id);
+    if (movable && s.removed) {
+      // Carried away: its colliders, storage, bed and station go with it.
+      for (const c of movable.colliders) this.collision.remove(c);
+      movable.colliders = [];
+      this.containers.delete(id);
+      this.beds.delete(id);
+      this.stations.delete(id);
+    }
     const door = this.doors.get(id);
     if (door) {
-      door.collider.enabled = !s.open && !s.broken;
+      door.collider.enabled = (!s.open && !s.broken) || s.boards > 0;
+      door.collider.flags = doorColliderFlags(door.doorKind) | (s.boards >= 2 ? Block.Sight | Block.Bullet : 0);
       return;
     }
     const win = this.windows.get(id);
-    if (win) win.collider.enabled = !s.broken;
+    if (win) {
+      win.collider.enabled = !s.broken || s.boards > 0;
+      win.collider.flags = WINDOW_FLAGS | (s.boards >= 2 ? Block.Sight : 0);
+    }
   }
 
   addBuilding(def: BuildingDef): void {
@@ -221,46 +327,7 @@ export class CompiledWorld {
       }
     }
 
-    for (const d of def.doors) {
-      const c = localToWorld(t, d.x, d.y);
-      const angle = d.angle + def.rot;
-      const hingeLocal = { x: d.x - (Math.cos(d.angle) * d.w * d.hinge) / 2, y: d.y - (Math.sin(d.angle) * d.w * d.hinge) / 2 };
-      const hinge = localToWorld(t, hingeLocal.x, hingeLocal.y);
-      const collider = this.collision.add({
-        shape: ShapeKind.Box,
-        x: c.x,
-        y: c.y,
-        hx: d.w / 2,
-        hy: DOOR_THICKNESS,
-        angle,
-        flags: doorColliderFlags(d.kind),
-        material: d.kind === 'glass' ? 'glass' : d.kind === 'metal' || d.kind === 'cell' || d.kind === 'garage' ? 'metal' : 'wood',
-        objectId: d.id,
-      });
-      element.colliders.push(collider);
-      const exterior = isOnPerimeter(def, d.x, d.y);
-      this.doors.set(d.id, {
-        kind: 'door',
-        id: d.id,
-        buildingId: def.id,
-        def: d,
-        doorKind: d.kind,
-        x: c.x,
-        y: c.y,
-        angle,
-        w: d.w,
-        hingeX: hinge.x,
-        hingeY: hinge.y,
-        hinge: d.hinge,
-        swing: d.swing,
-        maxHp: DOOR_HP[d.kind],
-        lockedByDefault: !!d.locked,
-        exterior,
-        collider,
-      });
-      element.objects.push(d.id);
-      this.syncCollider(d.id);
-    }
+    for (const d of def.doors) this.compileDoor(d, t, def.rot, def.id, null, isOnPerimeter(def, d.x, d.y), element);
 
     for (const w of def.windows) {
       const c = localToWorld(t, w.x, w.y);
@@ -297,6 +364,7 @@ export class CompiledWorld {
       this.compileProp(p, t, def.rot, element, def.id, def.type, room?.type ?? null);
     }
     this.elements.set(def.id, element);
+    for (const id of element.objects) if (this.states.has(id)) this.syncCollider(id);
   }
 
   addProp(p: PropInstance): void {
@@ -304,6 +372,7 @@ export class CompiledWorld {
     const element: CompiledElement = { colliders: [], objects: [] };
     this.compileProp(p, null, 0, element, null, null, null);
     this.elements.set(p.id, element);
+    if (this.states.has(p.id)) this.syncCollider(p.id);
   }
 
   addFence(f: FenceDef): void {
@@ -319,7 +388,111 @@ export class CompiledWorld {
     this.elements.set(f.id, element);
   }
 
-  /** Removes a building, prop or fence and everything compiled from it. */
+  /** Compiles a player-built structure (walls, doors, crates, fires, placed furniture). */
+  addStructure(s: StructureDef): void {
+    if (this.elements.has(s.id)) return;
+    const shape = structureShape(this.content, s.type, s.prop);
+    if (!shape) return;
+    const element: CompiledElement = { colliders: [], objects: [] };
+    const cos = Math.cos(s.rot);
+    const sin = Math.sin(s.rot);
+    const t: Transform2D = { x: s.x, y: s.y, cos, sin, px: 0, py: 0 };
+    const flags = blockFlags(shape.blocks);
+    const pieces: Collider[] = [];
+    if (shape.kind === 'door' || shape.kind === 'gate') {
+      const side = (shape.w - shape.opening) / 2;
+      if (side > 0.01) {
+        for (const sign of [-1, 1]) {
+          const c = localToWorld(t, sign * (shape.opening / 2 + side / 2), 0);
+          pieces.push(
+            this.collision.add({
+              shape: ShapeKind.Box,
+              x: c.x,
+              y: c.y,
+              hx: side / 2,
+              hy: shape.h / 2,
+              angle: s.rot,
+              flags,
+              material: shape.material,
+              objectId: s.id,
+            }),
+          );
+        }
+      }
+      const door: DoorDef = {
+        id: `${s.id}.door`,
+        x: 0,
+        y: 0,
+        w: shape.opening,
+        angle: 0,
+        kind: shape.kind === 'gate' ? 'gate' : 'plank',
+        hinge: 1,
+        swing: 1,
+      };
+      this.compileDoor(door, t, s.rot, s.id, s.id, true, element);
+    } else if (flags !== 0 && shape.kind !== 'floor') {
+      pieces.push(
+        shape.r > 0
+          ? this.collision.add({ shape: ShapeKind.Circle, x: s.x, y: s.y, r: shape.r, flags, material: shape.material, objectId: s.id })
+          : this.collision.add({
+              shape: ShapeKind.Box,
+              x: s.x,
+              y: s.y,
+              hx: shape.w / 2,
+              hy: shape.h / 2,
+              angle: s.rot,
+              flags,
+              material: shape.material,
+              objectId: s.id,
+            }),
+      );
+    }
+    element.colliders.push(...pieces);
+    const b = structureBounds(s, shape);
+    const radius = Math.max(b.maxX - b.minX, b.maxY - b.minY) / 2;
+    this.structures.set(s.id, {
+      kind: 'structure',
+      id: s.id,
+      def: s,
+      shape,
+      x: s.x,
+      y: s.y,
+      rot: s.rot,
+      radius,
+      maxHp: shape.maxHp,
+      colliders: pieces,
+    });
+    element.objects.push(s.id);
+    if (shape.container) {
+      const boxId = storageId(s.id);
+      this.containers.set(boxId, {
+        kind: 'container',
+        id: boxId,
+        propType: s.prop ?? s.type,
+        name: shape.container.name,
+        loot: '',
+        searchTime: 0.4,
+        volume: shape.container.volume,
+        x: s.x,
+        y: s.y,
+        rot: s.rot,
+        radius: Math.hypot(shape.w, shape.h) / 2,
+        buildingId: null,
+        buildingType: null,
+        roomType: null,
+        owner: s.owner,
+        structureId: s.id,
+      });
+      element.objects.push(boxId);
+    }
+    if (shape.station) {
+      this.stations.set(s.id, { id: s.id, kind: shape.station, name: shape.name, x: s.x, y: s.y, radius, fire: shape.kind === 'fire' });
+    }
+    if (shape.sleep !== null) this.beds.set(s.id, { id: s.id, name: shape.name, quality: shape.sleep, x: s.x, y: s.y, radius });
+    this.elements.set(s.id, element);
+  }
+
+  /** Removes a building, prop, fence or structure and everything compiled from it. */
   removeElement(id: string): void {
     const element = this.elements.get(id);
     if (!element) return;
@@ -328,9 +501,62 @@ export class CompiledWorld {
       this.doors.delete(objectId);
       this.windows.delete(objectId);
       this.containers.delete(objectId);
+      this.beds.delete(objectId);
+      this.stations.delete(objectId);
+      this.movables.delete(objectId);
+      this.structures.delete(objectId);
     }
     this.buildings.delete(id);
     this.elements.delete(id);
+  }
+
+  private compileDoor(
+    d: DoorDef,
+    t: Transform2D,
+    baseRot: number,
+    ownerId: string,
+    structureId: string | null,
+    exterior: boolean,
+    element: CompiledElement,
+  ): void {
+    const c = localToWorld(t, d.x, d.y);
+    const angle = d.angle + baseRot;
+    const hingeLocal = { x: d.x - (Math.cos(d.angle) * d.w * d.hinge) / 2, y: d.y - (Math.sin(d.angle) * d.w * d.hinge) / 2 };
+    const hinge = localToWorld(t, hingeLocal.x, hingeLocal.y);
+    const collider = this.collision.add({
+      shape: ShapeKind.Box,
+      x: c.x,
+      y: c.y,
+      hx: d.w / 2,
+      hy: DOOR_THICKNESS,
+      angle,
+      flags: doorColliderFlags(d.kind),
+      material: d.kind === 'glass' ? 'glass' : d.kind === 'metal' || d.kind === 'cell' || d.kind === 'garage' ? 'metal' : 'wood',
+      objectId: d.id,
+    });
+    element.colliders.push(collider);
+    this.doors.set(d.id, {
+      kind: 'door',
+      id: d.id,
+      buildingId: ownerId,
+      structureId,
+      def: d,
+      doorKind: d.kind,
+      x: c.x,
+      y: c.y,
+      angle,
+      w: d.w,
+      hingeX: hinge.x,
+      hingeY: hinge.y,
+      hinge: d.hinge,
+      swing: d.swing,
+      maxHp: DOOR_HP[d.kind],
+      lockedByDefault: !!d.locked,
+      exterior,
+      collider,
+    });
+    element.objects.push(d.id);
+    this.syncCollider(d.id);
   }
 
   private compileProp(
@@ -347,6 +573,10 @@ export class CompiledWorld {
     const pos = t ? localToWorld(t, p.x, p.y) : { x: p.x, y: p.y };
     const rot = p.rot + baseRot;
     const flags = blockFlags(def.blocks);
+    const w = p.w ?? def.w ?? 1;
+    const h = p.h ?? def.h ?? 1;
+    const radius = def.shape === 'circle' ? (def.r ?? 0.3) : Math.sqrt(w * w + h * h) / 2;
+    const colliders: Collider[] = [];
     if (def.shape !== 'none' && flags !== 0) {
       const collider =
         def.shape === 'circle'
@@ -363,15 +593,17 @@ export class CompiledWorld {
               shape: ShapeKind.Box,
               x: pos.x,
               y: pos.y,
-              hx: (p.w ?? def.w ?? 1) / 2,
-              hy: (p.h ?? def.h ?? 1) / 2,
+              hx: w / 2,
+              hy: h / 2,
               angle: rot,
               flags,
               material: def.material,
               objectId: p.id,
             });
+      colliders.push(collider);
       element.colliders.push(collider);
     }
+    let owns = false;
     if (def.container) {
       this.containers.set(p.id, {
         kind: 'container',
@@ -384,13 +616,39 @@ export class CompiledWorld {
         x: pos.x,
         y: pos.y,
         rot,
-        radius: def.shape === 'circle' ? (def.r ?? 0.3) : Math.sqrt((p.w ?? def.w ?? 1) ** 2 + (p.h ?? def.h ?? 1) ** 2) / 2,
+        radius,
         buildingId,
         buildingType,
         roomType,
+        owner: null,
+        structureId: null,
       });
-      element.objects.push(p.id);
+      owns = true;
     }
+    if (def.sleep) {
+      this.beds.set(p.id, { id: p.id, name: def.name, quality: def.sleep.quality, x: pos.x, y: pos.y, radius });
+      owns = true;
+    }
+    if (def.station) {
+      this.stations.set(p.id, { id: p.id, kind: def.station, name: def.name, x: pos.x, y: pos.y, radius, fire: false });
+      owns = true;
+    }
+    if (def.movable) {
+      this.movables.set(p.id, {
+        kind: 'movable',
+        id: p.id,
+        propType: def.id,
+        name: def.name,
+        x: pos.x,
+        y: pos.y,
+        rot,
+        radius,
+        buildingId,
+        colliders,
+      });
+      owns = true;
+    }
+    if (owns) element.objects.push(p.id);
   }
 
   private addSegment(x1: number, y1: number, x2: number, y2: number, thickness: number, flags: number, material: Material): Collider {
@@ -408,6 +666,11 @@ export class CompiledWorld {
       material,
     });
   }
+}
+
+/** Container id of a storage structure (crates, placed furniture with storage). */
+export function storageId(structureId: string): string {
+  return `${structureId}.box`;
 }
 
 function isOnPerimeter(def: BuildingDef, x: number, y: number): boolean {

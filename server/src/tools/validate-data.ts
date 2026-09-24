@@ -11,6 +11,7 @@ try {
   console.log(
     `  ${content.lootTables.size} loot tables, ${content.bundle.props.length} props, ${content.bundle.zombies.length} zombie archetypes`,
   );
+  console.log(`  ${content.bundle.recipes.length} recipes, ${content.bundle.constructions.length} constructions`);
 } catch (err) {
   console.error((err as Error).message);
   process.exit(1);

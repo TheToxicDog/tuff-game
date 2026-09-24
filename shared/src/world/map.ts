@@ -41,7 +41,22 @@ export function terrainIndex(material: TerrainMaterial): number {
 
 export type RoadKind = 'highway' | 'main' | 'street' | 'country' | 'dirt' | 'driveway';
 
-export interface RoadDef {
+/**
+ * Authoring metadata shared by every map element (design plan §44). Procedural generators may
+ * replace an element on "Regenerate" unless it is locked; elements placed by hand in the editor
+ * are `manual` and never replaced. `gen` names the generator layer that produced an element.
+ */
+export interface Authoring {
+  locked?: boolean;
+  manual?: boolean;
+  gen?: GenLayer;
+}
+
+/** Generator layers that "Generate" and "Regenerate unlocked" work on. */
+export type GenLayer = 'roads' | 'parcels' | 'nature';
+export const GEN_LAYERS: readonly GenLayer[] = ['roads', 'parcels', 'nature'];
+
+export interface RoadDef extends Authoring {
   id: string;
   kind: RoadKind;
   /** Centre line. */
@@ -101,7 +116,7 @@ export interface WallDef {
   material: Material;
 }
 
-export type DoorKind = 'wood' | 'exterior' | 'glass' | 'metal' | 'garage' | 'cell';
+export type DoorKind = 'wood' | 'exterior' | 'glass' | 'metal' | 'garage' | 'cell' | 'plank' | 'gate';
 
 export interface DoorDef {
   id: string;
@@ -132,7 +147,7 @@ export interface WindowDef {
   kind: WindowKind;
 }
 
-export interface PropInstance {
+export interface PropInstance extends Authoring {
   /** Globally unique id; containers and lights are addressed by it. */
   id: string;
   /** Prop definition id (data/world/props.json). */
@@ -160,7 +175,7 @@ export interface RoofDef {
 
 export type BuildingType = 'house' | 'grocery' | 'gas_station' | 'police' | 'hardware' | 'shed' | 'garage' | 'restaurant' | 'office';
 
-export interface BuildingDef {
+export interface BuildingDef extends Authoring {
   id: string;
   type: BuildingType;
   name?: string;
@@ -183,7 +198,7 @@ export interface BuildingDef {
 
 export type FenceKind = 'wood' | 'chainlink' | 'picket';
 
-export interface FenceDef {
+export interface FenceDef extends Authoring {
   id: string;
   kind: FenceKind;
   points: [number, number][];
@@ -191,7 +206,7 @@ export interface FenceDef {
 
 export type ZoneKind = 'residential' | 'commercial' | 'forest' | 'rural' | 'industrial' | 'downtown';
 
-export interface ZoneDef {
+export interface ZoneDef extends Authoring {
   id: string;
   name: string;
   kind: ZoneKind;
@@ -213,6 +228,18 @@ export interface TerrainLayer {
   chunks: Record<string, string>;
 }
 
+/** Biome regions (design plan §39, §46) steer the procedural generators. Order is part of the format. */
+export const BIOMES = ['none', 'city', 'suburb', 'town', 'forest', 'plains', 'farmland', 'industrial', 'wilderness'] as const;
+export type Biome = (typeof BIOMES)[number];
+
+/** Biome grid resolution in meters. */
+export const BIOME_CELL = 16;
+
+export interface BiomeLayer {
+  /** One byte per BIOME_CELL × BIOME_CELL cell (BIOMES index), row-major, run-length encoded + base64. */
+  data: string;
+}
+
 export interface MapData {
   format: number;
   id: string;
@@ -227,6 +254,41 @@ export interface MapData {
   fences: FenceDef[];
   zones: ZoneDef[];
   spawns: SpawnPoint[];
+  /** Editor-painted biomes; absent on maps that never had any. */
+  biomes?: BiomeLayer;
+  /** Terrain chunks ("cx,cy") the generators must not repaint (painted by hand, or locked). */
+  terrainLocked?: string[];
+}
+
+export function biomeGridSize(map: Pick<MapData, 'width' | 'height'>): { cols: number; rows: number } {
+  return { cols: Math.ceil(map.width / BIOME_CELL), rows: Math.ceil(map.height / BIOME_CELL) };
+}
+
+/** Decodes the biome grid (all 'none' when the map has none). */
+export function decodeBiomes(map: Pick<MapData, 'width' | 'height' | 'biomes'>): Uint8Array {
+  const { cols, rows } = biomeGridSize(map);
+  const cells = new Uint8Array(cols * rows);
+  if (!map.biomes?.data) return cells;
+  const pairs = base64ToBytes(map.biomes.data);
+  let o = 0;
+  for (let i = 0; i + 1 < pairs.length && o < cells.length; i += 2) {
+    const run = pairs[i];
+    cells.fill(Math.min(BIOMES.length - 1, pairs[i + 1]), o, Math.min(cells.length, o + run));
+    o += run;
+  }
+  return cells;
+}
+
+export function encodeBiomes(cells: Uint8Array): BiomeLayer {
+  return { data: encodeRuns(cells) };
+}
+
+export function biomeAt(cells: Uint8Array, map: Pick<MapData, 'width' | 'height'>, x: number, y: number): Biome {
+  const { cols, rows } = biomeGridSize(map);
+  const cx = Math.floor(x / BIOME_CELL);
+  const cy = Math.floor(y / BIOME_CELL);
+  if (cx < 0 || cy < 0 || cx >= cols || cy >= rows) return 'none';
+  return BIOMES[cells[cy * cols + cx]] ?? 'none';
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -266,8 +328,7 @@ function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-/** Run-length encodes a chunk's material grid as (count, value) byte pairs, then base64. */
-export function encodeTerrainChunk(cells: Uint8Array): string {
+function encodeRuns(cells: Uint8Array): string {
   const out: number[] = [];
   let i = 0;
   while (i < cells.length) {
@@ -278,6 +339,11 @@ export function encodeTerrainChunk(cells: Uint8Array): string {
     i += run;
   }
   return bytesToBase64(new Uint8Array(out));
+}
+
+/** Run-length encodes a chunk's material grid as (count, value) byte pairs, then base64. */
+export function encodeTerrainChunk(cells: Uint8Array): string {
+  return encodeRuns(cells);
 }
 
 export function decodeTerrainChunk(encoded: string): Uint8Array {

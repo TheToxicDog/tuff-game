@@ -1,0 +1,75 @@
+[
+  {
+    "id": "rip_sheet",
+    "name": "Rip Bed Sheet",
+    "description": "Tear a sheet into strips for improvised dressings.",
+    "category": "medical",
+    "time": 4,
+    "inputs": [{ "item": "bed_sheet", "qty": 1 }],
+    "outputs": [{ "item": "ripped_cloth", "qty": 4 }]
+  },
+  {
+    "id": "rip_towel",
+    "name": "Rip Towel",
+    "description": "Tear a towel into strips.",
+    "category": "medical",
+    "time": 3,
+    "inputs": [{ "item": "towel", "qty": 1 }],
+    "outputs": [{ "item": "ripped_cloth", "qty": 2 }]
+  },
+  {
+    "id": "make_splint",
+    "name": "Improvised Splint",
+    "description": "A plank cut down and bound with cloth.",
+    "category": "medical",
+    "time": 6,
+    "inputs": [
+      { "item": "plank", "qty": 1 },
+      { "item": "ripped_cloth", "qty": 2 }
+    ],
+    "tools": ["saw"],
+    "outputs": [{ "item": "splint", "qty": 2 }]
+  },
+  {
+    "id": "salvage_furniture",
+    "name": "Salvage Wooden Furniture",
+    "description": "Saw carried wooden furniture back into planks and nails.",
+    "category": "carpentry",
+    "time": 10,
+    "inputs": [{ "tag": "furniture_wood", "qty": 1 }],
+    "tools": ["saw"],
+    "outputs": [
+      { "item": "plank", "qty": 2 },
+      { "item": "nails", "qty": 6 }
+    ]
+  },
+  {
+    "id": "improvised_spear",
+    "name": "Improvised Spear",
+    "description": "A kitchen knife taped to a length of plank. Long reach, fragile.",
+    "category": "carpentry",
+    "station": "workbench",
+    "time": 10,
+    "inputs": [
+      { "item": "plank", "qty": 1 },
+      { "item": "kitchen_knife", "qty": 1 },
+      { "item": "duct_tape", "qty": 1 }
+    ],
+    "tools": ["saw"],
+    "outputs": [{ "item": "improvised_spear", "qty": 1 }]
+  },
+  {
+    "id": "plank_club",
+    "name": "Nailed Plank",
+    "description": "A plank studded with nails. Crude but effective.",
+    "category": "carpentry",
+    "station": "workbench",
+    "time": 8,
+    "inputs": [
+      { "item": "plank", "qty": 1 },
+      { "item": "nails", "qty": 8 }
+    ],
+    "tools": ["hammer"],
+    "outputs": [{ "item": "nailed_plank", "qty": 1 }]
+  }
+]

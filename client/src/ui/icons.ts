@@ -660,6 +660,55 @@ const ICONS: Record<string, Draw> = {
     g.arc(32, 34, 14, 0, Math.PI * 2);
     g.stroke();
   },
+  pot: (g, c, d) => {
+    g.fillStyle = d;
+    rr(g, 6, 26, 10, 5, 2);
+    rr(g, 48, 26, 10, 5, 2);
+    g.fillStyle = c;
+    rr(g, 14, 20, 36, 32, 6);
+    g.fillStyle = shadeHex('#8a8e92', 1.25);
+    g.beginPath();
+    g.ellipse(32, 21, 18, 5, 0, 0, Math.PI * 2);
+    g.fill();
+  },
+  bowl: (g, c) => {
+    g.fillStyle = '#d8d0c0';
+    g.beginPath();
+    g.ellipse(32, 34, 22, 16, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = c;
+    g.beginPath();
+    g.ellipse(32, 32, 17, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.35)';
+    g.fillRect(24, 22, 3, 6);
+    g.fillRect(34, 20, 3, 6);
+  },
+  meat: (g, c) => {
+    g.fillStyle = c;
+    g.beginPath();
+    g.ellipse(30, 32, 20, 14, -0.3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = 'rgba(255,240,220,0.55)';
+    g.beginPath();
+    g.ellipse(22, 28, 5, 3, -0.3, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#e8e0d0';
+    rr(g, 46, 36, 12, 5, 2);
+  },
+  mug: (g, c) => {
+    g.strokeStyle = c;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.arc(46, 34, 7, -Math.PI / 2, Math.PI / 2);
+    g.stroke();
+    g.fillStyle = c;
+    rr(g, 16, 18, 30, 34, 5);
+    g.fillStyle = 'rgba(0,0,0,0.25)';
+    g.beginPath();
+    g.ellipse(31, 20, 13, 3, 0, 0, Math.PI * 2);
+    g.fill();
+  },
   default: (g, c) => {
     g.fillStyle = c;
     rr(g, 14, 14, 36, 36, 8);

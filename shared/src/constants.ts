@@ -37,4 +37,7 @@ export const ZOMBIE_RADIUS = 0.3;
 /** Maximum distance at which a player can interact with a door, container or item. */
 export const INTERACT_RANGE = 1.9;
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
+
+/** WebSocket close code telling clients to reconnect because the map was republished. */
+export const MAP_RELOAD_CODE = 4002;

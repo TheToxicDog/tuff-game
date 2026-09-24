@@ -83,7 +83,8 @@ export class Combat {
       const glass: { id: string; distance: number }[] = [];
       for (const hit of collision.raycastAll(ox, oy, dx, dy, range, Block.Bullet)) {
         const oid = hit.collider.objectId;
-        if (oid && game.world.compiled.windows.has(oid)) {
+        // Glass is shot through; a boarded-up window stops the round like a wall.
+        if (oid && game.world.compiled.windows.has(oid) && game.world.compiled.effectiveState(oid).boards <= 0) {
           glass.push({ id: oid, distance: hit.distance });
           continue;
         }
@@ -198,8 +199,15 @@ export class Combat {
       const oid = hit?.collider.objectId;
       if (oid) {
         const obj = game.world.compiled.object(oid);
-        if (obj?.kind === 'door') game.damageObject(oid, def.damage * (def.structureDamage ?? 1), attacker, 'door_bang');
-        else if (obj?.kind === 'window') game.damageObject(oid, 999, attacker, 'window_break');
+        const structural = def.damage * (def.structureDamage ?? 1);
+        const boards = game.world.compiled.effectiveState(oid).boards;
+        if (obj?.kind === 'door') {
+          if (!obj.structureId || game.building.canDamage(attacker, obj.structureId))
+            game.damageObject(oid, structural, attacker, 'door_bang');
+        } else if (obj?.kind === 'window')
+          game.damageObject(oid, boards > 0 ? structural : 999, attacker, boards > 0 ? 'door_bang' : 'window_break');
+        else if (obj?.kind === 'structure' && game.building.canDamage(attacker, oid))
+          game.damageObject(oid, structural, attacker, 'door_bang');
       }
     }
     game.noise.emit(s.x, s.y, targets.length > 0 ? def.noise : def.noise * 0.3, attacker);

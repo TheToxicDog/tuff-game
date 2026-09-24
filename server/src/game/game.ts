@@ -5,6 +5,7 @@
 import {
   BinaryWriter,
   Block,
+  BOARD_HP,
   bleedRate,
   buildingPolygon,
   CHUNK_SIZE,
@@ -35,7 +36,9 @@ import {
   ServerBinary,
   SOUNDS,
   SpatialHash,
+  storageId,
   World,
+  WORLD_ACTIONS,
   WorldClock,
   writeEvent,
   writeSelfState,
@@ -53,6 +56,7 @@ import {
   type ServerConfig,
   type ServerMessage,
   type SoundName,
+  type WorldAction,
 } from '@tuff/shared';
 import type { LoadedContent } from '../content/loader';
 import {
@@ -64,6 +68,7 @@ import {
   type WorldMeta,
   changeCount,
 } from '../persistence/storage';
+import { BuildingSystem } from './building';
 import { Combat } from './combat';
 import { Body, Corpse, GroundItem, Player, Replicated, Transform, Zombie, type PlayerComp, type TimedAction } from './components';
 import { InventoryService, isBodyPart } from './inventory';
@@ -74,6 +79,7 @@ import { NoiseSystem } from './noise';
 import { PlayerSystem } from './players';
 import type { ClientSession } from './session';
 import { Spawner } from './spawner';
+import { SurvivalSystem } from './survival';
 import { WorldState } from './world-state';
 import { zombieAnim, ZombieSystem } from './zombies';
 
@@ -104,6 +110,8 @@ export class Game {
   readonly zombies: ZombieSystem;
   readonly players: PlayerSystem;
   readonly spawner: Spawner;
+  readonly survival: SurvivalSystem;
+  readonly building: BuildingSystem;
   readonly inventory: InventoryService;
   readonly loot: LootGenerator;
   readonly content: ContentRegistry;
@@ -144,6 +152,8 @@ export class Game {
     this.zombies = new ZombieSystem(this);
     this.players = new PlayerSystem(this);
     this.spawner = new Spawner(this);
+    this.survival = new SurvivalSystem(this);
+    this.building = new BuildingSystem(this);
     this.inventory = new InventoryService(this);
     this.loot = new LootGenerator(this.content, loaded.lootTables, this.config, map.seed);
     this.meta = { version: 1, mapId: map.id, seed: map.seed, minutes: this.config.startHour * 60, createdAt: Date.now(), populated: false };
@@ -177,6 +187,7 @@ export class Game {
       this.meta = snapshot.meta;
       this.clock.totalMinutes = snapshot.meta.minutes;
       this.world.load(snapshot);
+      for (const [owner, record] of snapshot.trust) this.building.trust.set(owner, record);
       this.spawner.load(snapshot.chunks, snapshot.zones);
       for (const ent of snapshot.entities.values()) this.restoreEntity(ent);
     } else if (snapshot.meta) {
@@ -388,6 +399,7 @@ export class Game {
       statusKey: '',
       refreshTimer: 0,
       move: { speedFactor: 1, sprintAllowed: true, staminaRegen: 1, maxStamina: 1, aimSway: 0 },
+      sleep: null,
     };
     p.move = this.players.moveParams(p);
     this.ecs.add(e, Transform, { x, y, angle: data.angle });
@@ -454,7 +466,29 @@ export class Game {
     }
     if (!p) return;
     let error: string | null = null;
+    if (p.sleep && msg.t !== 'wake' && msg.t !== 'close' && msg.t !== 'cancel') {
+      this.notify(p, 'You are asleep. Press E to wake up.', 'info');
+      return;
+    }
     switch (msg.t) {
+      case 'wake':
+        this.survival.wake(p, 'You get up.', 'info');
+        break;
+      case 'sleep':
+        error = this.survival.sleep(e, p, typeof msg.target === 'string' ? msg.target : undefined);
+        break;
+      case 'craft':
+        error = this.survival.beginCraft(e, p, String(msg.recipe ?? ''));
+        break;
+      case 'build':
+        error = this.building.beginBuild(e, p, msg as never);
+        break;
+      case 'act': {
+        const action = msg.action as WorldAction;
+        if (!WORLD_ACTIONS.includes(action)) return;
+        error = this.building.beginAction(e, p, action, String(msg.target ?? ''));
+        break;
+      }
       case 'interact':
         error = this.interact(e, p, String(msg.target ?? ''), msg.action === 'lock' ? 'lock' : 'toggle');
         break;
@@ -540,8 +574,14 @@ export class Game {
       session.send({ t: 'chat', from: '', text: `Online (${names.length}): ${names.join(', ')}`, system: true });
       return;
     }
+    const [cmd, ...args] = text.slice(1).split(/\s+/);
+    if (text.startsWith('/') && (cmd === 'trust' || cmd === 'untrust' || cmd === 'trusted')) {
+      const reply = this.building.trustCommand({ id: session.account.id, name: session.account.displayName }, cmd, args);
+      session.send({ t: 'chat', from: '', text: reply, system: true });
+      return;
+    }
     if (text.startsWith('/')) {
-      const reply = session.account.isAdmin ? this.adminCommand(session, text) : 'Unknown command. Try /who.';
+      const reply = session.account.isAdmin ? this.adminCommand(session, text) : 'Unknown command. Try /who or /trust <name>.';
       session.send({ t: 'chat', from: '', text: reply, system: true });
       return;
     }
@@ -557,7 +597,7 @@ export class Game {
     const num = (i: number, fallback: number) => (Number.isFinite(Number(args[i])) && args[i] !== undefined ? Number(args[i]) : fallback);
     switch (cmd) {
       case 'help':
-        return 'Admin: /tp x y · /time hour · /give item [qty] · /heal · /zombies n · /clear [radius] · /save';
+        return 'Admin: /tp x y · /time hour · /give item [qty] · /heal · /zombies n · /clear [radius] · /save · /kit build|cook — everyone: /who · /trust name · /untrust name · /trusted';
       case 'tp': {
         if (!p || !t) return 'You are not in the world.';
         const x = Math.max(1, Math.min(this.map.width - 1, num(0, t.x)));
@@ -632,6 +672,38 @@ export class Game {
       case 'save':
         void this.save();
         return 'Saving the world.';
+      case 'kit': {
+        if (!p || !t) return 'You are not in the world.';
+        const kits: Record<string, [string, number][]> = {
+          build: [
+            ['hammer', 1],
+            ['saw', 1],
+            ['plank', 10],
+            ['nails', 100],
+            ['lighter', 1],
+            ['tool_bag', 1],
+          ],
+          cook: [
+            ['cooking_pot', 1],
+            ['frying_pan', 1],
+            ['can_opener', 1],
+            ['water_bottle', 4],
+            ['potato', 4],
+            ['raw_steak', 2],
+            ['dry_pasta', 1],
+            ['ground_coffee', 1],
+          ],
+        };
+        const kit = kits[args[0] ?? ''];
+        if (!kit) return 'Usage: /kit build|cook';
+        this.inventory.giveItems(
+          e,
+          p,
+          kit.map(([item, qty]) => ({ item, qty })),
+        );
+        this.flushInventory(p);
+        return `Gave the ${args[0]} kit.`;
+      }
       default:
         return `Unknown command /${cmd}. Try /help.`;
     }
@@ -673,9 +745,21 @@ export class Game {
     if (door) {
       if (Math.hypot(door.x - t.x, door.y - t.y) > INTERACT_RANGE + door.w / 2) return 'Too far away.';
       const s = this.world.compiled.effectiveState(target);
+      if (s.boards > 0) return 'It is barricaded.';
       if (s.broken) return 'The door is broken.';
+      // Player-built doors lock with a key: their owner and trusted survivors, from either side.
+      const owner = door.structureId ? this.world.structures.get(door.structureId)?.owner : null;
+      const keyholder = !!owner && this.building.canManage(p.accountId, owner, this.isAdmin(p));
       if (action === 'lock') {
         if (s.open) return 'Close the door first.';
+        if (owner) {
+          if (!keyholder) return 'You do not have the key.';
+          this.world.setObjectState(target, { locked: !s.locked });
+          this.broadcastObject(target);
+          this.soundAt('door_locked', door.x, door.y, 0.5, e);
+          this.notify(p, s.locked ? 'Unlocked.' : 'Locked.', 'info');
+          return null;
+        }
         const building = this.world.map.buildings.find((b) => b.id === door.buildingId);
         const inside = building ? isInsideBuilding(building, t.x, t.y, -0.2) : false;
         if (!inside) return s.locked ? 'It is locked from the inside.' : 'You can only lock doors from the inside.';
@@ -687,7 +771,7 @@ export class Game {
       }
       if (!s.open && s.locked) {
         const building = this.world.map.buildings.find((b) => b.id === door.buildingId);
-        const inside = building ? isInsideBuilding(building, t.x, t.y, -0.2) : false;
+        const inside = owner ? keyholder : building ? isInsideBuilding(building, t.x, t.y, -0.2) : false;
         if (!inside || door.doorKind === 'cell') {
           this.soundAt('door_locked', door.x, door.y, 0.6, e);
           return 'It is locked.';
@@ -705,7 +789,9 @@ export class Game {
     const win = this.world.compiled.windows.get(target);
     if (win) {
       if (Math.hypot(win.x - t.x, win.y - t.y) > INTERACT_RANGE + win.w / 2) return 'Too far away.';
-      if (this.world.compiled.effectiveState(target).broken) return 'It is already broken — you can climb through.';
+      const ws = this.world.compiled.effectiveState(target);
+      if (ws.boards > 0) return 'It is boarded up.';
+      if (ws.broken) return 'It is already broken — you can climb through.';
       this.damageObject(target, 999, e, 'window_break');
       return null;
     }
@@ -713,7 +799,11 @@ export class Game {
     return null;
   }
 
-  private doorwayBlocked(x: number, y: number, w: number): boolean {
+  isAdmin(p: PlayerComp): boolean {
+    return !!(p.link as Partial<ClientSession> | null)?.account?.isAdmin;
+  }
+
+  doorwayBlocked(x: number, y: number, w: number): boolean {
     for (const id of this.spatial.query(x, y, w)) {
       const t = this.ecs.get(id, Transform);
       const b = this.ecs.get(id, Body);
@@ -736,6 +826,9 @@ export class Game {
     }
     const container = this.world.compiled.containers.get(target);
     if (!container) return null;
+    if (container.owner && this.world.compiled.effectiveState(target).locked) {
+      if (!this.building.canManage(p.accountId, container.owner, this.isAdmin(p))) return 'It is locked.';
+    }
     if (p.action) this.cancelAction(p);
     // The first search is slow (rummaging); reopening something already searched is quick.
     const searched = this.world.compiled.effectiveState(target).searched;
@@ -791,6 +884,15 @@ export class Game {
     else if (a.kind === 'consume' && a.uid !== undefined) {
       const message = this.inventory.finishUse(e, p, a.uid, a.woundId);
       if (message) this.notify(p, message, 'info');
+    } else if (a.kind === 'craft' && a.recipe) {
+      const message = this.survival.finishCraft(e, p, a.recipe);
+      if (message) this.notify(p, message, message.startsWith('You make') ? 'good' : 'warn');
+    } else if (a.kind === 'build' && a.build) {
+      const error = this.building.finishBuild(e, p, a.build);
+      if (error) this.notify(p, error, 'warn');
+    } else if (a.kind === 'work' && a.work) {
+      const message = this.building.finish(e, p, a.work, a.target);
+      if (message) this.notify(p, message, 'info');
     }
     this.flushInventory(p);
   }
@@ -833,11 +935,28 @@ export class Game {
     }
   }
 
-  /** Damages a door or window; returns true when it broke. */
+  /** Damages a door, window (barricade planks first) or structure; returns true when it broke. */
   damageObject(id: string, amount: number, source: number, sound: SoundName): boolean {
     const obj = this.world.compiled.object(id);
-    if (!obj || obj.kind === 'container') return false;
+    if (!obj) return false;
+    if (obj.kind === 'structure') return this.building.damageStructure(id, amount, source);
+    if (obj.kind !== 'door' && obj.kind !== 'window') return false;
     const s = this.world.compiled.effectiveState(id);
+    if (s.boards > 0) {
+      // Planks take the beating first; each one gives way in turn.
+      const boardHp = s.boardHp - Math.min(amount, BOARD_HP * 0.8);
+      const boards = Math.max(0, Math.ceil(boardHp / BOARD_HP - 1e-6));
+      this.world.setObjectState(id, { boards, boardHp: Math.max(0, boardHp) });
+      if (boards < s.boards) {
+        this.soundAt('board_break', obj.x, obj.y, 1, source);
+        this.noise.emit(obj.x, obj.y, 24, source);
+        this.broadcastObject(id);
+      } else {
+        this.soundAt('door_bang', obj.x, obj.y, 0.9, source);
+        this.noise.emit(obj.x, obj.y, 18, source);
+      }
+      return false;
+    }
     if (s.broken || (obj.kind === 'door' && s.open)) return false;
     const hp = s.hp - amount;
     if (hp <= 0) {
@@ -1061,13 +1180,16 @@ export class Game {
     const online = [...this.sessions].some((s) => s.account);
     // An empty server does not simulate at all: no hunger, no zombie movement, no time.
     if (online) {
-      const dtMinutes = dt * this.clock.gameMinutesPerSecond;
-      this.clock.advance(dt);
+      // With every survivor asleep, the night passes quickly (design plan §51–52).
+      const speed = this.survival.everyoneAsleep() ? this.survival.fastForward : 1;
+      const dtMinutes = dt * speed * this.clock.gameMinutesPerSecond;
+      this.clock.advance(dt * speed);
       for (const e of this.ecs.query(Player)) {
         const p = this.ecs.get(e, Player)!;
         p.stats.lifeMinutes += dtMinutes;
       }
       this.players.update(dt, dtMinutes);
+      this.survival.update(dt);
       this.zombies.update(dt);
       this.noise.process();
       this.spawner.update(dt);
@@ -1152,6 +1274,7 @@ export class Game {
         if (p.flashlight) flags |= PlayerFlags.Flashlight;
         if (p.body.health < 50 || bleedRate(p.body) > 0.05) flags |= PlayerFlags.Injured;
         if (p.action) flags |= PlayerFlags.Busy;
+        if (p.sleep) flags |= PlayerFlags.Sleeping;
         const held = p.inventory.slots[s.slot];
         base.anim = s.action;
         base.flags = flags;

@@ -23,6 +23,8 @@ export interface LightSource {
   intensity: number;
   /** Clip to the local player's line of sight (only valid for the local player's own light). */
   occluded: boolean;
+  /** Tint for radial lights (fires glow orange). */
+  color?: number;
 }
 
 function rgb(r: number, g: number, b: number): number {
@@ -86,7 +88,7 @@ export class Lighting {
       s.rotation = 0;
       const t = src as TransientLight;
       s.alpha = 'life' in src ? src.intensity * (t.life / t.max) : (src as LightSource).intensity;
-      s.tint = 'color' in src ? t.color : 0xfff0d8;
+      s.tint = 'life' in src ? t.color : ((src as LightSource).color ?? 0xfff0d8);
     }
     s.position.set(src.x, src.y);
     parent.addChild(s);

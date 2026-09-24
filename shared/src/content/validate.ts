@@ -3,10 +3,13 @@
 
 import {
   ITEM_CATEGORIES,
+  STATION_KINDS,
   TREATMENTS,
+  type ConstructionDef,
   type ItemDef,
   type LootTableDef,
   type PropDef,
+  type RecipeDef,
   type ServerConfig,
   type ZombieArchetypeDef,
 } from './types';
@@ -360,7 +363,121 @@ export function validateProps(raw: unknown, where: string, errors: ContentErrors
         c.number(l, 'intensity', `${path}.light`, { min: 0, max: 2 });
       }
     }
+    if (o.sleep !== undefined) {
+      const s = c.object(o.sleep, `${path}.sleep`);
+      if (s) c.number(s, 'quality', `${path}.sleep`, { min: 0, max: 1 });
+    }
+    if (o.station !== undefined) c.oneOf(o, 'station', path, STATION_KINDS);
+    if (o.movable !== undefined) {
+      const m = c.object(o.movable, `${path}.movable`);
+      if (m) c.number(m, 'weight', `${path}.movable`, { min: 0.1, max: 120 });
+    }
     list.push(o as unknown as PropDef);
+  });
+  return list;
+}
+
+export function validateRecipes(raw: unknown, where: string, errors: ContentErrors): RecipeDef[] {
+  const c = new Checker(errors, where);
+  if (!Array.isArray(raw)) {
+    c.fail('$', 'expected an array of recipes');
+    return [];
+  }
+  const list: RecipeDef[] = [];
+  raw.forEach((entry, i) => {
+    const o = c.object(entry, `[${i}]`);
+    if (!o) return;
+    const path = checkId(c, o, `[${i}]`) ?? `[${i}]`;
+    c.string(o, 'name', path);
+    c.string(o, 'description', path, false);
+    c.oneOf(o, 'category', path, ['cooking', 'survival', 'carpentry', 'medical'] as const);
+    if (o.station !== undefined) c.oneOf(o, 'station', path, STATION_KINDS);
+    c.number(o, 'time', path, { min: 0.5, max: 120 });
+    c.stringArray(o, 'tools', path);
+    if (!Array.isArray(o.inputs) || o.inputs.length === 0) c.fail(`${path}.inputs`, 'expected a non-empty array');
+    else
+      o.inputs.forEach((e, j) => {
+        const eo = c.object(e, `${path}.inputs[${j}]`);
+        if (!eo) return;
+        if ((typeof eo.item === 'string') === (typeof eo.tag === 'string'))
+          c.fail(`${path}.inputs[${j}]`, 'set exactly one of "item" or "tag"');
+        c.number(eo, 'qty', `${path}.inputs[${j}]`, { min: 1, max: 100, int: true });
+      });
+    if (!Array.isArray(o.outputs) || o.outputs.length === 0) c.fail(`${path}.outputs`, 'expected a non-empty array');
+    else
+      o.outputs.forEach((e, j) => {
+        const eo = c.object(e, `${path}.outputs[${j}]`);
+        if (!eo) return;
+        c.string(eo, 'item', `${path}.outputs[${j}]`);
+        c.number(eo, 'qty', `${path}.outputs[${j}]`, { min: 1, max: 100, int: true });
+      });
+    list.push(o as unknown as RecipeDef);
+  });
+  return list;
+}
+
+const CONSTRUCTION_KINDS = ['wall', 'door', 'fence', 'gate', 'floor', 'container', 'station', 'fire'] as const;
+
+export function validateConstructions(raw: unknown, where: string, errors: ContentErrors): ConstructionDef[] {
+  const c = new Checker(errors, where);
+  if (!Array.isArray(raw)) {
+    c.fail('$', 'expected an array of constructions');
+    return [];
+  }
+  const list: ConstructionDef[] = [];
+  raw.forEach((entry, i) => {
+    const o = c.object(entry, `[${i}]`);
+    if (!o) return;
+    const path = checkId(c, o, `[${i}]`) ?? `[${i}]`;
+    c.string(o, 'name', path);
+    c.string(o, 'description', path, false);
+    c.oneOf(o, 'category', path, ['walls', 'fences', 'floors', 'storage', 'utility'] as const);
+    const kind = c.oneOf(o, 'kind', path, CONSTRUCTION_KINDS);
+    const w = c.number(o, 'w', path, { min: 0.2, max: 8 });
+    c.number(o, 'h', path, { min: 0.05, max: 8 });
+    const blocks = c.stringArray(o, 'blocks', path, true);
+    for (const b of blocks ?? []) {
+      if (!['player', 'zombie', 'sight', 'bullet'].includes(b)) c.fail(`${path}.blocks`, `unknown flag "${b}"`);
+    }
+    c.oneOf(o, 'material', path, MATERIALS as never[]);
+    c.number(o, 'hp', path, { min: 1, max: 5000 });
+    c.number(o, 'time', path, { min: 0.5, max: 120 });
+    c.stringArray(o, 'tools', path, true);
+    c.string(o, 'style', path);
+    c.string(o, 'color', path, false);
+    if (!Array.isArray(o.materials) || o.materials.length === 0) c.fail(`${path}.materials`, 'expected a non-empty array');
+    else
+      o.materials.forEach((e, j) => {
+        const eo = c.object(e, `${path}.materials[${j}]`);
+        if (!eo) return;
+        c.string(eo, 'item', `${path}.materials[${j}]`);
+        c.number(eo, 'qty', `${path}.materials[${j}]`, { min: 1, max: 200, int: true });
+      });
+    if (kind === 'door' || kind === 'gate') {
+      const opening = c.number(o, 'opening', path, { min: 0.5, max: 4 });
+      if (opening !== undefined && w !== undefined && opening > w) c.fail(`${path}.opening`, 'must not be wider than the piece');
+    }
+    if (kind === 'container') {
+      const k = c.object(o.container, `${path}.container`);
+      if (k) {
+        c.string(k, 'name', `${path}.container`);
+        c.number(k, 'volume', `${path}.container`, { min: 1, max: 1000 });
+      }
+    }
+    if (kind === 'station' || kind === 'fire') c.oneOf(o, 'station', path, STATION_KINDS);
+    if (kind === 'fire') {
+      c.number(o, 'burnMinutes', path, { min: 1 });
+      c.string(o, 'fuel', path);
+    }
+    if (o.light !== undefined) {
+      const l = c.object(o.light, `${path}.light`);
+      if (l) {
+        c.number(l, 'radius', `${path}.light`, { min: 0.5 });
+        c.string(l, 'color', `${path}.light`);
+        c.number(l, 'intensity', `${path}.light`, { min: 0, max: 2 });
+      }
+    }
+    list.push(o as unknown as ConstructionDef);
   });
   return list;
 }
@@ -397,7 +514,48 @@ export function validateServerConfig(raw: unknown, where: string, errors: Conten
   }
   const p = c.object(o.player, '$.player');
   if (p && !Array.isArray(p.startingItems)) c.fail('$.player.startingItems', 'expected an array');
+  if (o.sleep !== undefined) {
+    const s = c.object(o.sleep, '$.sleep');
+    if (s) c.number(s, 'fastForward', '$.sleep', { min: 1, max: 60 });
+  }
+  if (o.building !== undefined) {
+    const b = c.object(o.building, '$.building');
+    if (b) {
+      c.boolean(b, 'griefing', '$.building');
+      c.number(b, 'maxPerPlayer', '$.building', { min: 0, max: 100000, int: true });
+    }
+  }
   return o as unknown as ServerConfig;
+}
+
+export interface ExtraContent {
+  recipes: RecipeDef[];
+  constructions: ConstructionDef[];
+}
+
+/** Cross-reference checks for recipes and constructions (items and tool tags must exist). */
+export function validateCraftingReferences(items: ItemDef[], extra: ExtraContent, errors: ContentErrors): void {
+  const itemIds = new Set(items.map((i) => i.id));
+  const tags = new Set(items.flatMap((i) => i.tags ?? []));
+  const recipeIds = new Set<string>();
+  for (const r of extra.recipes) {
+    if (recipeIds.has(r.id)) errors.add(`recipes: duplicate recipe id "${r.id}"`);
+    recipeIds.add(r.id);
+    for (const input of r.inputs) {
+      if (input.item && !itemIds.has(input.item)) errors.add(`recipes: ${r.id} uses unknown item "${input.item}"`);
+      if (input.tag && !tags.has(input.tag)) errors.add(`recipes: ${r.id} uses tag "${input.tag}" that no item has`);
+    }
+    for (const tool of r.tools ?? []) if (!tags.has(tool)) errors.add(`recipes: ${r.id} needs tool tag "${tool}" that no item has`);
+    for (const out of r.outputs) if (!itemIds.has(out.item)) errors.add(`recipes: ${r.id} makes unknown item "${out.item}"`);
+  }
+  const constructionIds = new Set<string>();
+  for (const k of extra.constructions) {
+    if (constructionIds.has(k.id)) errors.add(`construction: duplicate id "${k.id}"`);
+    constructionIds.add(k.id);
+    for (const m of k.materials) if (!itemIds.has(m.item)) errors.add(`construction: ${k.id} uses unknown item "${m.item}"`);
+    for (const tool of k.tools) if (!tags.has(tool)) errors.add(`construction: ${k.id} needs tool tag "${tool}" that no item has`);
+    if (k.fuel && !itemIds.has(k.fuel)) errors.add(`construction: ${k.id} burns unknown item "${k.fuel}"`);
+  }
 }
 
 /** Cross-reference checks that need every content type loaded. */

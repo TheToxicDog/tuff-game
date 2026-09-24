@@ -11,7 +11,8 @@
     "empty": 0.1,
     "entries": [
       { "table": "dry_food", "weight": 10 },
-      { "item": "peanut_butter", "weight": 2 }
+      { "item": "peanut_butter", "weight": 2 },
+      { "item": "ground_coffee", "weight": 2 }
     ]
   },
   {
@@ -43,7 +44,9 @@
     "entries": [
       { "table": "drinks_any", "weight": 8 },
       { "item": "cheese", "weight": 4, "max": 2 },
-      { "item": "juice_box", "weight": 3, "max": 3 }
+      { "item": "juice_box", "weight": 3, "max": 3 },
+      { "item": "raw_steak", "weight": 3, "max": 2 },
+      { "item": "raw_chicken", "weight": 3, "max": 2 }
     ]
   },
   {
@@ -263,7 +266,8 @@
       { "item": "batteries", "weight": 4, "min": 2, "max": 8 },
       { "item": "lantern", "weight": 2 },
       { "item": "propane_tank", "weight": 1 },
-      { "item": "gas_can_empty", "weight": 2 }
+      { "item": "gas_can_empty", "weight": 2 },
+      { "item": "cooking_pot", "weight": 2 }
     ]
   }
 ]

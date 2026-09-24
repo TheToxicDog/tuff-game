@@ -317,7 +317,7 @@
     "weight": 0.35,
     "volume": 0.4,
     "stackSize": 4,
-    "tags": ["cookware"],
+    "tags": ["mug"],
     "icon": "mug",
     "color": "#e8e0d8"
   },

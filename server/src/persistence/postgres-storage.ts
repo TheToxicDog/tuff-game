@@ -2,7 +2,7 @@
 // rows written in batches inside a transaction.
 
 import pg from 'pg';
-import type { ObjectState } from '@tuff/shared';
+import type { ObjectState, StructureDef } from '@tuff/shared';
 import {
   DuplicateUsernameError,
   type AccountRecord,
@@ -13,6 +13,7 @@ import {
   type PersistentEntity,
   type SessionRecord,
   type Storage,
+  type TrustRecord,
   type WorldChanges,
   type WorldMeta,
   type WorldSnapshot,
@@ -62,6 +63,14 @@ export const MIGRATIONS: Migration[] = [
       CREATE TABLE world_buildings (id text PRIMARY KEY, data jsonb NOT NULL);
     `,
   },
+  {
+    id: 2,
+    name: 'player structures and trust',
+    sql: `
+      CREATE TABLE world_structures (id text PRIMARY KEY, data jsonb NOT NULL);
+      CREATE TABLE world_trust (id text PRIMARY KEY, data jsonb NOT NULL);
+    `,
+  },
 ];
 
 const WORLD_TABLES = {
@@ -71,6 +80,8 @@ const WORLD_TABLES = {
   chunks: 'world_chunks',
   zones: 'world_zones',
   buildings: 'world_buildings',
+  structures: 'world_structures',
+  trust: 'world_trust',
 } as const;
 
 interface AccountRow {
@@ -219,6 +230,8 @@ export class PostgresStorage implements Storage {
       chunks: await load<DormantZombie[]>(WORLD_TABLES.chunks),
       zones: await load<ZoneState>(WORLD_TABLES.zones),
       buildings: await load<BuildingLootState>(WORLD_TABLES.buildings),
+      structures: await load<StructureDef>(WORLD_TABLES.structures),
+      trust: await load<TrustRecord>(WORLD_TABLES.trust),
     };
   }
 

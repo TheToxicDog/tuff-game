@@ -4,7 +4,7 @@
 // The base world (the map) is never stored here — only accounts, characters and the world's
 // differences from the base map (design plan §50).
 
-import type { BodyState, ItemStack, NeedsState, ObjectState, PlayerInventory } from '@tuff/shared';
+import type { BodyState, ItemStack, NeedsState, ObjectState, PlayerInventory, StructureDef } from '@tuff/shared';
 
 export interface AccountRecord {
   id: string;
@@ -106,6 +106,17 @@ export interface WorldSnapshot {
   chunks: Map<string, DormantZombie[]>;
   zones: Map<string, ZoneState>;
   buildings: Map<string, BuildingLootState>;
+  /** Player-built structures, keyed by id. */
+  structures: Map<string, StructureDef>;
+  /** Owner account id → account ids they trust with their structures and storage. */
+  trust: Map<string, TrustRecord>;
+}
+
+export interface TrustRecord {
+  /** Trusted account ids. */
+  accounts: string[];
+  /** Display names at the time they were trusted (for listing). */
+  names: string[];
 }
 
 /** Building-level loot decisions (e.g. which drawer hides the house's handgun). */
@@ -124,6 +135,8 @@ export interface WorldChanges {
   chunks: Map<string, DormantZombie[] | null>;
   zones: Map<string, ZoneState | null>;
   buildings: Map<string, BuildingLootState | null>;
+  structures: Map<string, StructureDef | null>;
+  trust: Map<string, TrustRecord | null>;
 }
 
 export function emptyChanges(): WorldChanges {
@@ -134,11 +147,23 @@ export function emptyChanges(): WorldChanges {
     chunks: new Map(),
     zones: new Map(),
     buildings: new Map(),
+    structures: new Map(),
+    trust: new Map(),
   };
 }
 
 export function changeCount(c: WorldChanges): number {
-  return (c.meta ? 1 : 0) + c.objects.size + c.containers.size + c.entities.size + c.chunks.size + c.zones.size + c.buildings.size;
+  return (
+    (c.meta ? 1 : 0) +
+    c.objects.size +
+    c.containers.size +
+    c.entities.size +
+    c.chunks.size +
+    c.zones.size +
+    c.buildings.size +
+    c.structures.size +
+    c.trust.size
+  );
 }
 
 export class DuplicateUsernameError extends Error {

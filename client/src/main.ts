@@ -1,6 +1,7 @@
 // Entry point: title screen → login → connect → game.
 
 import './styles.css';
+import { MAP_RELOAD_CODE } from '@tuff/shared';
 import { AudioEngine } from './audio/audio';
 import { ClientGame } from './game/client-game';
 import { currentAccount, forgetSession, logout } from './net/api';
@@ -65,6 +66,12 @@ async function enterGame(token: string): Promise<void> {
       window.removeEventListener('beforeunload', guardUnload);
       game.destroy();
       if (code === 4001) forgetSession();
+      if (code === MAP_RELOAD_CODE) {
+        // The world's map was republished from the editor: come straight back.
+        showMessage(uiRoot, 'Map updated', 'The world was rebuilt from a new map. Reconnecting…');
+        window.setTimeout(() => location.reload(), 1500);
+        return;
+      }
       showMessage(uiRoot, 'Disconnected', reason, { label: 'Reconnect', action: () => location.reload() });
     },
   });

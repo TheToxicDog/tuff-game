@@ -25,6 +25,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   useItem: ['KeyG'],
   map: ['KeyM'],
   build: ['KeyB'],
+  crafting: ['KeyK'],
   health: ['KeyH'],
   menu: ['Escape'],
   chat: ['Enter', 'KeyT'],

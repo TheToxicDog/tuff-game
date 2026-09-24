@@ -638,6 +638,69 @@ export const PROP_STYLES: Record<string, StyleFn> = {
     for (let y = -a.h / 2 + 0.08; y < a.h / 2 - 0.08; y += 0.14)
       g.rect(-a.w / 2 + 0.05, y, a.w - 0.1, 0.1).fill(shade(a.color, a.rng.range(0.85, 1.1)));
   },
+
+  // --- Player structures (data/construction) ---------------------------------------------------
+  wood_wall: (g, a) => {
+    g.rect(-a.w / 2 + 0.06, -a.h / 2 + 0.08, a.w, a.h).fill(SHADOW);
+    g.rect(-a.w / 2, -a.h / 2, a.w, a.h).fill(shade(a.color, 0.8));
+    // Horizontal planks with staggered joints.
+    const rows = Math.max(2, Math.round(a.h / 0.07));
+    for (let i = 0; i < rows; i++) {
+      const y = -a.h / 2 + (a.h / rows) * i;
+      g.rect(-a.w / 2, y + 0.005, a.w, a.h / rows - 0.01).fill(shade(a.color, a.rng.range(0.9, 1.12)));
+      const joint = -a.w / 2 + ((i * 0.37 + 0.3) % 1) * a.w;
+      g.rect(joint, y, 0.02, a.h / rows).fill(shade(a.color, 0.5));
+    }
+    for (let x = -a.w / 2 + 0.25; x < a.w / 2; x += 0.5) g.circle(x, 0, 0.012).fill(0x2a2a2a);
+    g.rect(-a.w / 2, -a.h / 2, a.w, a.h).stroke({ color: shade(a.color, 0.45), width: 0.025 });
+  },
+  barricade: (g, a) => {
+    // Trestle legs and two crossing planks.
+    for (const x of [-a.w / 2 + 0.2, a.w / 2 - 0.2]) {
+      g.rect(x - 0.05 + 0.04, -a.h / 2 + 0.05, 0.1, a.h).fill(SHADOW);
+      g.rect(x - 0.05, -a.h / 2, 0.1, a.h).fill(shade(a.color, 0.7));
+    }
+    g.rect(-a.w / 2, -0.09, a.w, 0.12).fill(shade(a.color, 1.05));
+    g.rect(-a.w / 2, 0.04, a.w, 0.1).fill(shade(a.color, 0.9));
+    g.rect(-a.w / 2, -0.09, a.w, 0.23).stroke({ color: shade(a.color, 0.45), width: 0.02 });
+  },
+  fence: (g, a) => {
+    g.rect(-a.w / 2 + 0.05, -a.h / 2 + 0.07, a.w, a.h).fill(SHADOW);
+    g.rect(-a.w / 2, -a.h / 2, a.w, a.h).fill(shade(a.color, 0.9));
+    g.rect(-a.w / 2, -0.015, a.w, 0.03).fill(shade(a.color, 1.2));
+    for (const x of [-a.w / 2, 0, a.w / 2]) g.rect(x - 0.07, -0.07, 0.14, 0.14).fill(shade(a.color, 0.65));
+  },
+  wood_floor: (g, a) => {
+    g.rect(-a.w / 2, -a.h / 2, a.w, a.h).fill(shade(a.color, 0.75));
+    const boards = Math.round(a.h / 0.2);
+    for (let i = 0; i < boards; i++) {
+      const y = -a.h / 2 + (a.h / boards) * i;
+      g.rect(-a.w / 2, y + 0.008, a.w, a.h / boards - 0.016).fill(shade(a.color, a.rng.range(0.88, 1.1)));
+      const joint = -a.w / 2 + ((i * 0.61 + 0.2) % 1) * a.w;
+      g.rect(joint, y, 0.015, a.h / boards).fill({ color: 0x000000, alpha: 0.25 });
+    }
+    g.rect(-a.w / 2, -a.h / 2, a.w, a.h).stroke({ color: 0x000000, width: 0.03, alpha: 0.3 });
+  },
+  crate: (g, a) => {
+    boxWithShadow(g, a.w, a.h, a.color, 0.02, 0.08);
+    for (let i = 1; i < 4; i++) g.rect(-a.w / 2, -a.h / 2 + (a.h / 4) * i - 0.01, a.w, 0.02).fill(shade(a.color, 0.7));
+    g.moveTo(-a.w / 2 + 0.05, -a.h / 2 + 0.05).lineTo(a.w / 2 - 0.05, a.h / 2 - 0.05);
+    g.stroke({ color: shade(a.color, 1.2), width: 0.06 });
+    g.rect(-a.w / 2 + 0.03, -a.h / 2 + 0.03, a.w - 0.06, a.h - 0.06).stroke({ color: shade(a.color, 1.15), width: 0.05 });
+  },
+  campfire: (g, a) => {
+    const r = Math.min(a.w, a.h) / 2;
+    g.circle(0, 0, r * 0.8).fill({ color: 0x1a1614, alpha: 0.9 });
+    for (let i = 0; i < 9; i++) {
+      const t = (i / 9) * Math.PI * 2;
+      g.circle(Math.cos(t) * r * 0.82, Math.sin(t) * r * 0.82, r * a.rng.range(0.16, 0.22)).fill(shade(a.color, a.rng.range(0.8, 1.2)));
+    }
+    for (let i = 0; i < 3; i++) {
+      const t = (i / 3) * Math.PI + 0.4;
+      g.moveTo(Math.cos(t) * r * 0.55, Math.sin(t) * r * 0.55).lineTo(-Math.cos(t) * r * 0.55, -Math.sin(t) * r * 0.55);
+    }
+    g.stroke({ color: 0x3a2a1c, width: 0.09 });
+  },
 };
 
 const contextCache = new Map<string, GraphicsContext>();

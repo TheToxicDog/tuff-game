@@ -225,6 +225,11 @@ export function bodyModifiers(body: BodyState, needs: NeedsState, now: number): 
     staminaRegen *= 0.6;
     aimSway += 1.5;
   }
+  if (needs.energy < 8) {
+    // Running on nothing: legs drag and sprinting is out of the question.
+    speed -= 0.12;
+    canSprint = false;
+  }
   if (body.health < 25) {
     speed -= 0.1;
     canSprint = canSprint && body.health > 12;
@@ -247,15 +252,43 @@ export function updateBleeding(body: BodyState, dtReal: number): number {
   return lost;
 }
 
+/** Sleep quality of the bare ground; beds are 1, couches 0.7 (see props.json). */
+export const GROUND_SLEEP_QUALITY = 0.25;
+
+/** Energy regained per game hour asleep at a given sleep quality. */
+export function sleepEnergyRate(quality: number): number {
+  return 6 + 9 * quality;
+}
+
+/** Why the player cannot fall asleep right now, or null (design plan §21–22). */
+export function sleepProblem(body: BodyState, needs: NeedsState, now: number): string | null {
+  if (needs.energy > 75) return 'You are not tired enough to sleep.';
+  if (bleedRate(body) > 0.05) return 'You cannot sleep while you are bleeding.';
+  if (totalPain(body, now) > 60) return 'You are in too much pain to sleep.';
+  if (needs.stress > 70) return 'You are too on edge to sleep.';
+  if (needs.hunger < 10) return 'You are too hungry to sleep.';
+  if (needs.thirst < 10) return 'You are too thirsty to sleep.';
+  return null;
+}
+
 /**
  * Game-time update: healing, infection, dressing wear, needs and their consequences.
- * `rng` is used for infection onset.
+ * `rng` is used for infection onset. `sleep` is the quality of the current sleep (null when
+ * awake): sleeping restores energy, slows hunger and thirst and speeds up healing.
  */
-export function updateBodyGameTime(body: BodyState, needs: NeedsState, dtMinutes: number, now: number, rng: Rng): void {
+export function updateBodyGameTime(
+  body: BodyState,
+  needs: NeedsState,
+  dtMinutes: number,
+  now: number,
+  rng: Rng,
+  sleep: number | null = null,
+): void {
   const hours = dtMinutes / 60;
-  needs.hunger = clamp(needs.hunger - hours * (100 / 44), 0, 100);
-  needs.thirst = clamp(needs.thirst - hours * (100 / 30), 0, 100);
-  needs.energy = clamp(needs.energy - hours * (100 / 40), 0, 100);
+  const asleep = sleep !== null;
+  needs.hunger = clamp(needs.hunger - hours * (100 / 44) * (asleep ? 0.6 : 1), 0, 100);
+  needs.thirst = clamp(needs.thirst - hours * (100 / 30) * (asleep ? 0.6 : 1), 0, 100);
+  needs.energy = clamp(needs.energy + hours * (asleep ? sleepEnergyRate(sleep) : -100 / 40), 0, 100);
 
   const wellFed = needs.hunger > 45 && needs.thirst > 45;
   const onAntibiotics = now < body.antibioticsUntil;
@@ -284,6 +317,7 @@ export function updateBodyGameTime(body: BodyState, needs: NeedsState, dtMinutes
     if (w.type === 'fracture' && !w.splinted) rate *= 0.3;
     if (wellFed) rate *= 1.2;
     if (needs.hunger < 15 || needs.thirst < 15) rate *= 0.4;
+    if (asleep) rate *= 1 + 0.6 * sleep;
     if (w.infection > 0.1) rate = 0;
     if (w.bleeding > 0.05) rate *= 0.3;
     w.severity = Math.max(0, w.severity - (rate * dtMinutes) / t.healMinutes);
@@ -297,12 +331,16 @@ export function updateBodyGameTime(body: BodyState, needs: NeedsState, dtMinutes
   for (const w of body.wounds) if (w.infection > 0.3) delta -= w.infection * 2 * hours;
   const bleeding = body.wounds.some((w) => w.bleeding > 0.02);
   if (delta === 0 && !bleeding && wellFed && body.health < MAX_HEALTH) {
-    delta += (needs.energy > 25 ? 3 : 1.5) * hours;
+    delta += (asleep ? 3 + 2 * sleep : needs.energy > 25 ? 3 : 1.5) * hours;
   }
   body.health = clamp(body.health + delta, 0, MAX_HEALTH);
 
   const pain = totalPain(body, now);
-  const stressTarget = clamp(pain * 0.6 + (needs.hunger < 25 ? 15 : 0) + (needs.thirst < 25 ? 15 : 0), 0, 100);
+  const stressTarget = clamp(
+    pain * 0.6 + (needs.hunger < 25 ? 15 : 0) + (needs.thirst < 25 ? 15 : 0) + (needs.energy < 10 ? 10 : 0) - (asleep ? 12 * sleep : 0),
+    0,
+    100,
+  );
   needs.stress += (stressTarget - needs.stress) * Math.min(1, hours * 0.5);
 }
 

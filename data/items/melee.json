@@ -280,7 +280,7 @@
     "weight": 1.3,
     "volume": 1.4,
     "stackSize": 1,
-    "tags": ["melee", "blunt", "cookware"],
+    "tags": ["melee", "blunt", "cookware", "pan"],
     "icon": "pan",
     "color": "#303234",
     "durability": 200,
@@ -351,6 +351,33 @@
       "damageType": "sharp",
       "knockdown": 0.05,
       "structureDamage": 0.3
+    }
+  },
+  {
+    "id": "nailed_plank",
+    "name": "Nailed Plank",
+    "description": "A plank bristling with nails. Heavy, slow and brutal; the nails catch and tear.",
+    "category": "weapon",
+    "weight": 2.4,
+    "volume": 4,
+    "stackSize": 1,
+    "tags": ["melee", "blunt"],
+    "icon": "bat",
+    "color": "#8a6a44",
+    "durability": 60,
+    "melee": {
+      "damage": 36,
+      "reach": 1.6,
+      "arc": 100,
+      "windup": 0.26,
+      "recovery": 0.5,
+      "stamina": 0.085,
+      "knockback": 3.6,
+      "maxTargets": 2,
+      "noise": 12,
+      "damageType": "blunt",
+      "knockdown": 0.25,
+      "structureDamage": 1.1
     }
   }
 ]

@@ -1,4 +1,4 @@
-import type { ContentBundle, FirearmDef, ItemDef, MeleeDef, PropDef, ZombieArchetypeDef } from './types';
+import type { ConstructionDef, ContentBundle, FirearmDef, ItemDef, MeleeDef, PropDef, RecipeDef, ZombieArchetypeDef } from './types';
 
 /** Lookup tables over loaded content. Item indices are stable for a given bundle and are used as
  * compact network ids. */
@@ -6,23 +6,39 @@ export class ContentRegistry {
   readonly items: readonly ItemDef[];
   readonly zombies: readonly ZombieArchetypeDef[];
   readonly props: readonly PropDef[];
+  readonly recipes: readonly RecipeDef[];
+  readonly constructions: readonly ConstructionDef[];
   readonly hash: string;
   private readonly itemMap = new Map<string, ItemDef>();
   private readonly itemIndexMap = new Map<string, number>();
   private readonly zombieMap = new Map<string, ZombieArchetypeDef>();
   private readonly propMap = new Map<string, PropDef>();
+  private readonly recipeMap = new Map<string, RecipeDef>();
+  private readonly constructionMap = new Map<string, ConstructionDef>();
 
-  constructor(bundle: ContentBundle) {
+  constructor(bundle: Omit<ContentBundle, 'recipes' | 'constructions'> & Partial<Pick<ContentBundle, 'recipes' | 'constructions'>>) {
     this.hash = bundle.hash;
     this.items = bundle.items;
     this.zombies = bundle.zombies;
     this.props = bundle.props;
+    this.recipes = bundle.recipes ?? [];
+    this.constructions = bundle.constructions ?? [];
     bundle.items.forEach((item, index) => {
       this.itemMap.set(item.id, item);
       this.itemIndexMap.set(item.id, index);
     });
     for (const z of bundle.zombies) this.zombieMap.set(z.id, z);
     for (const p of bundle.props) this.propMap.set(p.id, p);
+    for (const r of this.recipes) this.recipeMap.set(r.id, r);
+    for (const c of this.constructions) this.constructionMap.set(c.id, c);
+  }
+
+  findRecipe(id: string): RecipeDef | undefined {
+    return this.recipeMap.get(id);
+  }
+
+  findConstruction(id: string): ConstructionDef | undefined {
+    return this.constructionMap.get(id);
   }
 
   hasItem(id: string): boolean {

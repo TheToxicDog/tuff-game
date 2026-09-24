@@ -1,6 +1,8 @@
 // Zombie pathfinding: A* on a 0.5 m navigation grid built lazily per chunk from static colliders.
-// Doors and windows are "portal" cells: passable at a cost, so zombies path to them and bang on
-// them when they are closed instead of clawing at solid walls.
+// Doors, windows and player-built structures are "portal" cells: passable at a cost, so zombies
+// path to them and bang on them when they are closed (or barricaded, or walled up) instead of
+// clawing at solid walls. Barricades and sturdier structures cost more, so zombies prefer the
+// weakest way in.
 
 import { Block, CHUNK_SIZE, chunkKey, type Collider } from '@tuff/shared';
 import type { WorldState } from './world-state';
@@ -131,7 +133,19 @@ export class Navigation {
   }
 
   private isPortal(c: Collider): boolean {
-    return !!c.objectId && (this.world.compiled.doors.has(c.objectId) || this.world.compiled.windows.has(c.objectId));
+    const id = c.objectId;
+    if (!id) return false;
+    const compiled = this.world.compiled;
+    return compiled.doors.has(id) || compiled.windows.has(id) || compiled.structures.has(id);
+  }
+
+  /** Forgets the grid around an area whose static geometry changed (structures, moved furniture). */
+  invalidate(minX: number, minY: number, maxX: number, maxY: number): void {
+    const x0 = Math.floor((minX - 1) / CHUNK_SIZE);
+    const x1 = Math.floor((maxX + 1) / CHUNK_SIZE);
+    const y0 = Math.floor((minY - 1) / CHUNK_SIZE);
+    const y1 = Math.floor((maxY + 1) / CHUNK_SIZE);
+    for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) this.chunks.delete(chunkKey(cx, cy));
   }
 
   /** 0 free, 1 blocked, 2 portal (with its object id). */
@@ -148,9 +162,13 @@ export class Navigation {
   /** Extra cost of passing through a portal right now, or Infinity if impassable. */
   private portalCost(objectId: string | undefined): number {
     if (!objectId) return 0;
-    const s = this.world.compiled.effectiveState(objectId);
-    if (this.world.compiled.doors.has(objectId)) return s.open || s.broken ? 0 : 10;
-    return s.broken ? 2 : 22;
+    const compiled = this.world.compiled;
+    const s = compiled.effectiveState(objectId);
+    const struct = compiled.structures.get(objectId);
+    if (struct) return 30 + s.hp / 8;
+    const boards = s.boards * 14;
+    if (compiled.doors.has(objectId)) return boards + ((s.open || s.broken) && !boards ? 0 : 10);
+    return boards + (s.broken ? 2 : 22);
   }
 
   walkable(x: number, y: number): boolean {

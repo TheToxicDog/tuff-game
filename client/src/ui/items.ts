@@ -17,6 +17,7 @@ const CATEGORY_NAMES: Record<string, string> = {
   fuel: 'Fuel',
   junk: 'Junk',
   collectible: 'Valuable',
+  furniture: 'Furniture',
 };
 
 export function categoryName(def: ItemDef): string {

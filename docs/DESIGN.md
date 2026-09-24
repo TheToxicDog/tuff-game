@@ -155,7 +155,8 @@ targetCamera = playerPosition + normalizedAimDirection * lookAheadDistance
 cameraPosition = lerp(cameraPosition, targetCamera, cameraSmoothness)
 ```
 
-Players should also have mouse-wheel zoom. Recommended zoom range: **0.75× – 1.50×**. Competitive
+Players should also have mouse-wheel zoom. Recommended zoom range: **1.0× – 2.0×** (default 1.4×).
+The original 0.75× – 1.50× felt too far out in playtesting, so both ends moved closer. Competitive
 visibility must remain controlled so players cannot zoom impossibly far out.
 
 ## 4. Desktop Controls

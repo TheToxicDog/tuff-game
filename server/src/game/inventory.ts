@@ -13,6 +13,7 @@ import {
   forEachStack,
   hasToolTag,
   INTERACT_RANGE,
+  planConsumption,
   POCKETS,
   preferredSlot,
   QUICK_SLOT_COUNT,
@@ -509,6 +510,44 @@ export class InventoryService {
     p.statusDirty = true;
     void loc;
     return null;
+  }
+
+  /** Removes `qty` units from a carried stack (crafting ingredients, building materials). */
+  consumeUnits(p: PlayerComp, uid: number, qty: number): void {
+    const found = findStack(p.inventory, uid);
+    if (!found) return;
+    if (found.stack.qty > qty) found.stack.qty -= qty;
+    else this.removeStack(p, uid);
+    p.inventoryDirty = true;
+  }
+
+  /** Consumes a list of item requirements; returns false (consuming nothing) if any is missing. */
+  consumeMaterials(p: PlayerComp, materials: readonly { item: string; qty: number }[]): boolean {
+    const plan = planConsumption(
+      this.content,
+      p.inventory,
+      materials.map((m) => ({ item: m.item, qty: m.qty })),
+    );
+    if (!plan) return false;
+    for (const { uid, qty } of plan) this.consumeUnits(p, uid, qty);
+    return true;
+  }
+
+  /** Gives items to a player, dropping what does not fit at their feet. */
+  giveItems(e: number, p: PlayerComp, items: readonly { item: string; qty: number }[]): void {
+    const t = this.game.ecs.get(e, Transform);
+    for (const { item, qty } of items) {
+      const def = this.content.findItem(item);
+      if (!def || qty <= 0) continue;
+      let left = qty;
+      while (left > 0) {
+        const n = Math.min(left, def.stackSize);
+        left -= n;
+        const stack: ItemStack = { uid: newUid(), id: def.id, qty: n };
+        if (def.durability) stack.cond = 1;
+        if (!this.autoPlace(p, stack) && t) this.game.spawnGroundItem(t.x, t.y, stack);
+      }
+    }
   }
 
   private removeStack(p: PlayerComp, uid: number): void {

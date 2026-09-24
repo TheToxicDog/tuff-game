@@ -8,6 +8,7 @@ import type {
   InvLocation,
   ItemStack,
   PlayerInventory,
+  StationKind,
   StatusView,
   WorldItemView,
 } from '@tuff/shared';
@@ -37,4 +38,8 @@ export interface GameContext {
   ui(sound: SoundId): void;
   /** Moves a stack where it most sensibly goes in the player's inventory. */
   take(stack: ItemStack, from: InvLocation): void;
+  /** Crafting stations within reach (stoves, lit fires, workbenches). */
+  stationsNearby(): Set<StationKind>;
+  /** True while a timed action (search, cooking, building…) is running. */
+  readonly busy: boolean;
 }

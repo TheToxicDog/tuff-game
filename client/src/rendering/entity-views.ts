@@ -160,7 +160,7 @@ export class EntityViews implements EntityListener {
             windup: false,
             lunge: false,
             stagger: false,
-            prone: false,
+            prone: (f & PlayerFlags.Sleeping) !== 0,
           });
         } else {
           view.update(dt, e.x, e.y, e.angle, speed, {

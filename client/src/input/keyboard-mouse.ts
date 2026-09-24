@@ -15,7 +15,7 @@ export class KeyboardMouseSource implements InputSource {
   /** When false (typing in chat, menus open), gameplay keys are ignored. */
   enabled = true;
   /** Actions that still fire while disabled (closing menus, toggling inventory). */
-  private readonly alwaysOn = new Set<ButtonAction>(['menu', 'inventory', 'map', 'health']);
+  private readonly alwaysOn = new Set<ButtonAction>(['menu', 'inventory', 'map', 'health', 'crafting']);
 
   constructor(
     private readonly target: HTMLElement,

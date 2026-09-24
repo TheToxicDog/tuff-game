@@ -97,6 +97,12 @@ export class PropRenderer {
     this.views.set(p.id, { graphics, canopy });
   }
 
+  /** Furniture that has been picked up disappears. */
+  setHidden(id: string, hidden: boolean): void {
+    const v = this.views.get(id);
+    if (v) for (const g of v.graphics) g.visible = !hidden;
+  }
+
   remove(id: string): void {
     const v = this.views.get(id);
     if (!v) return;

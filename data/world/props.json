@@ -232,7 +232,8 @@
     "layer": "low",
     "style": "trash_can",
     "color": "#3a3e42",
-    "container": { "name": "Trash Can", "loot": "trash_can", "searchTime": 0.4, "volume": 30 }
+    "container": { "name": "Trash Can", "loot": "trash_can", "searchTime": 0.4, "volume": 30 },
+    "movable": { "weight": 5 }
   },
   {
     "id": "streetlight",
@@ -256,7 +257,8 @@
     "material": "wood",
     "layer": "low",
     "style": "bench",
-    "color": "#6a5038"
+    "color": "#6a5038",
+    "movable": { "weight": 20 }
   },
   {
     "id": "mailbox",
@@ -312,7 +314,8 @@
     "material": "wood",
     "layer": "low",
     "style": "picnic_table",
-    "color": "#7a6044"
+    "color": "#7a6044",
+    "movable": { "weight": 35 }
   },
   {
     "id": "pallet",
@@ -324,7 +327,8 @@
     "material": "wood",
     "layer": "ground",
     "style": "pallet",
-    "color": "#9a7a50"
+    "color": "#9a7a50",
+    "movable": { "weight": 12 }
   },
   {
     "id": "barrel",
@@ -335,7 +339,8 @@
     "material": "metal",
     "layer": "low",
     "style": "barrel",
-    "color": "#3a5a7a"
+    "color": "#3a5a7a",
+    "movable": { "weight": 12 }
   },
   {
     "id": "tire_pile",
@@ -358,7 +363,8 @@
     "material": "metal",
     "layer": "low",
     "style": "shopping_cart",
-    "color": "#9aa0a6"
+    "color": "#9aa0a6",
+    "movable": { "weight": 15 }
   },
   {
     "id": "parking_line",
@@ -444,7 +450,9 @@
     "layer": "low",
     "style": "bed",
     "color": "#5a6a8a",
-    "container": { "name": "Under the Bed", "loot": "under_bed", "searchTime": 0.6, "volume": 15 }
+    "container": { "name": "Under the Bed", "loot": "under_bed", "searchTime": 0.6, "volume": 15 },
+    "sleep": { "quality": 1.0 },
+    "movable": { "weight": 25 }
   },
   {
     "id": "bed_double",
@@ -457,7 +465,9 @@
     "layer": "low",
     "style": "bed",
     "color": "#7a5a5a",
-    "container": { "name": "Under the Bed", "loot": "under_bed", "searchTime": 0.6, "volume": 20 }
+    "container": { "name": "Under the Bed", "loot": "under_bed", "searchTime": 0.6, "volume": 20 },
+    "sleep": { "quality": 1.0 },
+    "movable": { "weight": 40 }
   },
   {
     "id": "nightstand",
@@ -470,7 +480,8 @@
     "layer": "low",
     "style": "nightstand",
     "color": "#6a4a30",
-    "container": { "name": "Nightstand", "loot": "nightstand", "searchTime": 0.25, "volume": 8 }
+    "container": { "name": "Nightstand", "loot": "nightstand", "searchTime": 0.25, "volume": 8 },
+    "movable": { "weight": 8 }
   },
   {
     "id": "wardrobe",
@@ -483,7 +494,8 @@
     "layer": "tall",
     "style": "wardrobe",
     "color": "#5a3e28",
-    "container": { "name": "Wardrobe", "loot": "wardrobe", "searchTime": 0.6, "volume": 40 }
+    "container": { "name": "Wardrobe", "loot": "wardrobe", "searchTime": 0.6, "volume": 40 },
+    "movable": { "weight": 40 }
   },
   {
     "id": "dresser",
@@ -496,7 +508,8 @@
     "layer": "low",
     "style": "dresser",
     "color": "#6a4a32",
-    "container": { "name": "Dresser", "loot": "dresser", "searchTime": 0.4, "volume": 30 }
+    "container": { "name": "Dresser", "loot": "dresser", "searchTime": 0.4, "volume": 30 },
+    "movable": { "weight": 30 }
   },
   {
     "id": "couch",
@@ -508,7 +521,9 @@
     "material": "fabric",
     "layer": "low",
     "style": "couch",
-    "color": "#5a4a3e"
+    "color": "#5a4a3e",
+    "sleep": { "quality": 0.7 },
+    "movable": { "weight": 35 }
   },
   {
     "id": "armchair",
@@ -520,7 +535,9 @@
     "material": "fabric",
     "layer": "low",
     "style": "armchair",
-    "color": "#6a3a30"
+    "color": "#6a3a30",
+    "sleep": { "quality": 0.45 },
+    "movable": { "weight": 15 }
   },
   {
     "id": "coffee_table",
@@ -532,7 +549,8 @@
     "material": "wood",
     "layer": "low",
     "style": "table",
-    "color": "#5a3e2a"
+    "color": "#5a3e2a",
+    "movable": { "weight": 10 }
   },
   {
     "id": "tv_stand",
@@ -545,7 +563,8 @@
     "layer": "low",
     "style": "tv_stand",
     "color": "#2a2622",
-    "container": { "name": "TV Stand", "loot": "living_room", "searchTime": 0.3, "volume": 12 }
+    "container": { "name": "TV Stand", "loot": "living_room", "searchTime": 0.3, "volume": 12 },
+    "movable": { "weight": 12 }
   },
   {
     "id": "bookshelf",
@@ -558,7 +577,8 @@
     "layer": "tall",
     "style": "bookshelf",
     "color": "#5a4028",
-    "container": { "name": "Bookshelf", "loot": "bookshelf", "searchTime": 0.4, "volume": 20 }
+    "container": { "name": "Bookshelf", "loot": "bookshelf", "searchTime": 0.4, "volume": 20 },
+    "movable": { "weight": 25 }
   },
   {
     "id": "dining_table",
@@ -570,7 +590,8 @@
     "material": "wood",
     "layer": "low",
     "style": "table",
-    "color": "#6a4a2e"
+    "color": "#6a4a2e",
+    "movable": { "weight": 20 }
   },
   {
     "id": "chair",
@@ -582,7 +603,8 @@
     "style": "chair",
     "color": "#5a4028",
     "w": 0.45,
-    "h": 0.45
+    "h": 0.45,
+    "movable": { "weight": 4 }
   },
   {
     "id": "desk",
@@ -595,7 +617,8 @@
     "layer": "low",
     "style": "desk",
     "color": "#5e4630",
-    "container": { "name": "Desk", "loot": "desk", "searchTime": 0.3, "volume": 15 }
+    "container": { "name": "Desk", "loot": "desk", "searchTime": 0.3, "volume": 15 },
+    "movable": { "weight": 22 }
   },
   {
     "id": "kitchen_counter",
@@ -634,7 +657,8 @@
     "layer": "low",
     "style": "stove",
     "color": "#d8d4cc",
-    "container": { "name": "Oven", "loot": "oven", "searchTime": 0.3, "volume": 10 }
+    "container": { "name": "Oven", "loot": "oven", "searchTime": 0.3, "volume": 10 },
+    "station": "heat"
   },
   {
     "id": "fridge",
@@ -647,7 +671,8 @@
     "layer": "tall",
     "style": "fridge",
     "color": "#e0dcd4",
-    "container": { "name": "Refrigerator", "loot": "fridge", "searchTime": 0.3, "volume": 60 }
+    "container": { "name": "Refrigerator", "loot": "fridge", "searchTime": 0.3, "volume": 60 },
+    "movable": { "weight": 60 }
   },
   {
     "id": "toilet",
@@ -710,7 +735,8 @@
     "layer": "low",
     "style": "washer",
     "color": "#e0e0dc",
-    "container": { "name": "Washing Machine", "loot": "laundry", "searchTime": 0.3, "volume": 10 }
+    "container": { "name": "Washing Machine", "loot": "laundry", "searchTime": 0.3, "volume": 10 },
+    "movable": { "weight": 45 }
   },
   {
     "id": "workbench",
@@ -723,7 +749,8 @@
     "layer": "low",
     "style": "workbench",
     "color": "#7a5a3a",
-    "container": { "name": "Workbench", "loot": "workbench", "searchTime": 0.5, "volume": 40 }
+    "container": { "name": "Workbench", "loot": "workbench", "searchTime": 0.5, "volume": 40 },
+    "station": "workbench"
   },
   {
     "id": "garage_shelf",
@@ -749,7 +776,8 @@
     "layer": "low",
     "style": "toolbox",
     "color": "#b8302a",
-    "container": { "name": "Toolbox", "loot": "toolbox", "searchTime": 0.3, "volume": 10 }
+    "container": { "name": "Toolbox", "loot": "toolbox", "searchTime": 0.3, "volume": 10 },
+    "movable": { "weight": 5 }
   },
   {
     "id": "lawn_mower",
@@ -761,7 +789,8 @@
     "material": "metal",
     "layer": "low",
     "style": "lawn_mower",
-    "color": "#3a6a3a"
+    "color": "#3a6a3a",
+    "movable": { "weight": 25 }
   },
   {
     "id": "rug",
@@ -784,7 +813,8 @@
     "material": "stone",
     "layer": "low",
     "style": "plant_pot",
-    "color": "#3e5a30"
+    "color": "#3e5a30",
+    "movable": { "weight": 6 }
   },
   {
     "id": "gun_safe",
@@ -797,7 +827,8 @@
     "layer": "tall",
     "style": "safe",
     "color": "#2a2c2e",
-    "container": { "name": "Gun Safe", "loot": "gun_safe", "searchTime": 1.2, "volume": 40 }
+    "container": { "name": "Gun Safe", "loot": "gun_safe", "searchTime": 1.2, "volume": 40 },
+    "movable": { "weight": 110 }
   },
   {
     "id": "filing_cabinet",
@@ -810,7 +841,8 @@
     "layer": "tall",
     "style": "filing_cabinet",
     "color": "#6a6e70",
-    "container": { "name": "Filing Cabinet", "loot": "filing_cabinet", "searchTime": 0.5, "volume": 20 }
+    "container": { "name": "Filing Cabinet", "loot": "filing_cabinet", "searchTime": 0.5, "volume": 20 },
+    "movable": { "weight": 25 }
   },
   {
     "id": "locker",
@@ -823,7 +855,8 @@
     "layer": "tall",
     "style": "locker",
     "color": "#4a5a6a",
-    "container": { "name": "Locker", "loot": "employee_locker", "searchTime": 0.4, "volume": 20 }
+    "container": { "name": "Locker", "loot": "employee_locker", "searchTime": 0.4, "volume": 20 },
+    "movable": { "weight": 20 }
   },
   {
     "id": "weapon_locker",
@@ -953,7 +986,8 @@
     "layer": "low",
     "style": "freezer",
     "color": "#e0e4e8",
-    "container": { "name": "Freezer", "loot": "freezer", "searchTime": 0.4, "volume": 80 }
+    "container": { "name": "Freezer", "loot": "freezer", "searchTime": 0.4, "volume": 80 },
+    "movable": { "weight": 50 }
   },
   {
     "id": "storage_rack",
@@ -979,7 +1013,8 @@
     "layer": "tall",
     "style": "boxes",
     "color": "#a0845a",
-    "container": { "name": "Cardboard Boxes", "loot": "stockroom", "searchTime": 0.8, "volume": 60 }
+    "container": { "name": "Cardboard Boxes", "loot": "stockroom", "searchTime": 0.8, "volume": 60 },
+    "movable": { "weight": 10 }
   },
   {
     "id": "vending_machine",
@@ -992,7 +1027,8 @@
     "layer": "tall",
     "style": "vending",
     "color": "#a82a2a",
-    "container": { "name": "Vending Machine", "loot": "vending", "searchTime": 1.0, "volume": 30 }
+    "container": { "name": "Vending Machine", "loot": "vending", "searchTime": 1.0, "volume": 30 },
+    "movable": { "weight": 90 }
   },
   {
     "id": "cell_bunk",
@@ -1004,7 +1040,8 @@
     "material": "metal",
     "layer": "low",
     "style": "bunk",
-    "color": "#6a6e70"
+    "color": "#6a6e70",
+    "sleep": { "quality": 0.6 }
   },
   {
     "id": "water_cooler",

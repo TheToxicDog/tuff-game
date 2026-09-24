@@ -21,6 +21,7 @@ import {
   weaponProfile,
   ZOMBIE_RADIUS,
   type MoveParams,
+  type PlayerInput,
   type PlayerStepEnv,
   type StatusView,
 } from '@tuff/shared';
@@ -118,7 +119,7 @@ export class PlayerSystem {
       this.updateAction(e, p, dt);
 
       updateBleeding(p.body, dt);
-      updateBodyGameTime(p.body, p.needs, dtMinutes, game.minutes, game.rng);
+      updateBodyGameTime(p.body, p.needs, dtMinutes, game.minutes, game.rng, p.sleep?.quality ?? null);
       this.updateFlashlight(p, dt);
 
       p.refreshTimer -= dt;
@@ -165,7 +166,8 @@ export class PlayerSystem {
         p.sim.action = PlayerAction.None;
         p.sim.actionTimer = 0;
       }
-      stepPlayer(p.sim, input, env);
+      // Sleepers lie still whatever the client sends (it sends neutral input too).
+      stepPlayer(p.sim, p.sleep ? sleepingInput(input, p.sim.aim, p.sim.slot) : input, env);
       p.lastSeq = input.seq;
       const held = p.inventory.slots[p.sim.slot];
       if (held && held.ammo !== undefined && held.ammo !== p.sim.magAmmo && game.content.findItem(held.id)?.firearm) {
@@ -178,7 +180,9 @@ export class PlayerSystem {
     const a = p.action;
     if (!a) return;
     const moved = Math.hypot(p.sim.x - a.startX, p.sim.y - a.startY);
-    if ((a.kind === 'search' && moved > 1.6) || p.sim.action === PlayerAction.Melee || p.sim.action === PlayerAction.Shove) {
+    // Searching tolerates a step or two; crafting, building and barricading need you to stand still.
+    const limit = a.kind === 'search' ? 1.6 : a.kind === 'consume' ? Infinity : 1.2;
+    if (moved > limit || p.sim.action === PlayerAction.Melee || p.sim.action === PlayerAction.Shove) {
       this.game.cancelAction(p);
       return;
     }
@@ -260,8 +264,15 @@ export class PlayerSystem {
       hasFlashlight: !!light,
       carried: r1(inventoryWeight(game.content, p.inventory)),
       move: p.move,
+      sleeping: p.sleep ? p.sleep.quality : null,
+      fastForward: !!p.sleep && game.survival.everyoneAsleep(),
     };
   }
+}
+
+/** The input a sleeping player is simulated with: no movement, no buttons. */
+export function sleepingInput(input: PlayerInput, aim: number, slot: number): PlayerInput {
+  return { ...input, moveX: 0, moveY: 0, buttons: 0, aim, slot };
 }
 
 export { PLAYER_RADIUS };

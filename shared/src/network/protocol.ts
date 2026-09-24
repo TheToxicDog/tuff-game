@@ -10,6 +10,7 @@ import type { BodyPart, NeedsState, Wound } from '../sim/body';
 import type { PlayerInput, PlayerSimState } from '../sim/player';
 import type { ObjectState } from '../world/compile';
 import type { BuildingDef, FenceDef, PropInstance, RoadDef, SpawnPoint, ZoneDef } from '../world/map';
+import type { StructureDef } from '../world/structures';
 import { BinaryReader, BinaryWriter } from './binary';
 
 // ---------------------------------------------------------------------------------------------
@@ -34,6 +35,7 @@ export const PlayerFlags = {
   Flashlight: 1 << 7,
   Injured: 1 << 8,
   Busy: 1 << 9,
+  Sleeping: 1 << 10,
 } as const;
 
 export const ZombieAnim = {
@@ -184,6 +186,10 @@ export const SOUNDS = [
   'player_hurt',
   'player_death',
   'glass_step',
+  'hammer',
+  'board_break',
+  'sizzle',
+  'fire',
 ] as const;
 export type SoundName = (typeof SOUNDS)[number];
 
@@ -457,6 +463,8 @@ export interface ChunkPayload {
   buildings: BuildingDef[];
   props: PropInstance[];
   fences: FenceDef[];
+  /** Player-built structures (walls, crates, fires, placed furniture). */
+  structures: StructureDef[];
   /** Non-default states of world objects in this chunk. */
   objects: Record<string, ObjectState>;
 }
@@ -506,6 +514,10 @@ export interface StatusView {
   /** Total carried weight in kg. */
   carried: number;
   move: MoveParams;
+  /** Sleep quality while asleep, null when awake. */
+  sleeping: number | null;
+  /** True while every survivor online is asleep and time runs fast. */
+  fastForward: boolean;
 }
 
 export interface ContainerView {
@@ -545,6 +557,8 @@ export type ServerMessage =
       worldMinutes: number;
     }
   | { t: 'chunk'; chunk: ChunkPayload }
+  | { t: 'structure'; structure: StructureDef }
+  | { t: 'unstructure'; id: string }
   | { t: 'unchunk'; keys: string[] }
   | { t: 'overview'; overview: MapOverview }
   | { t: 'explored'; cells: number[] }
@@ -560,6 +574,7 @@ export type ServerMessage =
   | { t: 'players'; players: PlayerListEntry[] }
   | { t: 'died'; cause: string; stats: CharacterStats; respawnIn: number }
   | { t: 'spawned'; entityId: number }
+  | { t: 'mapReload'; reason: string }
   | { t: 'pong'; id: number; tick: number }
   | { t: 'error'; code: string; message: string };
 
@@ -577,6 +592,15 @@ export type ClientMessage =
   | { t: 'unload'; uid: number }
   | { t: 'flashlight' }
   | { t: 'respawn' }
-  | { t: 'cancel' };
+  | { t: 'cancel' }
+  | { t: 'act'; action: WorldAction; target: string }
+  | { t: 'sleep'; target?: string }
+  | { t: 'wake' }
+  | { t: 'craft'; recipe: string }
+  | { t: 'build'; type: string; prop?: string; x: number; y: number; rot: number };
+
+/** Secondary world interactions (the hold-E action menu, design plan §5.4). */
+export const WORLD_ACTIONS = ['barricade', 'unbarricade', 'pickup', 'dismantle', 'repair', 'refuel', 'extinguish', 'lockStorage'] as const;
+export type WorldAction = (typeof WORLD_ACTIONS)[number];
 
 export const MAX_CHAT_LENGTH = 200;

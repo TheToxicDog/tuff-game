@@ -5,16 +5,22 @@ import { fileURLToPath } from 'node:url';
 import {
   ContentErrors,
   ContentRegistry,
+  furnitureItems,
+  validateConstructions,
+  validateCraftingReferences,
   validateItems,
   validateLootTables,
   validateProps,
+  validateRecipes,
   validateReferences,
   validateServerConfig,
   validateZombies,
+  type ConstructionDef,
   type ContentBundle,
   type ItemDef,
   type LootTableDef,
   type PropDef,
+  type RecipeDef,
   type ServerConfig,
   type ZombieArchetypeDef,
 } from '@tuff/shared';
@@ -76,6 +82,13 @@ export function loadContent(dataDir = findDataDir(), configPath?: string): Loade
   for (const { file, data } of readJsonFiles(join(dataDir, 'zombies'))) zombies.push(...validateZombies(data, file, errors));
   const props: PropDef[] = [];
   for (const { file, data } of readJsonFiles(join(dataDir, 'world'))) props.push(...validateProps(data, file, errors));
+  // Every movable prop can be carried as an item.
+  items.push(...furnitureItems(props));
+  const recipes: RecipeDef[] = [];
+  for (const { file, data } of readJsonFiles(join(dataDir, 'recipes'))) recipes.push(...validateRecipes(data, file, errors));
+  const constructions: ConstructionDef[] = [];
+  for (const { file, data } of readJsonFiles(join(dataDir, 'construction')))
+    constructions.push(...validateConstructions(data, file, errors));
 
   const cfgFile = configPath ?? process.env.TUFF_CONFIG ?? join(dataDir, 'config', 'server.json');
   let config: ServerConfig | null = null;
@@ -85,12 +98,13 @@ export function loadContent(dataDir = findDataDir(), configPath?: string): Loade
     errors.add(`Missing server config at ${cfgFile}`);
   }
   validateReferences(items, lootTables, props, config, zombies, errors);
+  validateCraftingReferences(items, { recipes, constructions }, errors);
   if (items.length === 0) errors.add('No items were loaded');
   if (zombies.length === 0) errors.add('No zombie archetypes were loaded');
   errors.throwIfAny();
 
-  const hash = createHash('sha256').update(JSON.stringify({ items, zombies, props })).digest('hex').slice(0, 16);
-  const bundle: ContentBundle = { hash, items, zombies, props };
+  const hash = createHash('sha256').update(JSON.stringify({ items, zombies, props, recipes, constructions })).digest('hex').slice(0, 16);
+  const bundle: ContentBundle = { hash, items, zombies, props, recipes, constructions };
   return {
     registry: new ContentRegistry(bundle),
     bundle,

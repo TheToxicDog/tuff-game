@@ -1,0 +1,180 @@
+[
+  {
+    "id": "bake_potato",
+    "name": "Baked Potato",
+    "description": "Throw a potato in the heat until the skin chars.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 6,
+    "inputs": [{ "item": "potato", "qty": 1 }],
+    "outputs": [{ "item": "baked_potato", "qty": 1 }]
+  },
+  {
+    "id": "vegetable_soup",
+    "name": "Vegetable Soup",
+    "description": "Any three vegetables and a bottle of water, simmered in a pot. Makes two bowls.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 12,
+    "inputs": [
+      { "tag": "vegetable", "qty": 3 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "vegetable_soup", "qty": 2 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  },
+  {
+    "id": "noodle_soup",
+    "name": "Noodle Soup",
+    "description": "Boil instant noodles instead of crunching them dry.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 7,
+    "inputs": [
+      { "item": "instant_noodles", "qty": 1 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "noodle_soup", "qty": 1 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  },
+  {
+    "id": "boil_pasta",
+    "name": "Boiled Pasta",
+    "description": "A box of pasta boils into two big bowls.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 12,
+    "inputs": [
+      { "item": "dry_pasta", "qty": 1 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "cooked_pasta", "qty": 2 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  },
+  {
+    "id": "boil_rice",
+    "name": "Boiled Rice",
+    "description": "A bag of rice boils into two bowls.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 12,
+    "inputs": [
+      { "item": "rice", "qty": 1 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "cooked_rice", "qty": 2 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  },
+  {
+    "id": "fry_steak",
+    "name": "Pan-Fried Steak",
+    "description": "Sear a steak in a frying pan.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 8,
+    "inputs": [{ "item": "raw_steak", "qty": 1 }],
+    "tools": ["pan"],
+    "outputs": [{ "item": "fried_steak", "qty": 1 }]
+  },
+  {
+    "id": "fry_chicken",
+    "name": "Fried Chicken",
+    "description": "Cook chicken through in a frying pan.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 10,
+    "inputs": [{ "item": "raw_chicken", "qty": 1 }],
+    "tools": ["pan"],
+    "outputs": [{ "item": "roast_chicken", "qty": 1 }]
+  },
+  {
+    "id": "heat_beans",
+    "name": "Hot Beans",
+    "description": "Open a can of beans and heat it up.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 5,
+    "inputs": [{ "item": "canned_beans", "qty": 1 }],
+    "tools": ["can_opener", "cookware"],
+    "outputs": [
+      { "item": "hot_beans", "qty": 1 },
+      { "item": "empty_can", "qty": 1 }
+    ]
+  },
+  {
+    "id": "heat_chili",
+    "name": "Hot Chili",
+    "description": "Open a can of chili and heat it up.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 5,
+    "inputs": [{ "item": "canned_chili", "qty": 1 }],
+    "tools": ["can_opener", "cookware"],
+    "outputs": [
+      { "item": "hot_chili", "qty": 1 },
+      { "item": "empty_can", "qty": 1 }
+    ]
+  },
+  {
+    "id": "heat_soup",
+    "name": "Hot Chicken Soup",
+    "description": "Open a can of soup and heat it up.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 5,
+    "inputs": [{ "item": "canned_soup", "qty": 1 }],
+    "tools": ["can_opener", "cookware"],
+    "outputs": [
+      { "item": "hot_soup", "qty": 1 },
+      { "item": "empty_can", "qty": 1 }
+    ]
+  },
+  {
+    "id": "camp_stew",
+    "name": "Camp Stew",
+    "description": "Canned meat, two vegetables and water. Makes two bowls.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 14,
+    "inputs": [
+      { "item": "canned_meat", "qty": 1 },
+      { "tag": "vegetable", "qty": 2 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "camp_stew", "qty": 2 },
+      { "item": "empty_can", "qty": 1 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  },
+  {
+    "id": "brew_coffee",
+    "name": "Hot Coffee",
+    "description": "Brew a tin of grounds into two mugs' worth. Holds off exhaustion.",
+    "category": "cooking",
+    "station": "heat",
+    "time": 8,
+    "inputs": [
+      { "item": "ground_coffee", "qty": 1 },
+      { "item": "water_bottle", "qty": 1 }
+    ],
+    "tools": ["pot"],
+    "outputs": [
+      { "item": "hot_coffee", "qty": 2 },
+      { "item": "empty_bottle", "qty": 1 }
+    ]
+  }
+]

@@ -4,10 +4,13 @@
 
 import {
   CHUNK_SIZE,
+  chunkKey,
   CompiledWorld,
   decodeTerrainChunk,
   isInsideBuilding,
   parseChunkKey,
+  structureBounds,
+  structureShape,
   TERRAIN_CELLS_PER_CHUNK,
   type BuildingDef,
   type ChunkPayload,
@@ -16,12 +19,14 @@ import {
   type ObjectState,
   type PropInstance,
   type RoadDef,
+  type StructureDef,
 } from '@tuff/shared';
 
-export type ElementKind = 'building' | 'prop' | 'road' | 'fence';
+export type ElementKind = 'building' | 'prop' | 'road' | 'fence' | 'structure';
+type ElementDef = BuildingDef | PropInstance | RoadDef | FenceDef | StructureDef;
 
 export interface WorldListener {
-  elementAdded(kind: ElementKind, def: BuildingDef | PropInstance | RoadDef | FenceDef): void;
+  elementAdded(kind: ElementKind, def: ElementDef): void;
   elementRemoved(kind: ElementKind, id: string): void;
   terrainChanged(): void;
   objectChanged(id: string): void;
@@ -42,11 +47,12 @@ export class ClientWorld {
   readonly props = new Map<string, PropInstance>();
   readonly roads = new Map<string, RoadDef>();
   readonly fences = new Map<string, FenceDef>();
+  readonly structures = new Map<string, StructureDef>();
   private readonly refs = new Map<string, number>();
   private readonly listeners: WorldListener[] = [];
 
   constructor(
-    content: ContentRegistry,
+    private readonly content: ContentRegistry,
     readonly width: number,
     readonly height: number,
   ) {
@@ -61,37 +67,71 @@ export class ClientWorld {
     const key = `${c.cx},${c.cy}`;
     if (this.chunks.has(key)) this.removeChunk(key);
     const record: ChunkRecord = { key, cx: c.cx, cy: c.cy, terrain: decodeTerrainChunk(c.terrain), elements: [] };
-    const add = (kind: ElementKind, id: string, def: BuildingDef | PropInstance | RoadDef | FenceDef) => {
-      record.elements.push({ kind, id });
-      const n = (this.refs.get(id) ?? 0) + 1;
-      this.refs.set(id, n);
-      if (n > 1) return;
-      switch (kind) {
-        case 'building':
-          this.buildings.set(id, def as BuildingDef);
-          this.compiled.addBuilding(def as BuildingDef);
-          break;
-        case 'prop':
-          this.props.set(id, def as PropInstance);
-          this.compiled.addProp(def as PropInstance);
-          break;
-        case 'road':
-          this.roads.set(id, def as RoadDef);
-          break;
-        case 'fence':
-          this.fences.set(id, def as FenceDef);
-          this.compiled.addFence(def as FenceDef);
-          break;
-      }
-      for (const l of this.listeners) l.elementAdded(kind, def);
-    };
+    const add = (kind: ElementKind, id: string, def: ElementDef) => this.addRef(record, kind, id, def);
     for (const b of c.buildings) add('building', b.id, b);
     for (const p of c.props) add('prop', p.id, p);
     for (const r of c.roads) add('road', r.id, r);
     for (const f of c.fences) add('fence', f.id, f);
+    for (const st of c.structures ?? []) add('structure', st.id, st);
     this.chunks.set(key, record);
     this.setObjectStates(c.objects);
     for (const l of this.listeners) l.terrainChanged();
+  }
+
+  private addRef(record: ChunkRecord, kind: ElementKind, id: string, def: ElementDef): void {
+    record.elements.push({ kind, id });
+    const n = (this.refs.get(id) ?? 0) + 1;
+    this.refs.set(id, n);
+    if (n > 1) return;
+    switch (kind) {
+      case 'building':
+        this.buildings.set(id, def as BuildingDef);
+        this.compiled.addBuilding(def as BuildingDef);
+        break;
+      case 'prop':
+        this.props.set(id, def as PropInstance);
+        this.compiled.addProp(def as PropInstance);
+        break;
+      case 'road':
+        this.roads.set(id, def as RoadDef);
+        break;
+      case 'fence':
+        this.fences.set(id, def as FenceDef);
+        this.compiled.addFence(def as FenceDef);
+        break;
+      case 'structure':
+        this.structures.set(id, def as StructureDef);
+        this.compiled.addStructure(def as StructureDef);
+        break;
+    }
+    for (const l of this.listeners) l.elementAdded(kind, def);
+  }
+
+  /** A structure was built (or placed) while its chunks were loaded. */
+  addStructure(def: StructureDef): void {
+    if (this.structures.has(def.id)) return;
+    const shape = structureShape(this.content, def.type, def.prop);
+    if (!shape) return;
+    const b = structureBounds(def, shape);
+    const x0 = Math.floor((b.minX - 1) / CHUNK_SIZE);
+    const x1 = Math.floor((b.maxX + 1) / CHUNK_SIZE);
+    const y0 = Math.floor((b.minY - 1) / CHUNK_SIZE);
+    const y1 = Math.floor((b.maxY + 1) / CHUNK_SIZE);
+    for (let cy = y0; cy <= y1; cy++) {
+      for (let cx = x0; cx <= x1; cx++) {
+        const record = this.chunks.get(chunkKey(cx, cy));
+        if (record) this.addRef(record, 'structure', def.id, def);
+      }
+    }
+  }
+
+  removeStructure(id: string): void {
+    if (!this.structures.has(id)) return;
+    for (const record of this.chunks.values()) record.elements = record.elements.filter((e) => e.id !== id);
+    this.refs.delete(id);
+    this.compiled.removeElement(id);
+    this.structures.delete(id);
+    for (const l of this.listeners) l.elementRemoved('structure', id);
   }
 
   removeChunk(key: string): void {
@@ -109,6 +149,7 @@ export class ClientWorld {
       if (kind === 'building') this.buildings.delete(id);
       else if (kind === 'prop') this.props.delete(id);
       else if (kind === 'road') this.roads.delete(id);
+      else if (kind === 'structure') this.structures.delete(id);
       else this.fences.delete(id);
       for (const l of this.listeners) l.elementRemoved(kind, id);
     }

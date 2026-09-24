@@ -12,7 +12,9 @@
       { "item": "coffee_mug", "weight": 2 },
       { "item": "plastic_bag", "weight": 3, "max": 3 },
       { "item": "garbage_bag", "weight": 2 },
-      { "item": "matches", "weight": 2 }
+      { "item": "matches", "weight": 2 },
+      { "item": "cooking_pot", "weight": 3 },
+      { "item": "ground_coffee", "weight": 2 }
     ]
   },
   {
@@ -41,7 +43,9 @@
       { "table": "fresh_food", "weight": 8 },
       { "item": "cheese", "weight": 3 },
       { "item": "pickles", "weight": 2 },
-      { "item": "water_bottle", "weight": 5, "max": 3 }
+      { "item": "water_bottle", "weight": 5, "max": 3 },
+      { "item": "raw_chicken", "weight": 1 },
+      { "item": "onion", "weight": 2, "max": 2 }
     ]
   },
   {
@@ -52,7 +56,9 @@
       { "item": "water_bottle", "weight": 4, "max": 2 },
       { "item": "bread", "weight": 3 },
       { "item": "soda_can", "weight": 2 },
-      { "item": "beef_jerky", "weight": 1 }
+      { "item": "beef_jerky", "weight": 1 },
+      { "item": "raw_steak", "weight": 3, "max": 2 },
+      { "item": "raw_chicken", "weight": 3, "max": 2 }
     ]
   },
   {
@@ -61,7 +67,8 @@
     "empty": 0.5,
     "entries": [
       { "item": "frying_pan", "weight": 6, "condition": [0.6, 1] },
-      { "item": "bread", "weight": 1 }
+      { "item": "bread", "weight": 1 },
+      { "item": "cooking_pot", "weight": 5 }
     ]
   },
   {

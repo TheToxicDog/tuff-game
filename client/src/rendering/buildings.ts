@@ -4,6 +4,7 @@
 
 import { Container, Graphics, TilingSprite, type Texture } from 'pixi.js';
 import { splitWall, type BuildingDef, type CompiledWorld, type ContentRegistry, type DoorDef, type WindowDef } from '@tuff/shared';
+import { drawBoards } from './barricades';
 import { propContext, shade } from './prop-styles';
 import { floorTexture, roofTexture } from './textures';
 
@@ -18,6 +19,7 @@ export interface BuildingLayers {
 interface DoorView {
   def: DoorDef;
   slab: Graphics;
+  boards: Graphics;
   closedRotation: number;
   openRotation: number;
   current: number;
@@ -28,7 +30,9 @@ interface DoorView {
 interface WindowView {
   def: WindowDef;
   g: Graphics;
+  boards: Graphics;
   broken: boolean | null;
+  boardCount: number;
 }
 
 interface BuildingView {
@@ -39,6 +43,8 @@ interface BuildingView {
   doors: Map<string, DoorView>;
   windows: Map<string, WindowView>;
   searched: Map<string, Graphics>;
+  /** Furniture graphics by prop id, hidden when the furniture is carried away. */
+  furniture: Map<string, Graphics[]>;
   bounds: { minX: number; minY: number; maxX: number; maxY: number };
 }
 
@@ -92,6 +98,7 @@ export class BuildingRenderer {
 
     // Furniture.
     const searched = new Map<string, Graphics>();
+    const furniture = new Map<string, Graphics[]>();
     for (const p of b.props) {
       const def = this.content.findProp(p.type);
       if (!def) continue;
@@ -103,6 +110,10 @@ export class BuildingRenderer {
       if (def.layer === 'ground') floors.addChild(g);
       else if (def.layer === 'tall') tall.addChild(g);
       else low.addChild(g);
+      if (def.movable) {
+        furniture.set(p.id, [g]);
+        this.objectToBuilding.set(p.id, b.id);
+      }
       if (def.container) {
         // Opened containers get a subtle mark so players can tell what they have searched.
         const mark = new Graphics();
@@ -111,6 +122,7 @@ export class BuildingRenderer {
         mark.visible = false;
         (def.layer === 'tall' ? tall : low).addChild(mark);
         searched.set(p.id, mark);
+        furniture.get(p.id)?.push(mark);
         this.objectToBuilding.set(p.id, b.id);
       }
     }
@@ -165,6 +177,7 @@ export class BuildingRenderer {
       doors: new Map(),
       windows: new Map(),
       searched,
+      furniture,
       bounds: this.compiled.buildings.get(b.id)?.bounds ?? { minX: b.x - b.w, minY: b.y - b.h, maxX: b.x + b.w, maxY: b.y + b.h },
     };
 
@@ -176,9 +189,13 @@ export class BuildingRenderer {
       slab2.position.set(hingeX, hingeY);
       const closedRotation = d.angle + (d.hinge === 1 ? 0 : Math.PI);
       const openRotation = closedRotation + (Math.PI / 2) * d.swing * d.hinge * 0.95;
+      const boards = new Graphics();
+      boards.position.set(d.x, d.y);
+      boards.rotation = d.angle;
       const dv: DoorView = {
         def: d,
         slab: slab2,
+        boards,
         closedRotation,
         openRotation,
         current: closedRotation,
@@ -192,7 +209,7 @@ export class BuildingRenderer {
       for (const s of [-1, 1]) {
         posts.circle(d.x + (Math.cos(d.angle) * d.w * s) / 2, d.y + (Math.sin(d.angle) * d.w * s) / 2, 0.08).fill(0x2a2622);
       }
-      walls.addChild(posts);
+      walls.addChild(posts, boards);
       view.doors.set(d.id, dv);
       this.objectToBuilding.set(d.id, b.id);
     }
@@ -200,8 +217,11 @@ export class BuildingRenderer {
       const g = new Graphics();
       g.position.set(w.x, w.y);
       g.rotation = w.angle;
-      walls.addChild(g);
-      view.windows.set(w.id, { def: w, g, broken: null });
+      const boards = new Graphics();
+      boards.position.set(w.x, w.y);
+      boards.rotation = w.angle;
+      walls.addChild(g, boards);
+      view.windows.set(w.id, { def: w, g, boards, broken: null, boardCount: -1 });
       this.objectToBuilding.set(w.id, b.id);
     }
 
@@ -212,7 +232,9 @@ export class BuildingRenderer {
     this.layers.tall.addChild(tall);
     this.layers.roofs.addChild(roof);
     this.views.set(b.id, view);
-    for (const id of [...view.doors.keys(), ...view.windows.keys(), ...view.searched.keys()]) this.objectChanged(id, true);
+    for (const id of [...view.doors.keys(), ...view.windows.keys(), ...view.searched.keys(), ...view.furniture.keys()]) {
+      this.objectChanged(id, true);
+    }
   }
 
   private buildRoof(c: Container, b: BuildingDef): void {
@@ -287,7 +309,7 @@ export class BuildingRenderer {
     const v = this.views.get(id);
     if (!v) return;
     for (const c of v.containers) c.destroy({ children: true });
-    for (const k of [...v.doors.keys(), ...v.windows.keys(), ...v.searched.keys()]) this.objectToBuilding.delete(k);
+    for (const k of [...v.doors.keys(), ...v.windows.keys(), ...v.searched.keys(), ...v.furniture.keys()]) this.objectToBuilding.delete(k);
     this.views.delete(id);
   }
 
@@ -303,6 +325,7 @@ export class BuildingRenderer {
       if (instant) door.current = door.target;
       door.slab.visible = !door.hidden;
       if (state.broken) door.slab.visible = false;
+      drawBoards(door.boards, door.def.w, state.boards, hashId(id));
       return;
     }
     const win = v.windows.get(id);
@@ -311,10 +334,16 @@ export class BuildingRenderer {
         win.broken = state.broken;
         drawWindow(win.g, win.def, state.broken);
       }
+      if (win.boardCount !== state.boards) {
+        win.boardCount = state.boards;
+        drawBoards(win.boards, win.def.w, state.boards, hashId(id));
+      }
       return;
     }
+    const pieces = v.furniture.get(id);
+    if (pieces && state.removed) for (const g of pieces) g.visible = false;
     const mark = v.searched.get(id);
-    if (mark) mark.visible = state.searched;
+    if (mark) mark.visible = state.searched && !state.removed;
   }
 
   /** Door animation, roof fading and culling. */

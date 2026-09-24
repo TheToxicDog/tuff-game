@@ -11,6 +11,8 @@ import {
   buildingTransform,
   localToWorld,
   roadBounds,
+  structureBounds,
+  structureShape,
   TERRAIN_CELLS_PER_CHUNK,
   encodeTerrainChunk,
   type BuildingDef,
@@ -22,6 +24,7 @@ import {
   type PropInstance,
   type RoadDef,
   type Rng,
+  type StructureDef,
 } from '@tuff/shared';
 import {
   emptyChanges,
@@ -36,6 +39,11 @@ interface ChunkElements {
   buildings: BuildingDef[];
   props: PropInstance[];
   fences: FenceDef[];
+  structures: StructureDef[];
+}
+
+function emptyElements(): ChunkElements {
+  return { roads: [], buildings: [], props: [], fences: [], structures: [] };
 }
 
 export class WorldState {
@@ -49,13 +57,16 @@ export class WorldState {
   private readonly elementObjects = new Map<string, string[]>();
   readonly containers = new Map<string, ContainerContents>();
   readonly buildingLoot = new Map<string, BuildingLootState>();
+  /** Player-built structures (world deltas, not part of the map). */
+  readonly structures = new Map<string, StructureDef>();
+  private readonly structureKeys = new Map<string, string[]>();
   private readonly buildingsByChunk = new Map<string, BuildingDef[]>();
   changes: WorldChanges = emptyChanges();
   private readonly fillTerrain: string;
 
   constructor(
     readonly map: MapData,
-    content: ContentRegistry,
+    private readonly content: ContentRegistry,
   ) {
     this.compiled = new CompiledWorld(content);
     this.chunksX = Math.ceil(map.width / CHUNK_SIZE);
@@ -63,11 +74,8 @@ export class WorldState {
     this.fillTerrain = encodeTerrainChunk(new Uint8Array(TERRAIN_CELLS_PER_CHUNK * TERRAIN_CELLS_PER_CHUNK).fill(map.terrain.fill));
 
     for (const b of map.buildings) {
-      const before = new Set([...this.compiled.doors.keys(), ...this.compiled.windows.keys(), ...this.compiled.containers.keys()]);
       this.compiled.addBuilding(b);
-      const owned = [...this.compiled.doors.keys(), ...this.compiled.windows.keys(), ...this.compiled.containers.keys()].filter(
-        (id) => !before.has(id),
-      );
+      const owned = [...this.compiled.elementObjects(b.id)];
       const keys = this.index(buildingBounds(b), (e) => e.buildings.push(b));
       for (const k of keys) {
         let list = this.buildingsByChunk.get(k);
@@ -81,7 +89,8 @@ export class WorldState {
       const def = content.findProp(p.type);
       const half = Math.max(def?.w ?? 1, def?.h ?? 1, (def?.r ?? 0.5) * 2, p.w ?? 0, p.h ?? 0) / 2 + 3;
       const keys = this.index({ minX: p.x - half, minY: p.y - half, maxX: p.x + half, maxY: p.y + half }, (e) => e.props.push(p));
-      if (this.compiled.containers.has(p.id)) this.registerObjects(p.id, [p.id], keys);
+      const owned = this.compiled.elementObjects(p.id);
+      if (owned.length > 0) this.registerObjects(p.id, [...owned], keys);
     }
     for (const f of map.fences) {
       this.compiled.addFence(f);
@@ -104,7 +113,7 @@ export class WorldState {
       for (let cx = x0; cx <= x1; cx++) {
         const key = chunkKey(cx, cy);
         let e = this.chunkElements.get(key);
-        if (!e) this.chunkElements.set(key, (e = { roads: [], buildings: [], props: [], fences: [] }));
+        if (!e) this.chunkElements.set(key, (e = emptyElements()));
         add(e);
         keys.push(key);
       }
@@ -119,6 +128,8 @@ export class WorldState {
 
   /** Restores deltas from storage. */
   load(snapshot: WorldSnapshot): void {
+    // Structures first: their doors and storage carry object states too.
+    for (const def of snapshot.structures.values()) this.addStructure(def, false);
     for (const [id, state] of snapshot.objects) {
       if (this.compiled.object(id)) this.compiled.setState(id, state);
     }
@@ -144,6 +155,49 @@ export class WorldState {
     return this.compiled.effectiveState(id);
   }
 
+  /** Adds a player-built structure to the world (and to the save unless `persist` is false). */
+  addStructure(def: StructureDef, persist = true): boolean {
+    const shape = structureShape(this.content, def.type, def.prop);
+    if (!shape) return false;
+    this.compiled.addStructure(def);
+    if (!this.compiled.structures.has(def.id)) return false;
+    this.structures.set(def.id, def);
+    const b = structureBounds(def, shape);
+    const keys = this.index({ minX: b.minX - 1, minY: b.minY - 1, maxX: b.maxX + 1, maxY: b.maxY + 1 }, (e) => e.structures.push(def));
+    this.structureKeys.set(def.id, keys);
+    this.registerObjects(def.id, [...this.compiled.elementObjects(def.id)], keys);
+    if (persist) this.changes.structures.set(def.id, def);
+    return true;
+  }
+
+  /** Removes a structure and everything stored about it. Returns the chunks it was in. */
+  removeStructure(id: string): string[] {
+    const def = this.structures.get(id);
+    if (!def) return [];
+    const keys = this.structureKeys.get(id) ?? [];
+    for (const k of keys) {
+      const e = this.chunkElements.get(k);
+      if (e) e.structures = e.structures.filter((s) => s.id !== id);
+    }
+    for (const objectId of this.elementObjects.get(id) ?? []) {
+      this.objectChunks.delete(objectId);
+      if (this.compiled.allStates().has(objectId)) this.changes.objects.set(objectId, null);
+      this.compiled.allStates().delete(objectId);
+      if (this.containers.delete(objectId)) this.changes.containers.set(objectId, null);
+    }
+    this.elementObjects.delete(id);
+    this.compiled.removeElement(id);
+    this.structures.delete(id);
+    this.structureKeys.delete(id);
+    this.changes.structures.set(id, null);
+    return keys;
+  }
+
+  /** Chunks a structure is indexed in. */
+  chunksOfStructure(id: string): string[] {
+    return this.structureKeys.get(id) ?? [];
+  }
+
   setContainer(id: string, contents: ContainerContents): void {
     this.containers.set(id, contents);
     this.changes.containers.set(id, contents);
@@ -167,7 +221,7 @@ export class WorldState {
 
   chunkPayload(cx: number, cy: number): ChunkPayload {
     const key = chunkKey(cx, cy);
-    const e = this.chunkElements.get(key) ?? { roads: [], buildings: [], props: [], fences: [] };
+    const e = this.chunkElements.get(key) ?? emptyElements();
     const objects: Record<string, ObjectState> = {};
     const collect = (elementId: string) => {
       for (const id of this.elementObjects.get(elementId) ?? []) {
@@ -177,6 +231,7 @@ export class WorldState {
     };
     for (const b of e.buildings) collect(b.id);
     for (const p of e.props) collect(p.id);
+    for (const st of e.structures) collect(st.id);
     return {
       cx,
       cy,
@@ -185,6 +240,7 @@ export class WorldState {
       buildings: e.buildings,
       props: e.props,
       fences: e.fences,
+      structures: e.structures,
       objects,
     };
   }

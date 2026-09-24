@@ -63,6 +63,10 @@ export class Hud {
   private readonly connection: HTMLElement;
   private readonly hint: HTMLElement;
   private readonly debug: HTMLElement;
+  private readonly sleepOverlay: HTMLElement;
+  private readonly sleepText: HTMLElement;
+  private readonly sleepFill: HTMLElement;
+  private readonly buildBadge: HTMLElement;
   private progressStart = 0;
   private progressDuration = 0;
   private hurtFlash = 0;
@@ -120,6 +124,21 @@ export class Hud {
     this.vignette = h('div', { class: 'hurt-vignette' });
     this.connection = h('div', { class: 'connection-bad hidden' });
     this.debug = h('div', { class: 'debug-overlay hidden' });
+    this.sleepText = h('div', { class: 'sleep-text' });
+    this.sleepFill = h('i', { style: 'width:0%' });
+    this.sleepOverlay = h(
+      'div',
+      { class: 'sleep-overlay hidden' },
+      h(
+        'div',
+        { class: 'sleep-card' },
+        h('div', { class: 'sleep-title' }, 'Asleep'),
+        this.sleepText,
+        h('div', { class: 'meter sleep-meter', title: 'Rest' }, this.sleepFill),
+        h('div', { class: 'fine' }, 'Press E to wake up'),
+      ),
+    );
+    this.buildBadge = h('div', { class: 'build-badge hidden' }, 'BUILD MODE');
     this.hint = h(
       'div',
       { class: 'hint interactive' },
@@ -161,6 +180,8 @@ export class Hud {
     this.root = h(
       'div',
       { class: 'hud' },
+      this.sleepOverlay,
+      this.buildBadge,
       this.vignette,
       status,
       topRight,
@@ -275,7 +296,22 @@ export class Hud {
     }
   }
 
+  setBuildMode(on: boolean): void {
+    this.buildBadge.classList.toggle('hidden', !on);
+  }
+
+  private setSleep(s: StatusView): void {
+    const asleep = s.sleeping !== null;
+    this.sleepOverlay.classList.toggle('hidden', !asleep);
+    if (!asleep) return;
+    const where = s.sleeping! >= 0.9 ? 'in a bed' : s.sleeping! >= 0.5 ? 'on something soft' : 'on the hard floor';
+    const rest = energyLabel(s.needs.energy) ?? 'Resting';
+    this.sleepText.textContent = `Sleeping ${where} · ${rest}${s.fastForward ? ' · everyone is asleep, the night passes quickly' : ''}`;
+    this.sleepFill.style.width = `${Math.round(s.needs.energy)}%`;
+  }
+
   setStatus(s: StatusView): void {
+    this.setSleep(s);
     this.healthLabelEl.textContent = healthLabel(s.health);
     this.hpFill.style.width = `${Math.max(0, Math.min(100, s.health)).toFixed(1)}%`;
     const badges: [string, string][] = [];

@@ -10,6 +10,7 @@ import {
   type PlayerInput,
   type PlayerInventory,
   type PlayerSimState,
+  type WorldAction,
   type ZombieArchetypeDef,
 } from '@tuff/shared';
 import type { CharacterStatsRecord } from '../persistence/storage';
@@ -37,18 +38,36 @@ export interface Body {
 }
 export const Body = defineComponent<Body>('Body');
 
-/** A multi-second, server-authoritative action such as searching, eating or bandaging. */
+/** A multi-second, server-authoritative action such as searching, eating, cooking or building. */
 export interface TimedAction {
-  kind: 'search' | 'consume' | 'pickup';
+  kind: 'search' | 'consume' | 'craft' | 'build' | 'work';
   label: string;
   duration: number;
   elapsed: number;
   startX: number;
   startY: number;
-  /** Target container or item uid, depending on kind. */
+  /** Target container, door, window or structure, depending on kind. */
   target: string;
   uid?: number;
   woundId?: number;
+  /** Recipe being crafted. */
+  recipe?: string;
+  /** Structure being placed. */
+  build?: { type: string; prop?: string; x: number; y: number; rot: number };
+  /** World action being performed (barricading, dismantling…). */
+  work?: WorldAction;
+}
+
+/** A sleeping player (design plan §21–22). */
+export interface SleepState {
+  /** 0..1: bed 1, couch 0.7, floor 0.25. */
+  quality: number;
+  /** Bed or couch slept in, if any. */
+  spot: string | null;
+  /** Health when they fell asleep, to wake them when hurt. */
+  health: number;
+  /** Real seconds asleep. */
+  elapsed: number;
 }
 
 /** Interface the simulation uses to talk to a player's network connection. */
@@ -87,6 +106,7 @@ export interface PlayerComp {
   refreshTimer: number;
   /** Movement parameters derived from encumbrance, injuries and weakness (shared with the client). */
   move: MoveParams;
+  sleep: SleepState | null;
   /** Real seconds before this dead player may respawn. */
 }
 export const Player = defineComponent<PlayerComp>('Player');

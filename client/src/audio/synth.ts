@@ -42,7 +42,11 @@ export type SoundId =
   | 'player_death'
   | 'ui_click'
   | 'ui_error'
-  | 'wind';
+  | 'wind'
+  | 'hammer'
+  | 'board_break'
+  | 'sizzle'
+  | 'fire';
 
 const RATE = 44100;
 
@@ -354,6 +358,37 @@ export function synthesizeAll(): Map<SoundId, Float32Array[]> {
     const b = buffer(0.15, 58);
     tone(b, 0, 0.12, 180, 0.5, 20, 0, 'square');
     add('ui_error', normalize(b, 0.25));
+  }
+  {
+    // Three hammer blows on wood.
+    const b = buffer(0.9, 60);
+    for (let i = 0; i < 3; i++) {
+      tone(b, i * 0.27, 0.08, 320 + i * 12, 0.8, 45, -200);
+      noiseBurst(b, i * 0.27, 0.07, 1, 55, 4200, 400);
+    }
+    add('hammer', normalize(b, 0.7));
+  }
+  {
+    // Splintering plank.
+    const b = buffer(0.7, 61);
+    tone(b, 0, 0.18, 150, 0.8, 18, -80);
+    noiseBurst(b, 0, 0.35, 1, 10, 3200, 150);
+    for (let i = 0; i < 10; i++) noiseBurst(b, b.rng.range(0.02, 0.4), 0.04, 0.5, 70, 5000, 900);
+    add('board_break', normalize(b, 0.85));
+  }
+  {
+    // Frying: crackly high-passed noise.
+    const b = buffer(1.4, 62);
+    noiseBurst(b, 0, 1.4, 0.5, 1.2, 9000, 2500);
+    for (let i = 0; i < 40; i++) noiseBurst(b, b.rng.range(0, 1.3), 0.01, b.rng.range(0.3, 0.9), 300, 12000, 3000);
+    add('sizzle', normalize(b, 0.4));
+  }
+  {
+    // A fire catching: whoosh and crackle.
+    const b = buffer(1.2, 63);
+    noiseBurst(b, 0, 0.6, 0.8, 4, 900, 60);
+    for (let i = 0; i < 18; i++) noiseBurst(b, b.rng.range(0.1, 1.1), 0.015, b.rng.range(0.4, 1), 200, 7000, 1500);
+    add('fire', normalize(b, 0.55));
   }
   {
     // Seamless-ish wind loop: brown noise with slow swells.

@@ -1,0 +1,187 @@
+[
+  {
+    "id": "wood_wall",
+    "name": "Wooden Wall",
+    "description": "A 2 m section of plank wall. Blocks everything; zombies have to chew through it.",
+    "category": "walls",
+    "kind": "wall",
+    "w": 2,
+    "h": 0.2,
+    "blocks": ["player", "zombie", "sight", "bullet"],
+    "material": "wood",
+    "hp": 260,
+    "time": 8,
+    "materials": [
+      { "item": "plank", "qty": 3 },
+      { "item": "nails", "qty": 8 }
+    ],
+    "tools": ["hammer"],
+    "style": "wood_wall",
+    "color": "#8a6a48"
+  },
+  {
+    "id": "wood_door",
+    "name": "Wooden Door Wall",
+    "description": "A 2 m wall section with a plank door you can open, close and lock.",
+    "category": "walls",
+    "kind": "door",
+    "w": 2,
+    "h": 0.2,
+    "opening": 1,
+    "blocks": ["player", "zombie", "sight", "bullet"],
+    "material": "wood",
+    "hp": 220,
+    "time": 10,
+    "materials": [
+      { "item": "plank", "qty": 4 },
+      { "item": "nails", "qty": 10 }
+    ],
+    "tools": ["hammer"],
+    "style": "wood_wall",
+    "color": "#8a6a48"
+  },
+  {
+    "id": "wood_barricade",
+    "name": "Wooden Barricade",
+    "description": "Waist-high planks on trestles. Stops bodies but you can see and shoot over it.",
+    "category": "walls",
+    "kind": "wall",
+    "w": 2,
+    "h": 0.45,
+    "blocks": ["player", "zombie"],
+    "material": "wood",
+    "hp": 180,
+    "time": 7,
+    "materials": [
+      { "item": "plank", "qty": 3 },
+      { "item": "nails", "qty": 6 }
+    ],
+    "tools": ["hammer"],
+    "style": "barricade",
+    "color": "#7a5c3e"
+  },
+  {
+    "id": "wood_fence",
+    "name": "Wooden Fence",
+    "description": "A 2 m fence panel for yards and pens.",
+    "category": "fences",
+    "kind": "fence",
+    "w": 2,
+    "h": 0.12,
+    "blocks": ["player", "zombie", "sight"],
+    "material": "wood",
+    "hp": 120,
+    "time": 5,
+    "materials": [
+      { "item": "plank", "qty": 2 },
+      { "item": "nails", "qty": 4 }
+    ],
+    "tools": ["hammer"],
+    "style": "fence",
+    "color": "#6e5236"
+  },
+  {
+    "id": "wood_gate",
+    "name": "Fence Gate",
+    "description": "A 2 m fence panel with a gate that opens and locks.",
+    "category": "fences",
+    "kind": "gate",
+    "w": 2,
+    "h": 0.12,
+    "opening": 1.6,
+    "blocks": ["player", "zombie", "sight"],
+    "material": "wood",
+    "hp": 120,
+    "time": 7,
+    "materials": [
+      { "item": "plank", "qty": 3 },
+      { "item": "nails", "qty": 6 }
+    ],
+    "tools": ["hammer"],
+    "style": "fence",
+    "color": "#6e5236"
+  },
+  {
+    "id": "wood_floor",
+    "name": "Wooden Floor",
+    "description": "A 2 × 2 m plank floor tile.",
+    "category": "floors",
+    "kind": "floor",
+    "w": 2,
+    "h": 2,
+    "blocks": [],
+    "material": "wood",
+    "hp": 100,
+    "time": 5,
+    "materials": [
+      { "item": "plank", "qty": 2 },
+      { "item": "nails", "qty": 4 }
+    ],
+    "tools": ["hammer"],
+    "style": "wood_floor",
+    "color": "#9a7a52"
+  },
+  {
+    "id": "storage_crate",
+    "name": "Storage Crate",
+    "description": "A lockable wooden crate. Only you and survivors you trust can open it once locked.",
+    "category": "storage",
+    "kind": "container",
+    "w": 1.1,
+    "h": 0.7,
+    "blocks": ["player", "zombie"],
+    "material": "wood",
+    "hp": 120,
+    "time": 8,
+    "materials": [
+      { "item": "plank", "qty": 3 },
+      { "item": "nails", "qty": 8 }
+    ],
+    "tools": ["hammer"],
+    "container": { "name": "Storage Crate", "volume": 60 },
+    "style": "crate",
+    "color": "#8a6a44"
+  },
+  {
+    "id": "workbench",
+    "name": "Workbench",
+    "description": "A sturdy bench for carpentry recipes.",
+    "category": "utility",
+    "kind": "station",
+    "station": "workbench",
+    "w": 1.8,
+    "h": 0.7,
+    "blocks": ["player", "zombie"],
+    "material": "wood",
+    "hp": 150,
+    "time": 12,
+    "materials": [
+      { "item": "plank", "qty": 5 },
+      { "item": "nails", "qty": 12 }
+    ],
+    "tools": ["hammer", "saw"],
+    "style": "workbench",
+    "color": "#7a5c3e"
+  },
+  {
+    "id": "campfire",
+    "name": "Campfire",
+    "description": "A fire pit for cooking and light. Burns six hours per plank. Light carries — zombies notice.",
+    "category": "utility",
+    "kind": "fire",
+    "station": "heat",
+    "w": 1.2,
+    "h": 1.2,
+    "blocks": ["player", "zombie"],
+    "material": "stone",
+    "hp": 80,
+    "time": 6,
+    "materials": [{ "item": "plank", "qty": 2 }],
+    "tools": ["fire"],
+    "burnMinutes": 360,
+    "fuel": "plank",
+    "light": { "radius": 7, "color": "#ffb060", "intensity": 0.9 },
+    "style": "campfire",
+    "color": "#5a5652"
+  }
+]

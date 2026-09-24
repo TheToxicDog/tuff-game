@@ -95,6 +95,8 @@ export class ZombieSystem {
       const lightLevel = Math.max(light, p.flashlight ? 0.85 : 0);
       let range = z.arch.sightRange * (0.3 + 0.7 * lightLevel);
       if (p.sim.crouching) range *= 0.6;
+      // A sleeper lies still in the dark: much harder to notice.
+      if (p.sleep) range *= 0.5;
       const speed = Math.hypot(p.sim.vx, p.sim.vy);
       if (speed < 0.3) range *= 0.8;
       if (p.sim.sprinting) range *= 1.2;
@@ -287,13 +289,15 @@ export class ZombieSystem {
     const id = z.bangTarget;
     const obj = id ? game.world.compiled.object(id) : undefined;
     z.stateTimer -= dt;
-    if (!id || !obj || obj.kind === 'container') {
+    if (!id || !obj || (obj.kind !== 'door' && obj.kind !== 'window' && obj.kind !== 'structure')) {
+      z.bangTarget = null;
       z.state = 'investigate';
       return;
     }
     const s = game.world.compiled.effectiveState(id);
-    const passable = obj.kind === 'door' ? s.open || s.broken : s.broken;
-    if (passable || z.stateTimer <= 0 || Math.hypot(obj.x - t.x, obj.y - t.y) > 2.2) {
+    const passable = s.boards <= 0 && (obj.kind === 'door' ? s.open || s.broken : obj.kind === 'window' ? s.broken : false);
+    const reach = obj.kind === 'structure' ? 1.6 + obj.radius : 2.2;
+    if (passable || z.stateTimer <= 0 || Math.hypot(obj.x - t.x, obj.y - t.y) > reach) {
       z.bangTarget = null;
       z.state = z.target && game.ecs.isAlive(z.target) ? 'chase' : 'investigate';
       z.stateTimer = 10;
@@ -304,7 +308,7 @@ export class ZombieSystem {
     if (z.attackCooldown <= 0) {
       z.attackCooldown = z.arch.attackCooldown * game.rng.range(1.0, 1.4);
       const damage = game.rng.range(5, 10) * (0.7 + z.arch.stability);
-      game.damageObject(id, damage, e, obj.kind === 'door' ? 'door_bang' : 'window_break');
+      game.damageObject(id, damage, e, obj.kind === 'window' && s.boards <= 0 ? 'window_break' : 'door_bang');
     }
   }
 
@@ -461,7 +465,7 @@ export class ZombieSystem {
       if (resolved.blocker?.objectId && (z.state === 'chase' || z.state === 'investigate')) {
         const oid = resolved.blocker.objectId;
         const obj = game.world.compiled.object(oid);
-        if (obj && obj.kind !== 'container' && z.stuckTimer > 0.5) {
+        if (obj && (obj.kind === 'door' || obj.kind === 'window' || obj.kind === 'structure') && z.stuckTimer > 0.5) {
           const moved = Math.hypot(t.x - z.progressX, t.y - z.progressY);
           if (moved < 0.35) {
             z.state = 'bang';

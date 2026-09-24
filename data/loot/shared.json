@@ -39,7 +39,10 @@
       { "item": "honey", "weight": 2 },
       { "item": "cookies", "weight": 3 },
       { "item": "bread", "weight": 3 },
-      { "item": "pickles", "weight": 2 }
+      { "item": "pickles", "weight": 2 },
+      { "item": "dry_pasta", "weight": 5 },
+      { "item": "rice", "weight": 4 },
+      { "item": "ground_coffee", "weight": 3 }
     ]
   },
   {
@@ -52,7 +55,8 @@
       { "item": "carrot", "weight": 4, "max": 4 },
       { "item": "tomato", "weight": 4, "max": 3 },
       { "item": "potato", "weight": 4, "max": 4 },
-      { "item": "cheese", "weight": 3 }
+      { "item": "cheese", "weight": 3 },
+      { "item": "onion", "weight": 3, "max": 3 }
     ]
   },
   {

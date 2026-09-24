@@ -20,6 +20,7 @@ export const BUTTON_ACTIONS = [
   'useItem',
   'map',
   'build',
+  'crafting',
   'health',
   'menu',
   'chat',

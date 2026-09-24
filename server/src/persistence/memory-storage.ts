@@ -10,12 +10,13 @@ import {
   type PersistentEntity,
   type SessionRecord,
   type Storage,
+  type TrustRecord,
   type WorldChanges,
   type WorldMeta,
   type WorldSnapshot,
   type ZoneState,
 } from './storage';
-import type { ObjectState } from '@tuff/shared';
+import type { ObjectState, StructureDef } from '@tuff/shared';
 
 export interface MemoryState {
   accounts: Map<string, AccountRecord>;
@@ -28,6 +29,8 @@ export interface MemoryState {
   chunks: Map<string, DormantZombie[]>;
   zones: Map<string, ZoneState>;
   buildings: Map<string, BuildingLootState>;
+  structures: Map<string, StructureDef>;
+  trust: Map<string, TrustRecord>;
 }
 
 export function emptyMemoryState(): MemoryState {
@@ -42,6 +45,8 @@ export function emptyMemoryState(): MemoryState {
     chunks: new Map(),
     zones: new Map(),
     buildings: new Map(),
+    structures: new Map(),
+    trust: new Map(),
   };
 }
 
@@ -139,6 +144,8 @@ export class MemoryStorage implements Storage {
       chunks: s.chunks,
       zones: s.zones,
       buildings: s.buildings,
+      structures: s.structures,
+      trust: s.trust,
     });
   }
 
@@ -150,6 +157,8 @@ export class MemoryStorage implements Storage {
     apply(this.state.chunks, changes.chunks);
     apply(this.state.zones, changes.zones);
     apply(this.state.buildings, changes.buildings);
+    apply(this.state.structures, changes.structures);
+    apply(this.state.trust, changes.trust);
     await this.changed('world');
   }
 }

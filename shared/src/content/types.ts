@@ -18,6 +18,7 @@ export const ITEM_CATEGORIES = [
   'fuel',
   'junk',
   'collectible',
+  'furniture',
 ] as const;
 export type ItemCategory = (typeof ITEM_CATEGORIES)[number];
 
@@ -158,6 +159,74 @@ export interface ItemDef {
   ammo?: { caliber: string };
   container?: ContainerItemDef;
   light?: LightDef;
+  /** Carried furniture: the prop it was picked up from (generated, see `furnitureItems`). */
+  furniture?: string;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Crafting and cooking (design plan §57–58)
+
+/** A place that enables certain recipes: a heat source for cooking, a workbench for carpentry. */
+export type StationKind = 'heat' | 'workbench';
+export const STATION_KINDS: readonly StationKind[] = ['heat', 'workbench'];
+
+export interface RecipeIngredient {
+  /** A specific item, or any item carrying `tag`. Exactly one is set. */
+  item?: string;
+  tag?: string;
+  qty: number;
+}
+
+export interface RecipeDef {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'cooking' | 'survival' | 'carpentry' | 'medical';
+  /** Station the player must stand next to, if any. */
+  station?: StationKind;
+  /** Real seconds the work takes. */
+  time: number;
+  /** Consumed ingredients. */
+  inputs: RecipeIngredient[];
+  /** Tool tags that must be carried but are not consumed. */
+  tools?: string[];
+  outputs: { item: string; qty: number }[];
+}
+
+// ---------------------------------------------------------------------------------------------
+// Construction (design plan §54–56)
+
+export type ConstructionKind = 'wall' | 'door' | 'fence' | 'gate' | 'floor' | 'container' | 'station' | 'fire';
+
+export interface ConstructionDef {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'walls' | 'fences' | 'floors' | 'storage' | 'utility';
+  kind: ConstructionKind;
+  /** Footprint: length along the local x axis and depth along y (meters). */
+  w: number;
+  h: number;
+  blocks: BlockName[];
+  material: Material;
+  hp: number;
+  /** Real seconds of building. */
+  time: number;
+  materials: { item: string; qty: number }[];
+  /** Tool tags required (e.g. `hammer`). */
+  tools: string[];
+  /** Width of the door or gate opening in the middle of the piece. */
+  opening?: number;
+  container?: { name: string; volume: number };
+  station?: StationKind;
+  light?: { radius: number; color: string; intensity: number };
+  /** Game minutes one load of fuel burns (fires). */
+  burnMinutes?: number;
+  /** Item that refuels it (fires). */
+  fuel?: string;
+  /** Renderer style key. */
+  style: string;
+  color?: string;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -244,6 +313,12 @@ export interface PropDef {
   container?: PropContainerDef;
   /** Light emitted when the world has power (streetlights, lamps). */
   light?: { radius: number; color: string; intensity: number };
+  /** Somewhere to sleep; quality 0..1 scales how well you rest. */
+  sleep?: { quality: number };
+  /** Crafting station provided by this prop (a working gas stove is a heat source). */
+  station?: StationKind;
+  /** Furniture that can be picked up and carried (kilograms). */
+  movable?: { weight: number };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -275,6 +350,18 @@ export interface ServerConfig {
     weaknessMinutes: number;
     respawnDelaySeconds: number;
   };
+  /** Optional; defaults apply when missing (see `sleepConfig`). */
+  sleep?: {
+    /** World clock multiplier while every online player is asleep. */
+    fastForward: number;
+  };
+  /** Optional; defaults apply when missing (see `buildConfig`). */
+  building?: {
+    /** Whether players may damage structures they have no rights to (defaults to the PvP flag). */
+    griefing?: boolean;
+    /** Maximum structures per account. */
+    maxPerPlayer: number;
+  };
   player: {
     startingItems: { item: string; qty: number; slot?: number }[];
   };
@@ -286,4 +373,34 @@ export interface ContentBundle {
   items: ItemDef[];
   zombies: ZombieArchetypeDef[];
   props: PropDef[];
+  recipes: RecipeDef[];
+  constructions: ConstructionDef[];
+}
+
+/** Item id for a piece of carried furniture. */
+export function furnitureItemId(propId: string): string {
+  return `furniture_${propId}`;
+}
+
+/**
+ * Item definitions for carried furniture, generated from movable props so every piece of
+ * furniture can be picked up without writing an item by hand. Furniture is bulky: it only fits in
+ * a quick slot (your hands) and its weight slows you down.
+ */
+export function furnitureItems(props: readonly PropDef[]): ItemDef[] {
+  return props
+    .filter((p) => p.movable)
+    .map((p) => ({
+      id: furnitureItemId(p.id),
+      name: p.name,
+      description: 'Furniture. Carry it in your hands and place it with build mode (B).',
+      category: 'furniture' as const,
+      weight: p.movable!.weight,
+      volume: 60,
+      stackSize: 1,
+      tags: ['furniture', `furniture_${p.material}`],
+      icon: 'box',
+      color: p.color ?? '#7a6a52',
+      furniture: p.id,
+    }));
 }
