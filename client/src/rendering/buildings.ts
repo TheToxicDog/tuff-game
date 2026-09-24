@@ -78,6 +78,8 @@ export class BuildingRenderer {
     const walls = this.place(new Container(), b);
     const tall = this.place(new Container(), b);
     const roof = this.place(new Container(), b);
+    // Boards over outside doors and windows sit above the roof so a barricaded house reads as one.
+    const outside = this.place(new Container(), b);
 
     // Foundation slab slightly larger than the footprint.
     const slab = new Graphics();
@@ -171,7 +173,7 @@ export class BuildingRenderer {
 
     const view: BuildingView = {
       def: b,
-      containers: [floors, low, walls, tall, roof],
+      containers: [floors, low, walls, tall, roof, outside],
       roof,
       roofAlpha: 1,
       doors: new Map(),
@@ -209,7 +211,8 @@ export class BuildingRenderer {
       for (const s of [-1, 1]) {
         posts.circle(d.x + (Math.cos(d.angle) * d.w * s) / 2, d.y + (Math.sin(d.angle) * d.w * s) / 2, 0.08).fill(0x2a2622);
       }
-      walls.addChild(posts, boards);
+      walls.addChild(posts);
+      (this.compiled.doors.get(d.id)?.exterior ? outside : walls).addChild(boards);
       view.doors.set(d.id, dv);
       this.objectToBuilding.set(d.id, b.id);
     }
@@ -220,7 +223,8 @@ export class BuildingRenderer {
       const boards = new Graphics();
       boards.position.set(w.x, w.y);
       boards.rotation = w.angle;
-      walls.addChild(g, boards);
+      walls.addChild(g);
+      outside.addChild(boards);
       view.windows.set(w.id, { def: w, g, boards, broken: null, boardCount: -1 });
       this.objectToBuilding.set(w.id, b.id);
     }
@@ -230,7 +234,7 @@ export class BuildingRenderer {
     this.layers.low.addChild(low);
     this.layers.walls.addChild(walls);
     this.layers.tall.addChild(tall);
-    this.layers.roofs.addChild(roof);
+    this.layers.roofs.addChild(roof, outside);
     this.views.set(b.id, view);
     for (const id of [...view.doors.keys(), ...view.windows.keys(), ...view.searched.keys(), ...view.furniture.keys()]) {
       this.objectChanged(id, true);
