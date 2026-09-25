@@ -17,3 +17,4 @@ export * from './sim/movement';
 export * from './factory/kinetics';
 export * from './factory/belts';
 export * from './factory/fluids';
+export * from './factory/rails';

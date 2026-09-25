@@ -110,6 +110,10 @@ craft(
   [s('plank', 16), s('stone_brick', 12), s('iron_plate', 2), s('bow', 1)],
   'fortification',
 );
+craft('wagon', 'workbench', [s('wagon')], [s('hardwood_plank', 20), s('iron_rod', 6), s('leather', 4), s('iron_plate', 2)], 'transport');
+craft('rail', 'workbench', [s('rail', 8)], [s('iron_rod', 2), s('plank', 4)], 'railways');
+craft('rail_station', 'workbench', [s('rail_station')], [s('rail', 2), s('plank', 8), s('iron_gear', 1)], 'railways');
+craft('minecart', 'workbench', [s('minecart')], [s('iron_plate', 4), s('iron_rod', 2), s('iron_gear', 2)], 'railways');
 craft('large_backpack', 'workbench', [s('large_backpack')], [s('leather', 12), s('rope', 6), s('iron_rod', 2)], 'transport');
 // Mechanical parts
 craft('shaft', 'workbench', [s('shaft', 2)], [s('iron_rod', 1), s('plank', 2)], 'mechanics');

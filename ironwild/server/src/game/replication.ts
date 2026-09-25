@@ -115,6 +115,8 @@ export class Replication {
     }
     if (s.crank) v.crank = true;
     if (s.hp < s.def.hp) v.hp = Math.max(1, Math.round((s.hp / s.def.hp) * 100));
+    if (s.def.rail === 'station') v.mode = s.rmode ?? 'load';
+    if (s.sw !== undefined) v.sw = s.sw;
     if (s.def.door) v.open = !!s.open;
     if (s.filter) v.filter = s.filter;
     if (s.store && (s.def.shipping || s.def.container)) {
@@ -303,7 +305,7 @@ export class Replication {
       case 'arrow':
         return { id: e.id, k: 'arrow', x: e.x, y: e.y, a: e.angle };
       case 'cart':
-        return { id: e.id, k: 'cart', owner: e.ownerName, x: e.x, y: e.y, a: e.angle };
+        return { id: e.id, k: 'cart', type: e.type, n: e.slots.filter((x) => x).length, owner: e.ownerName, x: e.x, y: e.y, a: e.angle };
     }
   }
 

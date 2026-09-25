@@ -4,6 +4,8 @@
 import {
   BUILD_RANGE,
   CREATURE_BY_ID,
+  DX,
+  DY,
   EntityFlags,
   FIST,
   INPUT_DT,
@@ -804,7 +806,10 @@ export class ClientGame {
 
   private isDragPlaceable(): boolean {
     const t = this.placing;
-    return !!t && ['conveyor', 'shaft', 'pipe', 'wood_wall', 'stone_wall', 'fence', 'wood_floor', 'stone_floor', 'spike_trap'].includes(t);
+    return (
+      !!t &&
+      ['conveyor', 'shaft', 'pipe', 'rail', 'wood_wall', 'stone_wall', 'fence', 'wood_floor', 'stone_floor', 'spike_trap'].includes(t)
+    );
   }
 
   private lastPlaced = '';
@@ -910,11 +915,20 @@ export class ClientGame {
           { kind: 'entity', id: e.id, x: e.x, y: e.y, label: `Search ${e.owner ?? 'a'}'s bag (F takes all)` },
           Math.hypot(e.x - px, e.y - py),
         );
-      if (e.kind === 'cart')
+      if (e.kind === 'cart') {
+        const what = e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'cart';
         add(
-          { kind: 'entity', id: e.id, x: e.x, y: e.y, label: `Open ${e.owner ?? ''}'s cart`, grab: 'Pull' },
+          {
+            kind: 'entity',
+            id: e.id,
+            x: e.x,
+            y: e.y,
+            label: `Open ${e.owner ?? ''}'s ${what}`,
+            grab: e.type === 'minecart' ? 'Reverse' : e.type === 'wagon' ? 'Hitch (on a horse)' : 'Pull',
+          },
           Math.hypot(e.x - px, e.y - py),
         );
+      }
       if (e.kind === 'creature' && e.owner) {
         const def = CREATURE_BY_ID.get(e.type ?? '');
         const ready = (e.flags & EntityFlags.Product) !== 0;
@@ -948,6 +962,11 @@ export class ClientGame {
     if (d.machine || d.logistics === 'filter') return `Open ${d.name}`;
     if (d.container) return `Open ${d.name}`;
     if (d.station) return `Use ${d.name}`;
+    if (d.rail === 'station') return `Station: ${s.st.mode ?? 'load'} (E to change)`;
+    if (d.rail) {
+      const links = [0, 1, 2, 3].filter((dir) => this.world.structAt(s.x + DX[dir], s.y + DY[dir])?.def.rail).length;
+      if (links >= 3) return 'Flip the switch';
+    }
     return null;
   }
 

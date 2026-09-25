@@ -48,7 +48,7 @@ const BUILD_GROUPS: { name: string; test: (d: ItemDef) => boolean }[] = [
     test: (d) => ['water_wheel', 'windmill', 'hand_crank', 'steam_engine', 'shaft', 'gearbox', 'speed_gearbox'].includes(d.id),
   },
   { name: 'Machines', test: (d) => ['crusher', 'washer', 'press', 'millstone', 'saw', 'assembler'].includes(d.id) },
-  { name: 'Logistics', test: (d) => ['conveyor', 'hopper', 'splitter', 'filter'].includes(d.id) },
+  { name: 'Logistics', test: (d) => ['conveyor', 'hopper', 'splitter', 'filter', 'rail', 'rail_station'].includes(d.id) },
   { name: 'Steam & fluids', test: (d) => ['pump', 'pipe', 'fluid_tank', 'boiler'].includes(d.id) },
   { name: 'Defenses', test: (d) => ['spike_trap', 'arrow_tower'].includes(d.id) },
 ];

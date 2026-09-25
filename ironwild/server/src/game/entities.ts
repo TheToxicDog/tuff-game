@@ -1,6 +1,7 @@
 // Non-player entities: creatures, dropped items, death bags, arrows and hand carts.
 
 import type { CreatureDef, ItemStack, Slots } from '@ironwild/shared';
+import type { RailState } from './rails';
 import type { RaiderState } from './raids';
 
 export type AiState = 'idle' | 'wander' | 'flee' | 'chase' | 'attack' | 'return';
@@ -84,6 +85,8 @@ export interface Arrow {
 
 export interface Cart {
   kind: 'cart';
+  /** Hand carts are pulled on foot, wagons behind a horse; minecarts run on rails. */
+  type: 'hand' | 'wagon' | 'minecart';
   id: number;
   x: number;
   y: number;
@@ -92,6 +95,7 @@ export interface Cart {
   owner: string | null;
   ownerName: string;
   puller: number;
+  rail?: RailState;
 }
 
 export type Entity = Creature | Drop | Bag | Arrow | Cart;

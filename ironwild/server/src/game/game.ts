@@ -30,6 +30,7 @@ import { FluidSystem } from './fluids';
 import { newCharacter, Player } from './player';
 import { PlayerSystem } from './players';
 import { Progression } from './progression';
+import { RailSystem } from './rails';
 import { RaidSystem } from './raids';
 import { Replication } from './replication';
 import type { ClientSession } from './session';
@@ -97,6 +98,7 @@ export class Game {
   readonly fishing: Fishing;
   readonly fluids: FluidSystem;
   readonly raids: RaidSystem;
+  readonly rails: RailSystem;
   readonly companies: CompanySystem;
   readonly commands: Commands;
 
@@ -128,6 +130,7 @@ export class Game {
     this.fishing = new Fishing(this);
     this.fluids = new FluidSystem(this);
     this.raids = new RaidSystem(this);
+    this.rails = new RailSystem(this);
     this.companies = new CompanySystem(this);
     this.commands = new Commands(this);
   }
@@ -217,6 +220,7 @@ export class Game {
     this.creatures.step(dt);
     this.factory.step(dt);
     this.fluids.step(dt);
+    this.rails.step(dt);
     this.farming.step(dt);
     this.fishing.step();
     this.raids.step(dt);

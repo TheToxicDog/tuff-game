@@ -159,6 +159,8 @@ export interface StructVisual {
   crank?: boolean;
   /** Shop listing summary. */
   label?: string;
+  /** Rail junction switch direction. */
+  sw?: number;
 }
 
 /** Belt item keyframe: position and speed of one item from a given server tick. */

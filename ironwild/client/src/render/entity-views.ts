@@ -105,7 +105,7 @@ export class EntityViews {
         break;
       case 'cart':
         root = new Container();
-        body = makeCart();
+        body = makeCart(e.type, e.n);
         root.addChild(body);
         break;
     }
@@ -147,6 +147,13 @@ export class EntityViews {
         if (v.parts) {
           drawHeld(v.parts.arm, held, v.parts.skin);
           if (v.parts.label && e.name) v.parts.label.text = e.tag ? `[${e.tag}] ${e.name}` : e.name;
+        } else if (e.kind === 'cart' && v.body) {
+          // Cargo changed: redraw.
+          const next = makeCart(e.type, e.n);
+          next.rotation = v.body.rotation;
+          v.root.addChildAt(next, v.root.getChildIndex(v.body));
+          v.body.destroy({ children: true });
+          v.body = next;
         }
       }
       if (v.parts) {

@@ -6,7 +6,10 @@ import {
   HORSE_SPEED,
   INPUT_DT,
   INPUT_RATE,
+  HAND_CART_SLOTS,
   INTERACT_RANGE,
+  MINECART_SLOTS,
+  WAGON_SLOTS,
   ITEM_BY_ID,
   InputFlags,
   MAX_HEALTH,
@@ -519,19 +522,26 @@ export class PlayerSystem {
       if (this.game.creatures.spawnFarmAnimal(p, def.animal, x, y)) consume();
       return;
     }
-    if (def.vehicle === 'cart') {
-      if (this.game.world.solidAt(Math.floor(x), Math.floor(y))) return;
+    if (def.vehicle) {
+      const type = def.vehicle === 'cart' ? 'hand' : def.vehicle;
       const cart: Cart = {
         kind: 'cart',
+        type,
         id: this.game.newEntityId(),
         x,
         y,
         angle: p.angle,
-        slots: Array.from({ length: 24 }, () => null),
+        slots: Array.from({ length: type === 'wagon' ? WAGON_SLOTS : type === 'minecart' ? MINECART_SLOTS : HAND_CART_SLOTS }, () => null),
         owner: p.accountId,
         ownerName: p.name,
         puller: 0,
       };
+      if (type === 'minecart') {
+        if (!this.game.rails.place(p, cart, x, y)) {
+          this.game.notice(p, 'Put a minecart on a rail.', 'bad');
+          return;
+        }
+      } else if (this.game.world.solidAt(Math.floor(x), Math.floor(y))) return;
       this.game.addEntity(cart);
       consume();
     }
@@ -597,6 +607,10 @@ export class PlayerSystem {
         return;
       }
       if (s.def.kinetic?.role === 'shaft' || s.def.logistics === 'conveyor') return;
+      if (s.def.rail) {
+        this.game.rails.interact(p, s);
+        return;
+      }
       this.openUi(p, { kind: 'struct', id });
       return;
     }
@@ -613,12 +627,22 @@ export class PlayerSystem {
           return;
         }
         if (op === 'grab') {
+          if (e.type === 'minecart') {
+            this.game.rails.reverse(e);
+            return;
+          }
           if (p.pulling === e.id) this.releaseCart(p);
-          else if (!e.puller && !p.mounted) {
+          else if (e.type === 'wagon' && !p.mounted)
+            this.game.notice(p, 'Wagons are pulled by a horse: ride up to it and press G.', 'info');
+          else if (!e.puller && (e.type === 'wagon' || !p.mounted)) {
             this.releaseCart(p);
             e.puller = p.id;
             p.pulling = e.id;
-            this.game.notice(p, 'Pulling the cart. Press G again to let go.', 'info');
+            this.game.notice(
+              p,
+              e.type === 'wagon' ? 'Wagon hitched. Press G to unhitch.' : 'Pulling the cart. Press G again to let go.',
+              'info',
+            );
           }
           return;
         }
@@ -670,7 +694,10 @@ export class PlayerSystem {
     const e = this.game.entities.get(t.id as number);
     if (!e || Math.hypot(e.x - p.x, e.y - p.y) > INTERACT_RANGE + 2) return null;
     if (e.kind === 'bag') return { kind: 'container', id: e.id, title: `${e.ownerName}'s bag`, store: e.slots, entity: true };
-    if (e.kind === 'cart') return { kind: 'container', id: e.id, title: `${e.ownerName}'s hand cart`, store: e.slots, entity: true };
+    if (e.kind === 'cart') {
+      const what = e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'hand cart';
+      return { kind: 'container', id: e.id, title: `${e.ownerName}'s ${what}`, store: e.slots, entity: true };
+    }
     return null;
   }
 
@@ -699,7 +726,7 @@ export class PlayerSystem {
     const dx = cart.x - p.x;
     const dy = cart.y - p.y;
     const d = Math.hypot(dx, dy);
-    const rope = 1.5;
+    const rope = cart.type === 'wagon' ? 2.3 : 1.5;
     if (d > rope) {
       cart.x = p.x + (dx / d) * rope;
       cart.y = p.y + (dy / d) * rope;
@@ -736,6 +763,8 @@ export class PlayerSystem {
 
   dismount(p: Player): void {
     if (!p.mounted) return;
+    const hitched = p.pulling ? this.game.entities.get(p.pulling) : undefined;
+    if (hitched?.kind === 'cart' && hitched.type === 'wagon') this.releaseCart(p);
     const horse = this.game.entities.get(p.mounted);
     if (horse && horse.kind === 'creature') {
       horse.rider = undefined;

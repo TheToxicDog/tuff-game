@@ -151,7 +151,7 @@ export interface ItemDef {
   /** Animal spawned when used inside a pen. */
   animal?: string;
   /** Vehicle spawned when used. */
-  vehicle?: 'cart';
+  vehicle?: 'cart' | 'wagon' | 'minecart';
 }
 
 type Extra = Partial<Omit<ItemDef, 'id' | 'name' | 'category' | 'value' | 'stack' | 'icon' | 'tags'>>;
@@ -670,6 +670,40 @@ item(
   5,
   { shape: 'box', color: 0x9a6b3f, accent: 0x5c3a20 },
   { vehicle: 'cart', desc: 'Use to set it down, then hold E next to it to pull it: 24 slots of storage on wheels.' },
+);
+
+item(
+  'wagon',
+  'Wagon',
+  'gear',
+  ['gear'],
+  420,
+  2,
+  { shape: 'box', color: 0x8a5a33, accent: 0xe8e0c8 },
+  { vehicle: 'wagon', desc: 'Set it down, then ride a horse up to it and press G to hitch it: 48 slots on four wheels.' },
+);
+item(
+  'minecart',
+  'Minecart',
+  'gear',
+  ['gear', 'machine'],
+  160,
+  5,
+  { shape: 'box', color: 0x55595f, accent: 0x9aa0a6 },
+  {
+    vehicle: 'minecart',
+    desc: 'Set it on a rail: it runs by itself, stops at stations to load or unload, and turns back at the end of the line.',
+  },
+);
+place('rail', 'Rail', 'machine', 6, 100, 0x7a5230, 'Track for minecarts. Joins the rails next to it; E on a junction flips its switch.');
+place(
+  'rail_station',
+  'Rail Station',
+  'machine',
+  90,
+  20,
+  0x3f7a4f,
+  'Minecarts stop here to load from or unload into what stands beside it. E changes the mode.',
 );
 
 // ——— Animals (placed as live animals) ———

@@ -5,6 +5,7 @@ import { MemoryStorage } from './persistence/memory-storage';
 import { Game } from './game/game';
 import { newCharacter, Player } from './game/player';
 import type { ClientSession } from './game/session';
+import type { Cart } from './game/entities';
 import type { Structure } from './game/world';
 
 let game: Game;
@@ -66,6 +67,28 @@ function clearSpot(w: number, h: number, minRadius = 25): { x: number; y: number
   throw new Error('no clear spot');
 }
 
+/** A patch of open grass, `w`×`h` tiles, cleared of trees and rocks. */
+function openGround(w: number, h: number, minRadius: number): { x: number; y: number } {
+  const world = game.world;
+  const s = world.settlements[0];
+  for (let r = minRadius; r < 200; r++) {
+    for (let a = 0; a < 60; a++) {
+      const x = Math.round(s.x + Math.cos((a / 60) * Math.PI * 2) * r);
+      const y = Math.round(s.y + Math.sin((a / 60) * Math.PI * 2) * r);
+      let ok = true;
+      for (let dy = -1; dy <= h && ok; dy++)
+        for (let dx = -1; dx <= w && ok; dx++)
+          if (world.tile(x + dx, y + dy) !== 3 || world.structAt(x + dx, y + dy) || world.claimAt(x + dx, y + dy)) ok = false;
+      if (!ok || world.settlementAt(x, y, 20)) continue;
+      for (const n of world.nodesNear(x + w / 2, y + h / 2, Math.max(w, h) + 2)) n.gone = true;
+      for (const e of [...game.entities.values()])
+        if (e.kind === 'creature' && Math.hypot(e.x - x - w / 2, e.y - y - h / 2) < Math.max(w, h) + 8) game.removeEntity(e.id);
+      return { x, y };
+    }
+  }
+  throw new Error('no open ground');
+}
+
 /** A clear spot far enough from every claim to put down a new one. */
 function claimSpot(): { x: number; y: number } {
   for (let r = 40; r < 160; r += 4) {
@@ -76,6 +99,9 @@ function claimSpot(): { x: number; y: number } {
 }
 
 function place(p: Player, item: string, x: number, y: number, rot = 0): Structure {
+  // Wildlife wanders at random; keep it off the spot.
+  for (const e of [...game.entities.values()])
+    if (e.kind === 'creature' && !e.owner && Math.hypot(e.x - x - 0.5, e.y - y - 0.5) < 3.5) game.removeEntity(e.id);
   game.playerSystem.give(p, { id: item, n: 1 }, true);
   game.building.place(p, item, x, y, rot);
   const s = game.world.structAt(x, y) ?? game.world.floorStructAt(x, y);
@@ -430,6 +456,7 @@ describe('fishing (§11)', () => {
 
 describe('market events (§14)', () => {
   it('a shortage raises prices for its goods until it ends', () => {
+    game.economy.events.length = 0;
     const town = SETTLEMENT_BY_ID.get('westhaven')!;
     const ingot = ITEM_BY_ID.get('iron_ingot')!;
     const before = game.economy.ask(town, ingot);
@@ -450,17 +477,22 @@ describe('market events (§14)', () => {
 });
 
 describe('Port Meridian (§14)', () => {
-  it('sells imports that are worth more inland, and pays well for finished goods', () => {
+  it('sells imports that are worth more inland, and pays well for finished goods', async () => {
+    // A fresh world: earlier tests' trading and market news would skew the comparison.
+    const fresh = new Game(new MemoryStorage(), { seed: 777 });
+    fresh.log = () => undefined;
+    await fresh.init();
+    fresh.economy.events.length = 0;
     const port = SETTLEMENT_BY_ID.get('port_meridian')!;
     const west = SETTLEMENT_BY_ID.get('westhaven')!;
-    expect(game.world.settlements.some((s) => s.id === 'port_meridian')).toBe(true);
+    expect(fresh.world.settlements.some((s) => s.id === 'port_meridian')).toBe(true);
     const spices = ITEM_BY_ID.get('spices')!;
-    const buyer = game.economy.bestBuyer(west, spices)!;
-    expect(game.economy.bid(west, buyer, spices)).toBeGreaterThan(game.economy.ask(port, spices));
+    const buyer = fresh.economy.bestBuyer(west, spices)!;
+    expect(fresh.economy.bid(west, buyer, spices)).toBeGreaterThan(fresh.economy.ask(port, spices));
     const gear = ITEM_BY_ID.get('iron_gear')!;
-    const exporter = game.economy.bestBuyer(port, gear)!;
+    const exporter = fresh.economy.bestBuyer(port, gear)!;
     expect(exporter.id).toBe('exporter');
-    expect(game.economy.bid(port, exporter, gear)).toBeGreaterThan(game.economy.bid(west, game.economy.bestBuyer(west, gear)!, gear));
+    expect(fresh.economy.bid(port, exporter, gear)).toBeGreaterThan(fresh.economy.bid(west, fresh.economy.bestBuyer(west, gear)!, gear));
   });
 });
 
@@ -584,5 +616,110 @@ describe('companies (§46)', () => {
     game.companies.handle(founder, { t: 'company', op: 'leave' });
     expect(claim.owner).toBe(founder.accountId);
     expect(founder.crests).toBe(pocket + 200);
+  });
+});
+
+describe('railways (§36)', () => {
+  it('shuttles goods from a loading station to an unloading one and back', () => {
+    const spot = openGround(11, 3, 70);
+    const { x, y } = { x: spot.x, y: spot.y + 1 };
+    const p = join('railman', x + 5.5, y + 2.5);
+    const from = place(p, 'chest', x, y - 1);
+    const load = place(p, 'rail_station', x, y);
+    for (let i = 1; i < 10; i++) place(p, 'rail', x + i, y);
+    const unload = place(p, 'rail_station', x + 10, y);
+    const to = place(p, 'chest', x + 10, y + 1);
+    // Stations start in load mode; E switches the far one to unload.
+    game.rails.interact(p, unload);
+    expect(unload.rmode).toBe('unload');
+    from.store![0] = { id: 'iron_ore', n: 30 };
+    // Set a minecart on the loading station, facing east.
+    game.playerSystem.give(p, { id: 'minecart', n: 1 }, true);
+    p.angle = 0;
+    p.move.x = x + 1.5;
+    p.move.y = y + 2;
+    game.playerSystem.useItem(
+      p,
+      p.slots.findIndex((s) => s?.id === 'minecart'),
+      x + 0.5,
+      y + 0.5,
+    );
+    const cart = [...game.entities.values()].find((e) => e.kind === 'cart' && e.type === 'minecart') as Cart;
+    expect(cart).toBeDefined();
+    // The first pass east is empty (it was set down past the loading point); it unloads nothing,
+    // turns at the end of the line, comes back, loads, and delivers.
+    for (let i = 0; i < 20 * 40 && countItem(to.store!, 'iron_ore') < 30; i++) game.step();
+    expect(countItem(from.store!, 'iron_ore')).toBe(0);
+    expect(countItem(to.store!, 'iron_ore')).toBe(30);
+    void load;
+  });
+
+  it('follows a junction switch and reverses on request', () => {
+    const spot = openGround(5, 5, 90);
+    const p = join('switcher', spot.x + 0.5, spot.y + 5.5);
+    // A T: a line west–east with a branch south from the middle.
+    for (let i = 0; i < 5; i++) place(p, 'rail', spot.x + i, spot.y);
+    for (let j = 1; j < 4; j++) place(p, 'rail', spot.x + 2, spot.y + j);
+    const junction = game.world.structAt(spot.x + 2, spot.y)!;
+    expect(game.rails.links(junction).sort()).toEqual([1, 2, 3]);
+    // Point the switch south.
+    game.rails.interact(p, junction);
+    while (junction.sw !== 2) game.rails.interact(p, junction);
+    game.playerSystem.give(p, { id: 'minecart', n: 1 }, true);
+    p.angle = 0;
+    p.move.x = spot.x + 0.5;
+    p.move.y = spot.y + 1.8;
+    game.playerSystem.useItem(
+      p,
+      p.slots.findIndex((s) => s?.id === 'minecart'),
+      spot.x + 0.5,
+      spot.y + 0.5,
+    );
+    const cart = [...game.entities.values()].find((e) => e.kind === 'cart' && e.type === 'minecart' && Math.abs(e.x - spot.x) < 3) as Cart;
+    expect(cart).toBeDefined();
+    let maxY = 0;
+    for (let i = 0; i < 20 * 3; i++) {
+      game.step();
+      maxY = Math.max(maxY, cart.y);
+    }
+    expect(maxY).toBeGreaterThan(spot.y + 2.5);
+    const before = cart.rail!.exit;
+    p.move.x = cart.x + 1;
+    p.move.y = cart.y;
+    game.playerSystem.interact(p, 'entity', cart.id, 'grab');
+    expect(cart.rail!.exit).not.toBe(before);
+  });
+});
+
+describe('wagons (§36)', () => {
+  it('hitch to a horse, follow it, and unhitch when the rider dismounts', () => {
+    const spot = openGround(6, 3, 110);
+    const p = join('carter', spot.x + 1.5, spot.y + 1.5);
+    game.playerSystem.give(p, { id: 'wagon', n: 1 }, true);
+    game.playerSystem.useItem(
+      p,
+      p.slots.findIndex((s) => s?.id === 'wagon'),
+      spot.x + 3.5,
+      spot.y + 1.5,
+    );
+    const wagon = [...game.entities.values()].find((e) => e.kind === 'cart' && e.type === 'wagon') as Cart;
+    expect(wagon.slots).toHaveLength(48);
+    // On foot it won't hitch.
+    game.playerSystem.interact(p, 'entity', wagon.id, 'grab');
+    expect(wagon.puller).toBe(0);
+    const horse = game.creatures.spawn('horse', spot.x + 2.5, spot.y + 1.5, '');
+    horse.owner = p.accountId;
+    game.playerSystem.interact(p, 'entity', horse.id, 'grab');
+    expect(p.mounted).toBe(horse.id);
+    game.playerSystem.interact(p, 'entity', wagon.id, 'grab');
+    expect(wagon.puller).toBe(p.id);
+    // Ride off west: the wagon follows on its rope (it is dragged as inputs are processed).
+    p.move.x -= 4;
+    for (let i = 1; i <= 3; i++) p.inputs.push([p.lastSeq + i, 0, 0, 0, 0]);
+    ticks(2);
+    expect(Math.hypot(wagon.x - p.x, wagon.y - p.y)).toBeLessThan(2.4);
+    // Dismounting unhitches.
+    game.playerSystem.dismount(p);
+    expect(wagon.puller).toBe(0);
   });
 });

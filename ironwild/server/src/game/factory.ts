@@ -921,6 +921,8 @@ export class Factory {
     if (s.crop) data.crop = s.crop;
     if (s.rpm) data.rpm = s.rpm;
     if (s.fluid?.kind && s.fluid.amount > 0) data.fluid = s.fluid;
+    if (s.sw !== undefined) data.sw = s.sw;
+    if (s.rmode) data.rmode = s.rmode;
     if (s.buf && (s.buf.water > 0 || s.buf.steam > 0)) data.buf = s.buf;
     return {
       id: s.id,
@@ -979,6 +981,8 @@ export class Factory {
     if (d.crop) s.crop = d.crop;
     if (d.rpm) s.rpm = d.rpm;
     if (d.fluid) s.fluid = d.fluid;
+    if (d.sw !== undefined) s.sw = d.sw;
+    if (d.rmode) s.rmode = d.rmode;
     if (d.buf) s.buf = d.buf;
     w.addStructure(s);
     if (s.crop) this.game.farming.track(s);

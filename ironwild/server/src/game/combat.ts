@@ -131,6 +131,25 @@ export class CombatSystem {
       return;
     }
 
+    // Hammer on a cart: pack it back up (once it's empty).
+    if (tool.kind === 'hammer') {
+      for (const e of this.game.entities.values()) {
+        if (e.kind !== 'cart' || !inArc(e.x, e.y, 0.6)) continue;
+        if (e.owner && e.owner !== p.accountId && !this.game.companies.sameCompany(p.accountId, e.owner)) continue;
+        if (e.slots.some((x) => x)) {
+          this.game.notice(p, 'Empty it first.', 'bad');
+          return;
+        }
+        if (e.puller) {
+          const puller = this.game.players.get(e.puller);
+          if (puller) this.game.playerSystem.releaseCart(puller);
+        }
+        this.game.removeEntity(e.id);
+        this.game.playerSystem.give(p, { id: e.type === 'hand' ? 'hand_cart' : e.type, n: 1 }, true);
+        this.game.emit(['sfx', 'pickup', Math.round(e.x * 100), Math.round(e.y * 100)], e.x, e.y, { r: 16 });
+        return;
+      }
+    }
     // Hammer on a structure: pick it back up.
     if (tool.kind === 'hammer') {
       const tx = Math.floor(p.x + Math.cos(p.angle) * (PLAYER_RADIUS + 0.7));
@@ -338,7 +357,17 @@ export class CombatSystem {
       if (e.kind === 'bag')
         out.push({ kind: 'bag', x: e.x, y: e.y, owner: e.owner, ownerName: e.ownerName, slots: e.slots, expires: e.expires });
       else if (e.kind === 'drop') out.push({ kind: 'drop', x: e.x, y: e.y, slots: [e.stack], expires: e.expires });
-      else if (e.kind === 'cart') out.push({ kind: 'cart', x: e.x, y: e.y, owner: e.owner, ownerName: e.ownerName, slots: e.slots });
+      else if (e.kind === 'cart')
+        out.push({
+          kind: 'cart',
+          x: e.x,
+          y: e.y,
+          owner: e.owner,
+          ownerName: e.ownerName,
+          slots: e.slots,
+          type: e.type,
+          ...(e.rail ? { data: { rail: e.rail } } : {}),
+        });
     }
     return out;
   }
@@ -368,8 +397,10 @@ export class CombatSystem {
         };
         this.game.addEntity(drop);
       } else if (s.kind === 'cart') {
+        const type = s.type === 'wagon' || s.type === 'minecart' ? s.type : 'hand';
         const cart: Cart = {
           kind: 'cart',
+          type,
           id: this.game.newEntityId(),
           x: s.x,
           y: s.y,
@@ -379,6 +410,8 @@ export class CombatSystem {
           ownerName: s.ownerName ?? 'someone',
           puller: 0,
         };
+        const rail = (s.data as { rail?: Cart['rail'] } | undefined)?.rail;
+        if (rail) cart.rail = { ...rail, atStation: false };
         this.game.addEntity(cart);
       }
     }

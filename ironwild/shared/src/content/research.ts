@@ -78,6 +78,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     col: 3,
     row: 1,
   },
+  {
+    id: 'railways',
+    name: 'Railways',
+    cost: 60,
+    requires: ['logistics'],
+    desc: 'Rails, stations and minecarts that haul goods on their own.',
+    col: 3,
+    row: 3,
+  },
   { id: 'jewelcraft', name: 'Gem Cutting', cost: 40, requires: ['smithing'], desc: 'Cut rough gems on the anvil.', col: 3, row: 4 },
   {
     id: 'precision',

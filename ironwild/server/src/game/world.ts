@@ -14,6 +14,7 @@ import {
   type CollisionWorld,
   type Fluid,
   type GeneratedWorld,
+  type StationMode,
   type GenSettlement,
   type NodeDef,
   type Slots,
@@ -117,6 +118,9 @@ export interface Structure {
   fluid?: { kind: Fluid | null; amount: number };
   /** Boilers and engines: their own water and steam. */
   buf?: Record<Fluid, number>;
+  /** Rail junctions: the way the switch sends carts; stations: what they do with them. */
+  sw?: number;
+  rmode?: StationMode;
 }
 
 export const chunkKey = (cx: number, cy: number): number => cy * 1024 + cx;

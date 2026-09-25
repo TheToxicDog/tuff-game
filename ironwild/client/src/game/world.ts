@@ -300,7 +300,7 @@ export class ClientWorld implements CollisionWorld {
     for (let y = s.y - 1; y <= s.y + s.h; y++) {
       for (let x = s.x - 1; x <= s.x + s.w; x++) {
         const n = this.structAt(x, y);
-        if (n && n !== s && (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic || n.def.fluid))
+        if (n && n !== s && (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic || n.def.fluid || n.def.rail))
           this.listener?.structChanged(n);
       }
     }

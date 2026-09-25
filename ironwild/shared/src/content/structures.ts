@@ -79,6 +79,8 @@ export interface StructureDef {
   tower?: { range: number; damage: number; every: number };
   /** Pipes, tanks and the machines that pump, boil or burn fluids. */
   fluid?: FluidSpec;
+  /** Track for minecarts; stations also load and unload them. */
+  rail?: 'track' | 'station';
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -498,6 +500,30 @@ const S: StructureDef[] = [
   },
 
   // ——— Logistics ———
+  {
+    id: 'rail',
+    name: 'Rail',
+    item: 'rail',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 150,
+    placement: 'any',
+    low: true,
+    rail: 'track',
+  },
+  {
+    id: 'rail_station',
+    name: 'Rail Station',
+    item: 'rail_station',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 300,
+    placement: 'any',
+    low: true,
+    rail: 'station',
+  },
   {
     id: 'conveyor',
     name: 'Conveyor',

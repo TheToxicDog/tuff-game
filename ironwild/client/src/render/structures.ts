@@ -3,7 +3,19 @@
 // stamp, furnaces glow. Each view is a static drawing plus a list of per-frame animations.
 
 import { Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { CROP_BY_ID, DX, DY, FLUID_COLORS, ITEM_BY_ID, fluidJoins, opposite, type Fluid, type StructureDef } from '@ironwild/shared';
+import {
+  CROP_BY_ID,
+  DX,
+  DY,
+  FLUID_COLORS,
+  ITEM_BY_ID,
+  fluidJoins,
+  opposite,
+  railLinks,
+  railShape,
+  type Fluid,
+  type StructureDef,
+} from '@ironwild/shared';
 import type { ClientStruct, ClientWorld } from '../game/world';
 import { iconCanvas } from '../ui/icons';
 import { OUTLINE, TS, arcPath, arrow, gearContext, shade } from './draw';
@@ -738,6 +750,36 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
       .fill(0x6a6f78)
       .stroke({ width: 3, color: OUTLINE });
   },
+  rail(c) {
+    track(c);
+  },
+  rail_station(c) {
+    c.inner.rotation = 0;
+    const links = railNeighbours(c);
+    const shape = railShape(links);
+    // Platform on a side the track does not use.
+    const side = [0, 1, 2, 3].find((d) => !shape.dirs.includes(d)) ?? 0;
+    const a = (side * Math.PI) / 2 - Math.PI / 2;
+    const plat = new Graphics();
+    plat.roundRect(8, -30, 24, 60, 4).fill(0xa47a45).stroke({ width: 3, color: OUTLINE });
+    for (let i = 0; i < 4; i++)
+      plat
+        .moveTo(10, -26 + i * 16)
+        .lineTo(30, -26 + i * 16)
+        .stroke({ width: 2, color: 0x7a5230 });
+    plat.rotation = a;
+    c.inner.addChild(plat);
+    track(c);
+    const mode = c.s.st.mode ?? 'load';
+    const color = mode === 'load' ? 0x5fb85f : mode === 'unload' ? 0x4f8fd0 : 0x9aa0a6;
+    const sign = new Graphics();
+    sign.roundRect(-9, -9, 18, 18, 4).fill(color).stroke({ width: 3, color: OUTLINE });
+    if (mode === 'load') sign.poly([-4, 4, 0, -4, 4, 4], true).fill(0xffffff);
+    else if (mode === 'unload') sign.poly([-4, -4, 0, 4, 4, -4], true).fill(0xffffff);
+    else sign.rect(-5, -1.5, 10, 3).fill(0xffffff);
+    sign.position.set(Math.cos(a) * 22, Math.sin(a) * 22);
+    c.inner.addChild(sign);
+  },
   pipe(c) {
     c.inner.rotation = 0;
     const joined = [0, 1, 2, 3].filter((d) => {
@@ -1145,6 +1187,60 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
     }
   },
 };
+
+/** Directions toward neighbouring rails. */
+function railNeighbours(c: DrawCtx): number[] {
+  return railLinks((d) => !!neighbour(c, d)?.def.rail);
+}
+
+/** Sleepers and two steel rails following the tile's links (straight, curved or a junction). */
+function track(c: DrawCtx): void {
+  c.inner.rotation = 0;
+  const shape = railShape(railNeighbours(c));
+  const g = new Graphics();
+  const STEEL = 0xa9afb8;
+  const TIE = 0x6b4a2a;
+  if (shape.kind === 'curve') {
+    const [d0, d1] = shape.dirs;
+    // The corner shared by the two edges is the curve's centre.
+    const kx = (DX[d0] + DX[d1]) * 32;
+    const ky = (DY[d0] + DY[d1]) * 32;
+    const start = Math.atan2(-ky, -kx) - Math.PI / 4;
+    for (let i = 0; i < 4; i++) {
+      const t = start + (i + 0.5) * (Math.PI / 8);
+      const r0 = 18;
+      const r1 = 46;
+      g.moveTo(kx + Math.cos(t) * r0, ky + Math.sin(t) * r0)
+        .lineTo(kx + Math.cos(t) * r1, ky + Math.sin(t) * r1)
+        .stroke({ width: 8, color: TIE });
+    }
+    for (const r of [22, 42]) {
+      arcPath(g, kx, ky, r, start, start + Math.PI / 2).stroke({ width: 6, color: OUTLINE });
+      arcPath(g, kx, ky, r, start, start + Math.PI / 2).stroke({ width: 3, color: STEEL });
+    }
+  } else {
+    const dirs = shape.kind === 'straight' ? shape.dirs : shape.dirs;
+    for (const d of dirs) {
+      const arm = new Graphics();
+      for (let i = 0; i < 2; i++) arm.rect(4 + i * 16, -16, 8, 32).fill(TIE);
+      for (const y of [-10, 10])
+        arm.moveTo(-2, y).lineTo(32, y).stroke({ width: 6, color: OUTLINE }).moveTo(-2, y).lineTo(32, y).stroke({ width: 3, color: STEEL });
+      arm.rotation = (d * Math.PI) / 2 - Math.PI / 2;
+      c.inner.addChild(arm);
+    }
+    if (shape.kind === 'junction') {
+      const sw = c.s.st.sw;
+      const lever = new Graphics().circle(0, 0, 7).fill(0xd9b23d).stroke({ width: 2, color: OUTLINE });
+      if (sw !== undefined)
+        lever
+          .moveTo(0, 0)
+          .lineTo(DX[sw] * 16, DY[sw] * 16)
+          .stroke({ width: 4, color: 0xc0302a });
+      c.inner.addChild(lever);
+    }
+  }
+  c.inner.addChildAt(g, 0);
+}
 
 function drawGeneric(c: DrawCtx): void {
   const { hw, hh } = half(c);

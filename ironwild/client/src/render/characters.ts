@@ -348,8 +348,59 @@ export function makeArrow(): Container {
   return c;
 }
 
-export function makeCart(): Container {
+/** Hand cart, horse wagon or minecart (drawn facing +x); `n` filled slots show as cargo. */
+export function makeCart(type = 'hand', n = 0): Container {
   const g = new Graphics();
+  const c = new Container();
+  c.addChild(g);
+  if (type === 'minecart') {
+    for (const [x, y] of [
+      [-18, -19],
+      [10, -19],
+      [-18, 13],
+      [10, 13],
+    ])
+      g.roundRect(x, y, 10, 6, 2).fill(0x2a2a2e).stroke({ width: 2, color: OUTLINE });
+    g.roundRect(-24, -16, 46, 32, 6).fill(0x6f757d).stroke({ width: 4, color: OUTLINE });
+    g.roundRect(-18, -10, 34, 20, 4).fill(0x3a3c40);
+    for (const [x, y] of [
+      [-20, -12],
+      [18, -12],
+      [-20, 12],
+      [18, 12],
+    ])
+      g.circle(x, y, 2).fill(0xb0b5bd);
+    if (n > 0) {
+      const heap = Math.min(1, n / 8);
+      g.ellipse(-1, 0, 10 + heap * 6, 6 + heap * 3).fill(0x8a7f74);
+      g.circle(-6, -2, 3 + heap * 2).fill(0x9c7a64);
+      g.circle(4, 2, 3 + heap * 2).fill(0x7d8189);
+    }
+    return c;
+  }
+  if (type === 'wagon') {
+    for (const [x, y] of [
+      [-40, -32],
+      [16, -32],
+      [-40, 24],
+      [16, 24],
+    ])
+      g.roundRect(x, y, 20, 9, 3).fill(0x3a2a1a).stroke({ width: 2, color: OUTLINE });
+    g.moveTo(26, -12).lineTo(62, -6).moveTo(26, 12).lineTo(62, 6).stroke({ width: 5, color: 0x7a5230 });
+    g.roundRect(-44, -26, 74, 52, 6).fill(0x8a5a33).stroke({ width: 4, color: OUTLINE });
+    if (n > 0)
+      for (let i = 0; i < Math.min(6, Math.ceil(n / 8)); i++)
+        g.circle(-32 + (i % 3) * 22, -10 + Math.floor(i / 3) * 20, 8)
+          .fill(0xc9a06a)
+          .stroke({ width: 2, color: OUTLINE });
+    // Canvas cover over the back two thirds.
+    g.roundRect(-40, -24, 48, 48, 12).fill({ color: 0xe8e0c8, alpha: 0.95 }).stroke({ width: 3, color: OUTLINE });
+    for (let i = 1; i < 4; i++)
+      g.moveTo(-40 + i * 12, -22)
+        .lineTo(-40 + i * 12, 22)
+        .stroke({ width: 2, color: 0xc9bfa6 });
+    return c;
+  }
   g.roundRect(-30, -24, 14, 10, 3).fill(0x3a2a1a).stroke({ width: 2, color: OUTLINE });
   g.roundRect(-30, 14, 14, 10, 3).fill(0x3a2a1a).stroke({ width: 2, color: OUTLINE });
   g.roundRect(-34, -18, 52, 36, 5).fill(0x9a6b3f).stroke({ width: 4, color: OUTLINE });
@@ -358,7 +409,10 @@ export function makeCart(): Container {
       .lineTo(-34 + i * 13, 18)
       .stroke({ width: 2, color: 0x7a5230 });
   g.moveTo(18, -10).lineTo(40, 0).lineTo(18, 10).stroke({ width: 4, color: 0x7a5230 });
-  const c = new Container();
-  c.addChild(g);
+  if (n > 0)
+    for (let i = 0; i < Math.min(4, Math.ceil(n / 6)); i++)
+      g.circle(-24 + i * 11, (i % 2) * 8 - 4, 6)
+        .fill(0xc9a06a)
+        .stroke({ width: 2, color: OUTLINE });
   return c;
 }
