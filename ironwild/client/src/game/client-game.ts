@@ -684,7 +684,7 @@ export class ClientGame {
     const left = inp.mouseLeft || inp.leftLatch;
     const right = inp.mouseRight || inp.rightLatch;
     inp.leftLatch = inp.rightLatch = false;
-    if (left && !overUi && !this.placing && !def?.place && !dead) flags |= InputFlags.Primary;
+    if (left && !overUi && !this.placing && !def?.place && !dead && !this.smithing.active) flags |= InputFlags.Primary;
     if (right && !overUi && !this.placing && !dead) flags |= InputFlags.Secondary;
     if (this.dodgeQueued) {
       flags |= InputFlags.Dodge;
@@ -732,10 +732,10 @@ export class ClientGame {
   private handleKeys(mouse: { x: number; y: number }): void {
     const inp = this.input;
     if (this.chat.typing) return;
-    if (this.smithing.active && (inp.hit('Space') || (inp.leftPressed && !inp.overUi))) {
-      inp.leftLatch = false;
-      this.smithing.strike();
-      return;
+    // The forge takes Space and clicks itself (see Smithing); here they must not dodge or swing.
+    if (this.smithing.active) {
+      inp.hit('Space');
+      inp.leftPressed = inp.leftLatch = false;
     }
     if (inp.hit('Enter')) {
       this.chat.open();

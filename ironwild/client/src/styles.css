@@ -860,7 +860,7 @@ select:focus {
 .research-grid {
   position: relative;
   width: 1165px;
-  height: 620px;
+  height: 720px;
 }
 
 .research-grid svg {
@@ -882,6 +882,14 @@ select:focus {
 .rnode .t {
   font-family: var(--heading);
   font-size: 14px;
+}
+
+/* Cards keep to their row: long descriptions are clamped (the full text is in the tooltip). */
+.rnode .desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .rnode.done {

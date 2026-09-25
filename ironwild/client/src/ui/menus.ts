@@ -135,11 +135,11 @@ export function researchWindow(ctx: UiContext): WindowDef {
       );
       const grid = h('div', { class: 'research-grid' });
       const W = 165;
-      const H = 124;
+      const H = 144;
       const svgNS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(svgNS, 'svg');
       svg.setAttribute('width', '1165');
-      svg.setAttribute('height', '620');
+      svg.setAttribute('height', '720');
       for (const n of RESEARCH) {
         for (const req of n.requires) {
           const r = RESEARCH_BY_ID.get(req)!;
@@ -163,7 +163,7 @@ export function researchWindow(ctx: UiContext): WindowDef {
           'div',
           { class: `rnode ${done ? 'done' : available ? 'available' : 'locked'}`, style: `left:${n.col * W}px;top:${n.row * H}px` },
           h('div', { class: 't' }, n.name),
-          h('div', { class: 'muted' }, n.desc),
+          h('div', { class: 'muted desc', title: n.desc }, n.desc),
           n.blueprint && !bpOk ? h('div', { class: 'bad', style: 'font-size:11px' }, `Needs ${ITEM_BY_ID.get(n.blueprint)?.name}`) : null,
           done
             ? h('div', { class: 'good', style: 'margin-top:4px' }, '✔ Researched')
@@ -501,6 +501,15 @@ export class Smithing {
   private marker: HTMLElement | null = null;
   private feedback: HTMLElement | null = null;
   private raf = 0;
+  /** Strikes are handled the moment the key or click happens (not on the next frame), so timing is fair at any frame rate. */
+  private readonly onKey = (e: KeyboardEvent) => {
+    if (e.code !== 'Space' || e.repeat) return;
+    e.preventDefault();
+    this.strike();
+  };
+  private readonly onPointer = (e: PointerEvent) => {
+    if (e.button === 0 && e.target instanceof HTMLCanvasElement) this.strike();
+  };
 
   constructor(private readonly ctx: UiContext) {}
 
@@ -508,12 +517,16 @@ export class Smithing {
     this.recipe = recipe;
     this.hits = [];
     this.start = performance.now();
+    window.addEventListener('keydown', this.onKey);
+    window.addEventListener('pointerdown', this.onPointer);
     return {
       title: () => h('span', null, 'Forging ', h('span', { class: 'sub' }, ITEM_BY_ID.get(this.outputOf())?.name ?? '')),
       order: 3,
       render: (body) => this.render(body),
       onClose: () => {
         cancelAnimationFrame(this.raf);
+        window.removeEventListener('keydown', this.onKey);
+        window.removeEventListener('pointerdown', this.onPointer);
         this.recipe = null;
       },
     };
