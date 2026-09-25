@@ -106,7 +106,8 @@ export class CombatSystem {
     let hitSomething = false;
     let hits = 0;
     for (const e of this.game.entities.values()) {
-      if (e.kind !== 'creature' || hits >= 3 || e.rider) continue;
+      // Hired guards are on your side (and nobody else's to cut down).
+      if (e.kind !== 'creature' || hits >= 3 || e.rider || e.guard) continue;
       if (!inArc(e.x, e.y, e.def.radius)) continue;
       if (e.def.temperament === 'farm' && e.owner && e.owner !== p.accountId && !this.game.companies.sameCompany(p.accountId, e.owner))
         continue;
@@ -283,7 +284,7 @@ export class CombatSystem {
         return;
       }
       for (const e of this.game.entities.values()) {
-        if (e.kind !== 'creature' || e.rider) continue;
+        if (e.kind !== 'creature' || e.rider || e.guard) continue;
         if (a.high && (e.def.temperament === 'farm' || e.def.temperament === 'passive')) continue;
         if (Math.hypot(e.x - a.x, e.y - a.y) < e.def.radius + 0.15) {
           const shooter = a.owner ? (this.game.players.get(a.owner) ?? null) : null;

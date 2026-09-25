@@ -6,6 +6,14 @@ import type { RaiderState } from './raids';
 
 export type AiState = 'idle' | 'wander' | 'flee' | 'chase' | 'attack' | 'return';
 
+/** Getting around something in the way: how long it has been stuck, and a sidestep until a time (ms). */
+export interface Detour {
+  stuck: number;
+  detourUntil: number;
+  dx: number;
+  dy: number;
+}
+
 export interface Creature {
   kind: 'creature';
   id: number;
@@ -43,6 +51,10 @@ export interface Creature {
   rider?: number;
   /** Bandits on a raid (§42). */
   raider?: RaiderState;
+  /** A hired guard (§42), the guard house it keeps watch from, and how it gets around things. */
+  guard?: { post: number; nav: Detour };
+  /** A guard this creature is fighting back against. */
+  foe?: number;
   /** Next time a spike trap may hurt it. */
   trapAt?: number;
 }

@@ -36,6 +36,7 @@ import { TownProjects } from './projects';
 import { RailSystem } from './rails';
 import { RaidSystem } from './raids';
 import { Replication } from './replication';
+import { GuardSystem } from './guards';
 import type { ClientSession } from './session';
 import { World, type ResourceNode, type Structure } from './world';
 
@@ -102,6 +103,7 @@ export class Game {
   readonly fluids: FluidSystem;
   readonly power: PowerSystem;
   readonly raids: RaidSystem;
+  readonly guards: GuardSystem;
   readonly rails: RailSystem;
   readonly projects: TownProjects;
   readonly ambitions: Ambitions;
@@ -137,6 +139,7 @@ export class Game {
     this.fluids = new FluidSystem(this);
     this.power = new PowerSystem(this);
     this.raids = new RaidSystem(this);
+    this.guards = new GuardSystem(this);
     this.rails = new RailSystem(this);
     this.projects = new TownProjects(this);
     this.ambitions = new Ambitions(this);
@@ -153,6 +156,7 @@ export class Game {
     this.economy.init();
     this.creatures.init();
     this.raids.init();
+    this.guards.init();
     this.factory.rebuildAll();
   }
 
@@ -239,6 +243,7 @@ export class Game {
       this.regrowNodes();
       this.progression.stepSecond();
       this.ambitions.stepSecond();
+      this.guards.stepSecond();
       this.combat.expireEntities();
     }
     if (this.day !== prevDay) this.economy.newDay();
@@ -441,6 +446,11 @@ export class Game {
         break;
       case 'claim':
         this.building.claimMember(p, msg.id, msg.op, msg.name, msg.role);
+        break;
+      case 'guard':
+        if (typeof msg.id !== 'number') break;
+        if (msg.op === 'hire' && typeof msg.days === 'number') this.guards.hire(p, msg.id, msg.days);
+        else if (msg.op === 'dismiss') this.guards.release(p, msg.id);
         break;
       case 'shop':
         if (msg.op === 'price') this.economy.shopPrice(p, msg.id, msg.item, msg.q, msg.price);

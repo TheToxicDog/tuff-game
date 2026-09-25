@@ -94,6 +94,12 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   Statue of Industry (₡19,650 of steel, precision gears and gold) and a Beacon of Progress
   (₡26,200; with 40 power it lights up the valley at night). They stand for good once raised,
   appear on every map, and give prestige instead of counting as wealth.
+- Hired guards (§42, "guards later"): a 2×2 guard house (Fortification) takes on a guard for wages
+  paid in advance — ₡150 a game day, for 1, 3 or 7 days at a time and up to two weeks ahead; the
+  wages go to nobody. The guard keeps watch by the house, fights raiders and wild animals within
+  14 tiles of it, sidesteps around things in the way, and mends between fights. Raiders and animals
+  the guard goes for fight back. A guard who falls is replaced two game hours later while the wages
+  last; when they run out the guard goes home. The house flies its flag while someone is on duty.
 - Motor trucks (§36, "late game: truck"): research Motor Vehicles after Petroleum; a truck (steel,
   gearbox units, bearings, springs, glass, a circuit board) carries 64 slots, drives at 1.9× walking
   pace and 1.35× more on roads, plazas, bridges and floors, but neither sprints nor dodges. It burns
@@ -109,4 +115,3 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Hired guards (§42).

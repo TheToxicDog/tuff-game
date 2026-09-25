@@ -18,6 +18,7 @@ import {
   TRUCK_SCALE,
   swingAngle,
   type CharacterParts,
+  type Humanoid,
 } from './characters';
 import { OUTLINE, TS } from './draw';
 import type { Renderer } from './renderer';
@@ -240,7 +241,8 @@ export class EntityViews {
       if (v.hp) {
         const show = e.kind === 'player' || e.hp < 100;
         v.hp.visible = show;
-        if (show) drawHealth(v.hp, e.hp, e.kind === 'player', e.kind === 'player' ? 56 : 46);
+        // Players and hired guards get the friendly (green) bar.
+        if (show) drawHealth(v.hp, e.hp, e.kind === 'player' || e.type === 'guard', e.kind === 'player' ? 56 : 46);
       }
       // Hurt flash.
       const hurt = now - e.hurtAt < 160 || (e.flags & EntityFlags.Hurt) !== 0;
@@ -252,6 +254,9 @@ export class EntityViews {
         v.body.position.set(Math.cos(a) * lunge, Math.sin(a) * lunge);
         const busy = (e.flags & EntityFlags.Busy) !== 0;
         v.body.scale.set(busy ? 1.06 : 1);
+        // People (bandits, guards) swing their weapon as the blow lands.
+        const arm = (v.body as Humanoid).arm;
+        if (arm) arm.rotation = swingAngle(since - 0.2, false);
         this.updateBubble(v, (e.flags & EntityFlags.Product) !== 0);
       }
       if (e.kind === 'drop') {

@@ -22,7 +22,7 @@ export const RESEARCH: readonly ResearchNode[] = [
     name: 'Fortification',
     cost: 20,
     requires: [],
-    desc: 'Spike traps and arrow towers against raids.',
+    desc: 'Spike traps, arrow towers and guard houses against raids.',
     col: 0,
     row: 2,
   },

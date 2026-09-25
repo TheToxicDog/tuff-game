@@ -49,6 +49,8 @@ export type ClientMessage =
   | { t: 'project'; npc: string; item: string }
   | { t: 'chat'; text: string }
   | { t: 'claim'; id: number; op: 'add' | 'remove'; name: string; role?: ClaimRole }
+  /** Guard houses (§42): hire (or extend) for `days`, or dismiss. */
+  | { t: 'guard'; id: number; op: 'hire' | 'dismiss'; days?: number }
   | { t: 'shop'; id: number; op: 'price'; item: string; q?: number; price: number | null }
   | { t: 'shop'; id: number; op: 'buy'; item: string; q?: number; n: number }
   | { t: 'order'; op: 'post'; item: string; n: number; price: number }
@@ -506,7 +508,25 @@ export interface ProjectInfo {
   total: number;
 }
 
-export type UiState = TradeUi | ContainerUi | MachineUi | StationUi | ShopUi | ClaimUi | ExchangeUi | BoardUi;
+export type UiState = TradeUi | ContainerUi | MachineUi | StationUi | ShopUi | ClaimUi | ExchangeUi | BoardUi | GuardUi;
+
+/** A guard house (§42): its guard, the wages left, and what hiring costs. */
+export interface GuardUi {
+  kind: 'guard';
+  id: number;
+  owner: string;
+  /** Game minutes of wages paid in advance (0: nobody hired). */
+  left: number;
+  /** The guard's health in percent; 0 while a replacement is on the way. */
+  hp: number;
+  /** What the guard is doing. */
+  status: string;
+  /** Wages per game day, and the spans (in days) they can be paid for. */
+  wage: number;
+  terms: number[];
+  /** Whether you may send the guard home (the owner, or a company officer). */
+  manage: boolean;
+}
 
 export interface BuyOrderInfo {
   id: string;

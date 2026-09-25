@@ -63,6 +63,7 @@ the systems in a fixed order each 50 ms tick:
 | `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals     |
 | `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                                  |
 | `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                        |
+| `guards.ts`      | Hired guards (§42): wages paid ahead, keeping watch by the guard house, fighting threats, replacements                     |
 | `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers, overclocking, wear, factory stats         |
 | `farming.ts`     | Tilling, crops, harvests, animal products                                                                                  |
 | `electric.ts`    | Power grids of poles, generators and devices; supply, demand and the share each device gets; motor torque                  |

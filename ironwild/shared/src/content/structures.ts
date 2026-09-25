@@ -96,6 +96,8 @@ export interface StructureDef {
   only?: string;
   /** Lubricators (§61): keep the machines beside them oiled from their lubricant. */
   lubricator?: boolean;
+  /** Guard houses (§42): a hired guard keeps watch from here. */
+  guardHouse?: boolean;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -181,6 +183,17 @@ const S: StructureDef[] = [
     container: 4,
     only: 'arrow',
     tower: { range: 9, damage: 20, every: 1.3 },
+  },
+  {
+    id: 'guard_house',
+    name: 'Guard House',
+    item: 'guard_house',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 1200,
+    placement: 'land',
+    guardHouse: true,
   },
   { id: 'bed', name: 'Bed', item: 'bed', size: [1, 1], solid: false, layer: 'object', hp: 150, placement: 'land', bed: true, low: true },
   {

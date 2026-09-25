@@ -1,5 +1,5 @@
 // Panels driven by the server: trading with an NPC, containers, machines, shop stands, land
-// claims, the contract board and the exchange.
+// claims, guard houses, the contract board and the exchange.
 
 import {
   FLUID_NAMES,
@@ -15,6 +15,7 @@ import {
   type ClaimUi,
   type ContainerUi,
   type ExchangeUi,
+  type GuardUi,
   type MachineUi,
   type ShopUi,
   type TradeListing,
@@ -39,6 +40,8 @@ export function panelFor(ui: UiState, ctx: UiContext): WindowDef | null {
       return { title: () => ui.title, order: 2, width: 470, render: (b) => shop(b, ui, ctx) };
     case 'claim':
       return { title: () => titleOf('Land Claim', `owned by ${ui.owner}`), order: 2, width: 380, render: (b) => claim(b, ui, ctx) };
+    case 'guard':
+      return { title: () => titleOf('Guard House', ui.owner), order: 2, width: 420, render: (b) => guardHouse(b, ui, ctx) };
     case 'board':
       return { title: () => titleOf('Contract Board', ui.settlement), order: 2, width: 560, render: (b) => board(b, ui, ctx) };
     case 'exchange':
@@ -432,6 +435,58 @@ function shop(body: HTMLElement, ui: ShopUi, ctx: UiContext): void {
       ),
     );
   }
+}
+
+// ——— Guard houses (§42) ———
+
+function guardHouse(body: HTMLElement, ui: GuardUi, ctx: UiContext): void {
+  const hired = ui.left > 0;
+  body.append(h('div', { class: 'npc-line' }, ui.status));
+  if (hired) {
+    const days = Math.floor(ui.left / 1440);
+    const hours = Math.floor((ui.left % 1440) / 60);
+    body.append(
+      h(
+        'div',
+        { class: 'row' },
+        h('span', { style: 'flex:1' }, 'Wages paid for'),
+        h('b', null, `${days > 0 ? `${days} d ` : ''}${hours} h`),
+      ),
+    );
+    if (ui.hp > 0) body.append(h('div', { class: 'row' }, h('span', { style: 'flex:1' }, 'Health'), h('b', null, `${ui.hp} %`)));
+  }
+  body.append(h('div', { class: 'section-title' }, hired ? 'Pay more wages' : `Hire a guard for ${formatCrests(ui.wage)} a day`));
+  const crests = ctx.state.status.crests;
+  body.append(
+    h(
+      'div',
+      { class: 'row' },
+      ...ui.terms.map((days) =>
+        h(
+          'button',
+          { class: 'small gold', disabled: crests < ui.wage * days, onclick: () => ctx.send({ t: 'guard', id: ui.id, op: 'hire', days }) },
+          `${days} day${days > 1 ? 's' : ''} · ${formatCrests(ui.wage * days)}`,
+        ),
+      ),
+    ),
+    h(
+      'div',
+      { class: 'muted', style: 'font-size:12px;margin-top:6px' },
+      'Guards fight raiders and wild animals within 14 tiles of the house and mend between fights. If one falls, another reports a couple of hours later while the wages last.',
+    ),
+  );
+  if (hired && ui.manage)
+    body.append(
+      h(
+        'div',
+        { class: 'row', style: 'margin-top:8px' },
+        h(
+          'button',
+          { class: 'small red', onclick: () => ctx.send({ t: 'guard', id: ui.id, op: 'dismiss' }) },
+          'Send the guard home (no refund)',
+        ),
+      ),
+    );
 }
 
 // ——— Claims ———

@@ -193,6 +193,9 @@ export function swingAngle(t: number, heavy: boolean): number {
 
 // ——— Creatures ———
 
+/** Bandits and guards are drawn as people; their arm swings when they strike. */
+export type Humanoid = Container & { arm?: Container };
+
 export function makeCreature(type: string): Container {
   const c = new Container();
   const g = new Graphics();
@@ -307,12 +310,17 @@ export function makeCreature(type: string): Container {
       g.moveTo(10, 0).lineTo(40, 0).stroke({ width: 7, color: 0x3a2515 });
       g.circle(60, 0, 3).fill(0x111111);
       break;
-    case 'bandit': {
-      const parts = makeCharacter({ look: 3, shirt: 0x5a2a2a, hat: 0xa0302a });
-      drawHeld(parts.arm, 'wooden_club', parts.skin);
-      c.removeChildren();
+    case 'bandit':
+    case 'guard': {
+      // Bandits in red with a club; hired guards (§42) in blue with a steel helmet and a sword.
+      const guard = type === 'guard';
+      const parts = guard
+        ? makeCharacter({ look: 1, shirt: 0x2f5d8f, hat: 0x9aa3ad })
+        : makeCharacter({ look: 3, shirt: 0x5a2a2a, hat: 0xa0302a });
+      drawHeld(parts.arm, guard ? 'iron_sword' : 'wooden_club', parts.skin);
+      c.removeChildren().forEach((x) => x.destroy());
       c.addChild(parts.root);
-      (c as Container & { arm?: Container }).arm = parts.arm;
+      (c as Humanoid).arm = parts.arm;
       return c;
     }
     default:

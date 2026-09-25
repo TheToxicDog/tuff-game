@@ -124,6 +124,9 @@ export interface Structure {
   town?: boolean;
   /** Monuments: the game minute they were raised. */
   raised?: number;
+  /** Guard houses: the game minute the wages run out, the guard's health, its entity (0 while nobody is on
+   *  duty) and when a replacement for a fallen guard reports. */
+  guard?: { until: number; hp: number; entity: number; back: number; warned?: boolean };
   /** Drills: the vein, seam or rock they stand over (it comes back when the drill is taken away). */
   node?: number;
   /** Containers: used slots last sent to clients. */
@@ -161,6 +164,7 @@ export class World implements CollisionWorld {
   readonly towers = new Set<Structure>();
   readonly monuments = new Set<Structure>();
   readonly lubricators = new Set<Structure>();
+  readonly guardHouses = new Set<Structure>();
 
   constructor(seed: number) {
     this.gen = generateWorld(seed);
@@ -298,6 +302,7 @@ export class World implements CollisionWorld {
     if (s.def.tower) this.towers.add(s);
     if (s.def.monument) this.monuments.add(s);
     if (s.def.lubricator) this.lubricators.add(s);
+    if (s.def.guardHouse) this.guardHouses.add(s);
   }
 
   removeStructure(s: Structure): void {
@@ -310,6 +315,7 @@ export class World implements CollisionWorld {
     this.towers.delete(s);
     this.monuments.delete(s);
     this.lubricators.delete(s);
+    this.guardHouses.delete(s);
   }
 
   makeStructure(id: number, type: string, x: number, y: number, rot: number, owner: string | null, ownerName: string): Structure {

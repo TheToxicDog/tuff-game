@@ -120,6 +120,13 @@ craft(
   [s('plank', 16), s('stone_brick', 12), s('iron_plate', 2), s('bow', 1)],
   'fortification',
 );
+craft(
+  'guard_house',
+  'workbench',
+  [s('guard_house')],
+  [s('plank', 24), s('stone_brick', 16), s('iron_plate', 4), s('rope', 4), s('iron_sword', 1)],
+  'fortification',
+);
 craft('wagon', 'workbench', [s('wagon')], [s('hardwood_plank', 20), s('iron_rod', 6), s('leather', 4), s('iron_plate', 2)], 'transport');
 craft('rail', 'workbench', [s('rail', 8)], [s('iron_rod', 2), s('plank', 4)], 'railways');
 craft('rail_station', 'workbench', [s('rail_station')], [s('rail', 2), s('plank', 8), s('iron_gear', 1)], 'railways');

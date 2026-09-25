@@ -1,6 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   EntityFlags,
+  GUARD_REPLACE_MINUTES,
+  GUARD_WAGE,
   ITEM_BY_ID,
   SETTLEMENT_BY_ID,
   TILES,
@@ -19,7 +21,8 @@ import { MemoryStorage } from './persistence/memory-storage';
 import { Game } from './game/game';
 import { newCharacter, Player } from './game/player';
 import type { ClientSession } from './game/session';
-import type { Cart } from './game/entities';
+import type { Cart, Creature } from './game/entities';
+import { hostileCreature } from './game/guards';
 import type { Structure } from './game/world';
 
 let game: Game;
@@ -430,6 +433,93 @@ describe('raids and defenses (§42)', () => {
     expect(bandit.hp).toBeLessThan(bandit.def.hp);
     expect(trap.hp).toBeLessThan(trap.def.hp);
     game.creatures.kill(bandit, null);
+  });
+});
+
+describe('hired guards (§42)', () => {
+  it('work for wages paid ahead, see off wolves and raiders, are replaced if they fall and go home unpaid', () => {
+    const owner = join('marshal');
+    const spot = clearSpot(4, 4, 40);
+    owner.move.x = spot.x + 0.5;
+    owner.move.y = spot.y + 1.5;
+    owner.crests = 3000;
+    const claim = place(owner, 'land_claim', spot.x, spot.y);
+    const house = place(owner, 'guard_house', spot.x + 2, spot.y);
+    const chest = place(owner, 'chest', spot.x + 1, spot.y + 3);
+    const stranger = join('drifter', spot.x + 1.5, spot.y + 2.5);
+    stranger.crests = 1000;
+    game.guards.hire(stranger, house.id, 1);
+    expect(house.guard).toBeUndefined();
+    expect(notices(stranger).slice(-1)[0]).toMatch(/belongs to marshal/);
+    game.guards.hire(owner, house.id, 2); // not one of the terms
+    expect(house.guard).toBeUndefined();
+    game.guards.hire(owner, house.id, 1);
+    expect(owner.crests).toBe(3000 - GUARD_WAGE);
+    const guard = game.entities.get(house.guard!.entity) as Creature;
+    expect(guard.guard?.post).toBe(house.id);
+    expect(game.replication.visual(house)?.on).toBe(true);
+    // Paying ahead extends the contract, up to two weeks.
+    game.guards.hire(owner, house.id, 7);
+    game.guards.hire(owner, house.id, 7);
+    expect(notices(owner).slice(-1)[0]).toMatch(/at most 14 days/);
+    expect(owner.crests).toBe(3000 - 8 * GUARD_WAGE);
+    expect(game.guards.ui(owner, house)).toMatchObject({ kind: 'guard', status: 'On watch.', hp: 100, manage: true });
+    expect(game.guards.ui(owner, house).left).toBeCloseTo(8 * 1440, -1);
+
+    // The owner steps away; a wolf comes by the house and the guard sees it off, then mends.
+    owner.move.x = spot.x + 30;
+    const wolf = game.creatures.spawn('wolf', guard.x + 4, guard.y + 1, '');
+    let bitten = false;
+    for (let i = 0; i < 20 * 20 && game.entities.has(wolf.id); i++) {
+      game.step();
+      if (guard.hp < guard.def.hp) bitten = true;
+    }
+    expect(game.entities.has(wolf.id)).toBe(false);
+    expect(game.entities.has(guard.id)).toBe(true);
+    expect(bitten).toBe(true);
+    const hurt = guard.hp;
+    ticks(40);
+    expect(guard.hp).toBeGreaterThan(Math.min(hurt, guard.def.hp - 1));
+    // Players can't cut down a guard, and towers and traps leave them be.
+    expect(hostileCreature(guard)).toBe(false);
+
+    // Raiders come for the claim: the guard takes them on.
+    chest.store![0] = { id: 'gold_ingot', n: 10 };
+    guard.hp = guard.def.hp;
+    expect(game.raids.start(claim, 0)).toBe(true);
+    let fought = false;
+    for (let i = 0; i < 20 * 240 && game.raids.active; i++) {
+      game.step();
+      for (const e of game.entities.values()) if (e.kind === 'creature' && e.raider && e.foe && e.hp < e.def.hp) fought = true;
+    }
+    expect(fought).toBe(true);
+    expect(game.raids.active).toBe(false);
+
+    // A fallen guard is replaced a couple of hours later, while the wages last.
+    if (!house.guard!.entity) {
+      // (Should the raiders have won, the replacement has had time to arrive.)
+      game.minutes += GUARD_REPLACE_MINUTES;
+      ticks(21);
+    }
+    game.creatures.damage(game.entities.get(house.guard!.entity) as Creature, 10_000, null, 0, false);
+    expect(house.guard!.entity).toBe(0);
+    expect(game.guards.ui(owner, house).status).toBe('A new guard is on the way.');
+    expect(game.replication.visual(house)?.on).toBeFalsy();
+    game.minutes += GUARD_REPLACE_MINUTES;
+    ticks(21);
+    const replacement = game.entities.get(house.guard!.entity) as Creature;
+    expect(replacement?.guard?.post).toBe(house.id);
+    expect(replacement.hp).toBe(replacement.def.hp);
+    // Saved with the house, not as an animal.
+    expect(game.factory.saveStructure(house).data).toMatchObject({ guard: { until: house.guard!.until } });
+    expect(game.creatures.save().some((e) => e.type === 'guard')).toBe(false);
+
+    // When the wages run out, the guard goes home.
+    house.guard!.until = game.minutes;
+    ticks(21);
+    expect(house.guard).toBeUndefined();
+    expect(game.entities.has(replacement.id)).toBe(false);
+    expect(notices(owner).some((n) => /wages at the guard house ran out/.test(n))).toBe(true);
   });
 });
 

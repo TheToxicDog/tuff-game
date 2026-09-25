@@ -998,6 +998,7 @@ export class Factory {
     if (s.town) data.town = true;
     if (s.raised !== undefined) data.raised = s.raised;
     if (s.node !== undefined) data.node = s.node;
+    if (s.guard) data.guard = { until: s.guard.until, hp: s.guard.hp, back: s.guard.back };
     if (s.rmode) data.rmode = s.rmode;
     if (s.buf && (s.buf.water > 0 || s.buf.steam > 0)) data.buf = s.buf;
     return {
@@ -1061,6 +1062,10 @@ export class Factory {
     if (d.town) s.town = true;
     if (d.raised !== undefined) s.raised = d.raised;
     if (d.node !== undefined) s.node = d.node;
+    if (d.guard) {
+      const g = d.guard as { until?: number; hp?: number; back?: number };
+      if (typeof g.until === 'number') s.guard = { until: g.until, hp: g.hp ?? 1, entity: 0, back: g.back ?? 0 };
+    }
     if (d.rmode) s.rmode = d.rmode;
     if (d.buf) s.buf = d.buf;
     w.addStructure(s);

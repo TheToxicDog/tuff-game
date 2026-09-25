@@ -419,6 +419,60 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   pen_gate(c) {
     fenceLike(c, true);
   },
+  guard_house(c) {
+    const { hw, hh } = half(c);
+    const g = c.g;
+    const roof = 0x7a3a2c;
+    g.roundRect(-hw + 2, -hh + 2, hw * 2 - 4, hh * 2 - 4, 8).fill({ color: 0x000000, alpha: 0.16 });
+    // Stone footing, then a hipped tile roof seen from above: four slopes meeting at the top.
+    g.roundRect(-hw + 4, -hh + 4, hw * 2 - 8, hh * 2 - 8, 8)
+      .fill(0x8e8a82)
+      .stroke({ width: 4, color: OUTLINE });
+    const r = hw - 12;
+    const slopes: [number, number, number, number, number][] = [
+      [-r, -r, r, -r, 1],
+      [r, -r, r, r, 0.78],
+      [r, r, -r, r, 0.9],
+      [-r, r, -r, -r, 0.68],
+    ];
+    for (const [x1, y1, x2, y2, k] of slopes) g.poly([x1, y1, x2, y2, 0, 0], true).fill(shade(roof, k));
+    for (const [x, y] of [
+      [-r, -r],
+      [r, -r],
+      [r, r],
+      [-r, r],
+    ])
+      g.moveTo(x, y)
+        .lineTo(0, 0)
+        .stroke({ width: 3, color: shade(roof, 0.5) });
+    g.rect(-r, -r, r * 2, r * 2).stroke({ width: 4, color: OUTLINE });
+    g.roundRect(-8, -8, 16, 16, 3).fill(0x55595f).stroke({ width: 2, color: OUTLINE });
+    // The door under a little porch on the south side.
+    g.rect(-15, hh - 18, 30, 12)
+      .fill(0x5a3f26)
+      .stroke({ width: 2, color: OUTLINE });
+    // A flag on the corner post flies while a guard is on duty.
+    const px = r - 2;
+    const py = -r + 2;
+    g.circle(px, py, 5).fill(0x3a2a1a).stroke({ width: 2, color: OUTLINE });
+    if (!c.s.st.on) {
+      g.roundRect(px - 3, py, 6, 16, 2)
+        .fill(0xc0392b)
+        .stroke({ width: 1.5, color: OUTLINE });
+      return;
+    }
+    const flag = new Graphics();
+    c.inner.addChild(flag);
+    c.anims.push((_dt, t) => {
+      const wave = Math.sin(t * 5) * 3;
+      flag
+        .clear()
+        .poly([px, py - 4, px + 30, py - 8 + wave, px + 22, py + 2 + wave * 0.5, px + 30, py + 10 + wave, px, py + 6], true)
+        .fill(0xc0392b)
+        .stroke({ width: 2, color: OUTLINE });
+      flag.circle(px + 12, py + 1 + wave * 0.4, 3).fill(0xf2c53d);
+    });
+  },
   storehouse(c) {
     const { hw, hh } = half(c);
     const g = c.g;

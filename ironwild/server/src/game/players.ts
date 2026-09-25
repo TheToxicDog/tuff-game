@@ -718,6 +718,7 @@ export class PlayerSystem {
       const ny = Math.max(s.y, Math.min(p.y, s.y + s.h));
       if (Math.hypot(nx - p.x, ny - p.y) > INTERACT_RANGE + 2) return null;
       if (s.def.claimRadius) return this.game.building.claimUi(p, s);
+      if (s.def.guardHouse) return this.game.guards.ui(p, s);
       if (s.def.shop) return this.game.economy.shopUi(p, s);
       if (s.machine) return this.game.factory.machineUi(p, s);
       if (s.def.logistics === 'filter') return this.game.factory.machineUi(p, s);

@@ -9,6 +9,7 @@ import { ITEM_BY_ID, TICK_RATE, TILES, type ItemStack, type Slots } from '@ironw
 import { circleHitsBox } from './building';
 import type { Arrow, Creature } from './entities';
 import type { Game } from './game';
+import { hostileCreature } from './guards';
 import type { Player } from './player';
 import { structureSolid, type Structure } from './world';
 
@@ -301,6 +302,18 @@ export class RaidSystem {
       const t = this.game.players.get(c.target);
       if (t && !t.dead && Math.hypot(t.x - c.x, t.y - c.y) < 12) foe = t;
     }
+    // A hired guard closer than anyone else, or one who went for us, is fought first.
+    let guard = this.game.guards.nearest(c.x, c.y, foe ? Math.hypot(foe.x - c.x, foe.y - c.y) : foeD);
+    if (!guard && c.foe && r.phase === 'march') {
+      const g = this.game.entities.get(c.foe);
+      if (g?.kind === 'creature' && Math.hypot(g.x - c.x, g.y - c.y) < 12) guard = g;
+    }
+    if (guard) {
+      c.state = 'chase';
+      r.bash = 0;
+      creatures.pursue(c, guard.x, guard.y, creatures.attackCreature(c, guard, dt), dt, r);
+      return;
+    }
     if (foe) {
       c.state = 'chase';
       c.target = foe.id;
@@ -495,15 +508,10 @@ export class RaidSystem {
 
   // ——— Defenses ———
 
-  private hostile(e: Creature): boolean {
-    if (e.rider) return false;
-    return !!e.raider || e.def.temperament === 'aggressive' || (e.def.temperament === 'neutral' && e.aggro > 0);
-  }
-
   private stepTraps(now: number): void {
     const w = this.game.world;
     for (const e of this.game.entities.values()) {
-      if (e.kind !== 'creature' || !this.hostile(e) || (e.trapAt ?? 0) > now) continue;
+      if (e.kind !== 'creature' || !hostileCreature(e) || (e.trapAt ?? 0) > now) continue;
       const s = w.structAt(Math.floor(e.x), Math.floor(e.y));
       if (!s?.def.trap) continue;
       e.trapAt = now + 700;
@@ -523,7 +531,7 @@ export class RaidSystem {
       let target: Creature | null = null;
       let best = spec.range;
       for (const e of this.game.entities.values()) {
-        if (e.kind !== 'creature' || !this.hostile(e)) continue;
+        if (e.kind !== 'creature' || !hostileCreature(e)) continue;
         const d = Math.hypot(e.x - cx, e.y - cy);
         if (d < best) {
           best = d;

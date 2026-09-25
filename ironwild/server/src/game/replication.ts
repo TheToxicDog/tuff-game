@@ -125,6 +125,8 @@ export class Replication {
     if (er === 'lamp' || er === 'motor') v.on = (s.power ?? 0) > 0.05;
     if (s.sw !== undefined) v.sw = s.sw;
     if (s.def.door) v.open = !!s.open;
+    // A guard house flies its flag while a guard is on duty.
+    if (s.def.guardHouse) v.on = !!s.guard?.entity;
     if (s.filter) v.filter = s.filter;
     if (s.store && (s.def.shipping || s.def.container)) {
       const used = s.store.filter((x) => x).length;

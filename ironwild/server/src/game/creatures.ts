@@ -1,9 +1,10 @@
 // Wildlife, bandits and farm animals (§41). Creatures only think when a player is nearby; the
-// spawner keeps each region's populations topped up away from players.
+// spawner keeps each region's populations topped up away from players. Hired guards (guards.ts)
+// are creatures too; animals and raiders a guard goes for turn on it.
 
-import { CREATURE_BY_ID, PLAYER_RADIUS, Region, TILES, Tile, resolveCollisions, type CollisionWorld } from '@ironwild/shared';
+import { CREATURE_BY_ID, PLAYER_RADIUS, Region, TICK_RATE, TILES, Tile, resolveCollisions, type CollisionWorld } from '@ironwild/shared';
 import type { EntitySave } from '../persistence/storage';
-import type { Creature } from './entities';
+import type { Creature, Detour } from './entities';
 import type { Game } from './game';
 import type { Player } from './player';
 
@@ -97,7 +98,7 @@ export class CreatureSystem {
           break;
         }
       }
-      if (!near && e.def.temperament !== 'farm' && !e.raider) continue;
+      if (!near && e.def.temperament !== 'farm' && !e.raider && !e.guard) continue;
       this.think(e, dt, players);
     }
   }
@@ -179,6 +180,11 @@ export class CreatureSystem {
       this.game.raids.think(c, dt, players);
       return;
     }
+    if (c.guard) {
+      this.game.guards.think(c, dt);
+      return;
+    }
+    if (c.foe && this.fightBack(c, dt)) return;
     const w = this.game.world;
 
     // Nearest player that matters.
@@ -298,6 +304,23 @@ export class CreatureSystem {
     return moved;
   }
 
+  /** Steers toward (tx, ty); blocked for a moment, it sidesteps around whatever is in the way for a while. */
+  pursue(c: Creature, tx: number, ty: number, speed: number, dt: number, nav: Detour): number {
+    const now = this.game.tick * (1000 / TICK_RATE);
+    const detour = now < nav.detourUntil;
+    const moved = this.steer(c, detour ? c.x + nav.dx * 3 : tx, detour ? c.y + nav.dy * 3 : ty, speed, dt);
+    if (speed > 0 && moved < speed * dt * 0.25) nav.stuck += dt;
+    else nav.stuck = Math.max(0, nav.stuck - dt);
+    if (nav.stuck > 0.4) {
+      nav.stuck = 0;
+      const a = Math.atan2(ty - c.y, tx - c.x) + (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 2 + (Math.random() - 0.5) * 0.6);
+      nav.dx = Math.cos(a);
+      nav.dy = Math.sin(a);
+      nav.detourUntil = now + 700 + Math.random() * 600;
+    }
+    return moved;
+  }
+
   /**
    * Chases and bites/strikes a player: returns the speed to move at (0 when in reach). Attacks are
    * telegraphed with a wind-up before they land.
@@ -322,6 +345,43 @@ export class CreatureSystem {
     return speed;
   }
 
+  /** Like attack(), against another creature: a guard and the animals and raiders it fights. */
+  attackCreature(c: Creature, t: Creature, dt: number): number {
+    const def = c.def;
+    const reach = def.radius + t.def.radius + 0.45;
+    const d = Math.hypot(t.x - c.x, t.y - c.y);
+    let speed = d > reach * 0.8 ? def.speed * 0.95 : 0;
+    if (c.windup > 0) {
+      c.windup -= dt;
+      speed *= 0.25;
+      if (c.windup <= 0) {
+        c.cooldown = def.attackRate;
+        if (d <= reach + 0.35 && this.game.entities.has(t.id)) {
+          t.foe = c.id;
+          const crit = Math.random() < 0.1;
+          this.damage(t, def.damage * (0.85 + Math.random() * 0.3) * (crit ? 1.5 : 1), null, 0.35, crit, c.x, c.y);
+        }
+      }
+    } else if (d <= reach && c.cooldown <= 0) {
+      c.windup = def.id === 'bear' ? 0.5 : def.id === 'guard' ? 0.3 : 0.35;
+      this.game.emit(['atk', c.id], c.x, c.y);
+    }
+    return speed;
+  }
+
+  /** An animal a guard went for turns on it while it stays close. */
+  private fightBack(c: Creature, dt: number): boolean {
+    const t = this.game.entities.get(c.foe!);
+    const passive = c.def.temperament === 'passive' || c.def.temperament === 'farm';
+    if (t?.kind !== 'creature' || passive || Math.hypot(t.x - c.x, t.y - c.y) > c.def.sight) {
+      c.foe = 0;
+      return false;
+    }
+    c.state = 'chase';
+    this.steer(c, t.x, t.y, this.attackCreature(c, t, dt), dt);
+    return true;
+  }
+
   /** Damage from a player, or from a trap or tower (`by` null; `fromX/fromY` set the knockback). */
   damage(c: Creature, amount: number, by: Player | null, knock: number, crit: boolean, fromX = by?.x ?? c.x, fromY = by?.y ?? c.y): void {
     c.hp -= amount;
@@ -343,6 +403,7 @@ export class CreatureSystem {
   kill(c: Creature, by: Player | null): void {
     this.game.removeEntity(c.id);
     if (c.zone) this.zoneCount.set(c.zone, Math.max(0, (this.zoneCount.get(c.zone) ?? 1) - 1));
+    if (c.guard) this.game.guards.fell(c);
     this.game.emit(['die', c.id], c.x, c.y);
     const loot = [];
     for (const d of c.def.drops) {
@@ -382,7 +443,8 @@ export class CreatureSystem {
   save(): EntitySave[] {
     const out: EntitySave[] = [];
     for (const e of this.game.entities.values()) {
-      if (e.kind !== 'creature' || !e.owner) continue;
+      // Guards are saved with their guard house.
+      if (e.kind !== 'creature' || !e.owner || e.guard) continue;
       out.push({
         kind: 'animal',
         x: e.x,

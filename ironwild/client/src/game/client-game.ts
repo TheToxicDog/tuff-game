@@ -1021,6 +1021,7 @@ export class ClientGame {
     if (s.type === 'hand_crank') return 'Hold to turn the crank';
     if (s.type === 'crop') return (s.st.stage ?? 0) >= 4 ? 'Harvest' : null;
     if (d.claimRadius) return 'Manage land claim';
+    if (d.guardHouse) return s.st.on ? 'Check on the guard' : 'Hire a guard';
     if (d.shop) return `Browse ${s.owner ?? ''}'s shop`;
     if (d.machine || d.logistics === 'filter') return `Open ${d.name}`;
     if (d.container) return `Open ${d.name}`;

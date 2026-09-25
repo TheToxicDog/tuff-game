@@ -1,6 +1,6 @@
 // Wildlife, bandits and farm animals.
 
-export type Temperament = 'passive' | 'neutral' | 'aggressive' | 'farm';
+export type Temperament = 'passive' | 'neutral' | 'aggressive' | 'farm' | 'guard';
 
 export interface CreatureDrop {
   item: string;
@@ -183,6 +183,19 @@ export const CREATURES: readonly CreatureDef[] = [
     sight: 3,
     drops: [],
   },
+  {
+    // Hired at a guard house (§42); never spawns in the wild.
+    id: 'guard',
+    name: 'Guard',
+    hp: 260,
+    radius: 0.45,
+    speed: 5.2,
+    temperament: 'guard',
+    damage: 22,
+    attackRate: 0.9,
+    sight: 10,
+    drops: [],
+  },
 ];
 
 export const CREATURE_BY_ID: ReadonlyMap<string, CreatureDef> = new Map(CREATURES.map((c) => [c.id, c]));
@@ -195,3 +208,11 @@ export function creatureDef(id: string): CreatureDef {
 
 /** Riding speed multiplier on a horse. */
 export const HORSE_SPEED = 1.75;
+
+/** Guards (§42): wages per game day, paid in advance for one of these spans (at most GUARD_MAX_DAYS ahead). */
+export const GUARD_WAGE = 150;
+export const GUARD_TERMS = [1, 3, 7] as const;
+export const GUARD_MAX_DAYS = 14;
+/** How far from their house guards fight, and the game minutes before a fallen guard is replaced. */
+export const GUARD_LEASH = 14;
+export const GUARD_REPLACE_MINUTES = 120;

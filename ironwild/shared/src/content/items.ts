@@ -718,6 +718,15 @@ place(
   0x7a5230,
   'Shoots bandits and predators within 9 tiles, over walls. Load it with arrows (E, or by conveyor).',
 );
+place(
+  'guard_house',
+  'Guard House',
+  'building',
+  420,
+  5,
+  0x6b4a2a,
+  'Hire a guard here (E), wages paid in advance: they fight raiders and wild animals within 14 tiles of the house.',
+);
 
 item(
   'hand_cart',

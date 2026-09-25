@@ -103,8 +103,9 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   resources in a bag — go back for it.
 - **Defend** what you build: a wealthy claim occasionally draws a bandit raid (announced a little
   in advance). Raiders smash through walls, doors and fences, rob chests and crates, wreck machines,
-  and run off with the loot — kill them to get it back. Spike traps and arrow towers (loaded with
-  arrows by hand or conveyor) help; damaged walls mend after the raid.
+  and run off with the loot — kill them to get it back. Spike traps, arrow towers (loaded with
+  arrows by hand or conveyor) and hired guards help — a guard house takes on a guard for ₡150 a
+  day, paid in advance, who fights raiders and wild animals near it. Damaged walls mend after the raid.
 - **Fish** rivers, Mirror Lake and the sea with a rod: cast, wait for the float to dip, click.
   Each water has its own fish; now and then you pull up a boot, salvage or a lost purse. Salvage
   the ruins, the old mine and shipwrecks on the beaches for scrap, parts and the odd treasure.
