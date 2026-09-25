@@ -26,6 +26,7 @@ import type { Entity } from './entities';
 import { Factory } from './factory';
 import { Farming } from './farming';
 import { Fishing } from './fishing';
+import { PowerSystem } from './electric';
 import { FluidSystem } from './fluids';
 import { newCharacter, Player } from './player';
 import { PlayerSystem } from './players';
@@ -97,6 +98,7 @@ export class Game {
   readonly farming: Farming;
   readonly fishing: Fishing;
   readonly fluids: FluidSystem;
+  readonly power: PowerSystem;
   readonly raids: RaidSystem;
   readonly rails: RailSystem;
   readonly companies: CompanySystem;
@@ -129,6 +131,7 @@ export class Game {
     this.farming = new Farming(this);
     this.fishing = new Fishing(this);
     this.fluids = new FluidSystem(this);
+    this.power = new PowerSystem(this);
     this.raids = new RaidSystem(this);
     this.rails = new RailSystem(this);
     this.companies = new CompanySystem(this);
@@ -220,6 +223,7 @@ export class Game {
     this.creatures.step(dt);
     this.factory.step(dt);
     this.fluids.step(dt);
+    this.power.step();
     this.rails.step(dt);
     this.farming.step(dt);
     this.fishing.step();
@@ -330,6 +334,7 @@ export class Game {
     session.send(welcome);
     session.send({ t: 'kin', s: [], nets: this.factory.netSummaries(), of: [] });
     this.fluids.broadcast(true, session);
+    this.power.broadcast(true, session);
     this.playerSystem.joined(player);
     this.broadcastChat('', `${player.name} arrived in the valley.`, 'system');
     this.log(`${account.username} joined (${this.players.size} online)`);

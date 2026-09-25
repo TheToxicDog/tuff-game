@@ -3,6 +3,7 @@
 // rot = 0 (facing north).
 
 import type { Dir } from '../constants';
+import type { ElectricSpec } from '../factory/electric';
 import type { FluidSpec } from '../factory/fluids';
 
 /** A face through which a kinetic block passes rotation. `group` separates gear stages. */
@@ -40,6 +41,8 @@ export interface MachineSpec {
   buffer: number;
   /** Output direction relative to the facing (0 = front). */
   modes?: string[];
+  /** Runs on electricity from a nearby power pole. */
+  electric?: boolean;
 }
 
 export type LogisticsKind = 'conveyor' | 'splitter' | 'filter' | 'hopper';
@@ -81,6 +84,8 @@ export interface StructureDef {
   fluid?: FluidSpec;
   /** Track for minecarts; stations also load and unload them. */
   rail?: 'track' | 'station';
+  /** Generators, poles and everything that runs on electricity. */
+  electric?: ElectricSpec;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -500,6 +505,78 @@ const S: StructureDef[] = [
   },
 
   // ——— Logistics ———
+  {
+    id: 'generator',
+    name: 'Generator',
+    item: 'generator',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 500,
+    placement: 'land',
+    kinetic: { role: 'consumer', stress: 64 },
+    electric: { role: 'generator', power: 100 },
+  },
+  {
+    id: 'power_pole',
+    name: 'Power Pole',
+    item: 'power_pole',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 150,
+    placement: 'land',
+    electric: { role: 'pole', power: 0 },
+  },
+  {
+    id: 'electric_motor',
+    name: 'Electric Motor',
+    item: 'electric_motor',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 500,
+    placement: 'land',
+    kinetic: { role: 'source', ports: allFaces(), rpm: 16, torque: 48 },
+    electric: { role: 'motor', power: 100 },
+  },
+  {
+    id: 'electric_lamp',
+    name: 'Electric Lamp',
+    item: 'electric_lamp',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 80,
+    placement: 'land',
+    light: 9,
+    low: true,
+    electric: { role: 'lamp', power: 6 },
+  },
+  {
+    id: 'lathe',
+    name: 'Lathe',
+    item: 'lathe',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 500,
+    placement: 'land',
+    machine: { station: 'lathe', buffer: 20, electric: true },
+    electric: { role: 'machine', power: 50 },
+  },
+  {
+    id: 'packager',
+    name: 'Packager',
+    item: 'packager',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 500,
+    placement: 'land',
+    machine: { station: 'packager', buffer: 40, electric: true },
+    electric: { role: 'machine', power: 40 },
+  },
   {
     id: 'rail',
     name: 'Rail',

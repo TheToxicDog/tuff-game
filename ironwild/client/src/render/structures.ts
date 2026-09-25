@@ -203,7 +203,7 @@ export class StructureRenderer {
     root.addChild(inner);
     const g = new Graphics();
     inner.addChild(g);
-    const top = s.type === 'windmill' || s.type === 'arrow_tower' ? new Container() : null;
+    const top = s.type === 'windmill' || s.type === 'arrow_tower' || s.type === 'power_pole' ? new Container() : null;
     const anims: Anim[] = [];
     const ctx: DrawCtx = {
       s,
@@ -400,6 +400,115 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   },
   pen_gate(c) {
     fenceLike(c, true);
+  },
+  generator(c) {
+    const { hw, hh } = half(c);
+    stubs(c, [1, 3]);
+    casing(c.g, hw, hh, 0x3f6f9a, 5);
+    // Copper field coils around a spinning armature.
+    for (const sx of [-1, 1])
+      c.g
+        .roundRect(sx * 16 - 7, -18, 14, 36, 5)
+        .fill(0xc27a45)
+        .stroke({ width: 2, color: OUTLINE });
+    const rotor = new Graphics();
+    rotor.circle(0, 0, 10).fill(0x6f757d).stroke({ width: 2, color: OUTLINE });
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      rotor
+        .moveTo(0, 0)
+        .lineTo(Math.cos(a) * 9, Math.sin(a) * 9)
+        .stroke({ width: 3, color: 0xd9b23d });
+    }
+    spinner(c, rotor, 0, parity(c.s));
+    c.g.poly([-4, -hh + 8, 3, -hh + 8, -1, -hh + 14, 5, -hh + 14, -4, -hh + 24, -1, -hh + 16, -6, -hh + 16], true).fill(0xf2d34a);
+  },
+  power_pole(c) {
+    c.inner.rotation = 0;
+    c.g.circle(0, 0, 9).fill(0x6b4a2a).stroke({ width: 3, color: OUTLINE });
+    if (!c.top) return;
+    // The crossarm stands above everything, where the cables meet it.
+    const head = new Graphics();
+    head.roundRect(-16, -26, 32, 8, 3).fill(0x7a5230).stroke({ width: 2.5, color: OUTLINE });
+    head.roundRect(-3, -26, 6, 26, 2).fill(0x7a5230);
+    for (const x of [-9, 9]) head.circle(x, -22, 4).fill(0x9ad0e0).stroke({ width: 2, color: OUTLINE });
+    head.position.set(c.s.w * TS * 0.5, c.s.h * TS * 0.5);
+    c.top.addChild(head);
+  },
+  electric_motor(c) {
+    const { hw, hh } = half(c);
+    stubs(c, [0, 1, 2, 3]);
+    casing(c.g, hw, hh, 0x3f5670, 6);
+    for (let i = -2; i <= 2; i++) c.g.rect(-hw + 12, i * 7 - 1.5, hw * 2 - 24, 3).fill(0x2f4260);
+    const shaft = new Graphics();
+    shaft.circle(0, 0, 9).fill(0xb0b5bd).stroke({ width: 2, color: OUTLINE });
+    shaft.rect(-2, -9, 4, 18).fill(0x55595f);
+    spinner(c, shaft, 0);
+    const led = new Graphics().circle(hw - 12, -hh + 12, 4).fill(c.s.st.on ? 0x8fd45a : 0x5a2a2a);
+    c.inner.addChild(led);
+  },
+  electric_lamp(c) {
+    c.inner.rotation = 0;
+    c.g.circle(0, 0, 6).fill(0x55595f).stroke({ width: 2, color: OUTLINE });
+    c.g.roundRect(-2, -14, 4, 14, 2).fill(0x55595f);
+    const bulb = new Graphics()
+      .circle(0, -16, 8)
+      .fill(c.s.st.on ? 0xfff6c8 : 0x8a8a7a)
+      .stroke({ width: 2.5, color: OUTLINE });
+    c.inner.addChild(bulb);
+  },
+  lathe(c) {
+    const { hw, hh } = half(c);
+    // A bed with a spinning chuck at one end and the tool post riding along it.
+    c.g
+      .roundRect(-hw + 4, -hh + 14, hw * 2 - 8, hh * 2 - 22, 5)
+      .fill(0x6d7482)
+      .stroke({ width: 4, color: OUTLINE });
+    c.g.rect(-hw + 10, -4, hw * 2 - 20, 8).fill(0x4a4f57);
+    c.g
+      .roundRect(hw - 20, -12, 12, 24, 3)
+      .fill(0x55595f)
+      .stroke({ width: 2, color: OUTLINE });
+    const chuck = new Graphics();
+    chuck.circle(0, 0, 11).fill(0xb0b5bd).stroke({ width: 3, color: OUTLINE });
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      chuck.rect(Math.cos(a) * 6 - 2, Math.sin(a) * 6 - 2, 4, 4).fill(0x3a3c40);
+    }
+    chuck.position.set(-hw + 18, 0);
+    c.inner.addChild(chuck);
+    const post = new Graphics()
+      .roundRect(-6, -hh + 16, 12, 12, 2)
+      .fill(0xd9b23d)
+      .stroke({ width: 2, color: OUTLINE });
+    c.inner.addChild(post);
+    itemBadge(c, 4, 0, 16);
+    outputMark(c.g, hh);
+    c.anims.push((dt, t) => {
+      if (!c.s.st.on) return;
+      chuck.rotation += dt * 14;
+      post.x = Math.sin(t * 1.3) * 10;
+    });
+  },
+  packager(c) {
+    const { hw, hh } = half(c);
+    casing(c.g, hw, hh, 0x9a6b3f, 4);
+    c.g.roundRect(-hw + 12, -8, hw * 2 - 24, 16, 3).fill(0x3d3f45);
+    const box = new Graphics();
+    box.roundRect(-10, -10, 20, 20, 3).fill(0xc99a5b).stroke({ width: 2, color: OUTLINE });
+    box.moveTo(-10, 0).lineTo(10, 0).stroke({ width: 2, color: 0x8a5a33 });
+    c.inner.addChild(box);
+    const arm = new Graphics()
+      .roundRect(-3, -hh + 8, 6, 16, 2)
+      .fill(0x6f757d)
+      .stroke({ width: 2, color: OUTLINE });
+    c.inner.addChild(arm);
+    outputMark(c.g, hh);
+    c.anims.push((_dt, t) => {
+      if (!c.s.st.on) return;
+      box.x = ((t * 18) % 30) - 15;
+      arm.y = Math.max(0, Math.sin(t * 6)) * 8;
+    });
   },
   torch(c) {
     c.g.roundRect(-4, -4, 8, 26, 3).fill(0x7a5230).stroke({ width: 2, color: OUTLINE });

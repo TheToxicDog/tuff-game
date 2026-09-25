@@ -156,6 +156,8 @@ const STATUS_WARN = new Set([
   'Pipes full',
   'Steam backed up',
   'Pipe it to a boiler',
+  'No electricity',
+  'No power pole nearby',
 ]);
 
 const FLUID_BAR: Record<string, string> = { Water: '#4f8fd0', Steam: '#dfe6ea' };
@@ -196,6 +198,18 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
     body.append(
       h('div', { class: 'muted', style: 'font-size:12px;margin-top:6px' }, `${t.fluid}: ${Math.round(t.amount)} / ${t.capacity}`),
       h('div', { class: 'stress' }, h('div', { style: `width:${pct}%;background:${FLUID_BAR[t.fluid] ?? '#8fd45a'}` })),
+    );
+  }
+  if (ui.grid !== undefined) {
+    const g = ui.grid;
+    body.append(
+      h(
+        'div',
+        { class: g && g.share >= 1 ? 'muted' : 'bad', style: 'font-size:12px;margin-top:6px' },
+        !g
+          ? 'No power pole within 3 tiles.'
+          : `Grid: ${g.supply} power made, ${g.demand} used${g.share < 1 ? ` — running at ${Math.round(g.share * 100)}%` : ''}`,
+      ),
     );
   }
   if (ui.rate)
@@ -246,7 +260,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
             'button',
             {
               class: `small${i === ui.oc ? ' active' : ''}`,
-              title: `${o.speed}× speed, ${o.cost}× ${ui.fuel ? 'fuel' : 'stress'}`,
+              title: `${o.speed}× speed, ${o.cost}× ${ui.fuel ? 'fuel' : ui.grid !== undefined ? 'power' : 'stress'}`,
               onclick: () => ctx.send({ t: 'machine', id: ui.id, op: 'oc', level: i }),
             },
             o.label,
@@ -259,7 +273,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
         h(
           'div',
           { class: 'muted', style: 'font-size:12px;margin-top:3px' },
-          `Faster machines need disproportionately more ${ui.fuel ? 'fuel' : 'torque'}: 125% costs 1.6×, 150% costs 2.3×.`,
+          `Faster machines need disproportionately more ${ui.fuel ? 'fuel' : ui.grid !== undefined ? 'power' : 'torque'}: 125% costs 1.6×, 150% costs 2.3×.`,
         ),
       );
     }

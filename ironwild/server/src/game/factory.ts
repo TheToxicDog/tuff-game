@@ -91,6 +91,7 @@ export class Factory {
     if (s.def.kinetic || (s.def.logistics && BELT_TYPES.has(s.def.logistics))) this.powerDirty = true;
     if (s.def.logistics || s.def.machine || s.def.container) this.topologyDirty = true;
     if (s.def.fluid) this.game.fluids.markDirty();
+    if (s.def.electric) this.game.power.markDirty();
   }
 
   /** A power source switched on or off (steam engines, from the fluid system). */
@@ -161,6 +162,7 @@ export class Factory {
   private sourceActive(s: Structure): boolean {
     if (s.type === 'hand_crank') return !!s.crank;
     if (s.type === 'steam_engine') return !!s.machine?.active;
+    if (s.def.electric?.role === 'motor') return (s.power ?? 0) > 0;
     return true;
   }
 
@@ -179,6 +181,7 @@ export class Factory {
           active: this.sourceActive(s),
           rpm: s.rpm,
           stressMul: OVERCLOCK[s.machine?.oc ?? 0]?.cost ?? 1,
+          torqueMul: s.def.electric?.role === 'motor' ? (s.power ?? 0) : undefined,
         });
       } else if (s.items) belts.push(s);
     }
@@ -538,6 +541,14 @@ export class Factory {
     if (s.def.fluid) return;
 
     let rate = 1;
+    if (def.electric) {
+      rate = s.power ?? 0;
+      if (rate <= 0) {
+        const grid = this.game.power.gridAt(s);
+        this.setIdle(s, !m.in.some((x) => x) ? 'Idle' : grid ? 'No electricity' : 'No power pole nearby');
+        return this.visual(s, wasActive, prevStatus);
+      }
+    }
     if (def.powered) {
       const rpm = s.speed ?? 0;
       rate = rpm / BASE_RPM;
@@ -761,6 +772,7 @@ export class Factory {
       net: this.netSummary(s.net),
       recipes,
       ...fluid,
+      ...(s.def.electric ? { grid: this.game.power.gridAt(s) ?? null } : {}),
     };
   }
 

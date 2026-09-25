@@ -51,6 +51,8 @@ export const STATION_NAMES: Record<string, string> = {
   steam: 'Steam Engine',
   boiler: 'Boiler',
   pump: 'Mechanical Pump',
+  lathe: 'Lathe',
+  packager: 'Packager',
 };
 
 /** Fish that cook into grilled fish. */
@@ -137,6 +139,12 @@ craft('shop_stand', 'workbench', [s('shop_stand')], [s('plank', 20), s('rope', 4
 craft('oven', 'workbench', [s('oven')], [s('brick', 20), s('iron_plate', 2)], 'cooking');
 craft('blast_furnace', 'workbench', [s('blast_furnace')], [s('brick', 40), s('iron_plate', 10), s('stone_brick', 20)], 'steel');
 craft('assembler', 'workbench', [s('assembler')], [s('steel_plate', 8), s('steel_gear', 6), s('copper_wire', 20)], 'precision');
+craft('generator', 'workbench', [s('generator')], [s('iron_plate', 6), s('copper_wire', 24), s('iron_gear', 2)], 'electricity');
+craft('power_pole', 'workbench', [s('power_pole', 2)], [s('wood', 4), s('copper_wire', 4), s('glass', 1)], 'electricity');
+craft('electric_lamp', 'workbench', [s('electric_lamp', 2)], [s('glass', 2), s('copper_wire', 3), s('iron_rod', 1)], 'electricity');
+craft('lathe', 'workbench', [s('lathe')], [s('steel_plate', 6), s('iron_gear', 4), s('copper_wire', 12)], 'electricity');
+craft('electric_motor', 'workbench', [s('electric_motor')], [s('iron_plate', 4), s('copper_wire', 16), s('spring', 2)], 'industry');
+craft('packager', 'workbench', [s('packager')], [s('plank', 20), s('iron_plate', 4), s('spring', 4), s('valve', 1)], 'industry');
 craft('pipe', 'workbench', [s('pipe', 4)], [s('copper_plate', 1)], 'steam');
 craft('pump', 'workbench', [s('pump')], [s('iron_plate', 3), s('iron_gear', 2), s('copper_plate', 2)], 'steam');
 craft('fluid_tank', 'workbench', [s('fluid_tank')], [s('copper_plate', 6), s('iron_rod', 4)], 'steam');
@@ -195,6 +203,18 @@ for (const fish of FISH) {
 // ——— Oven ———
 machine('bake_bread', 'oven', [s('flour')], [s('bread', 1)], 4);
 machine('oven_meat', 'oven', [s('raw_meat')], [s('cooked_meat', 1)], 2.5);
+
+// ——— Lathe (electric) ———
+machine('turn_spring', 'lathe', [s('iron_rod')], [s('spring', 2)], 2);
+machine('turn_valve', 'lathe', [s('iron_rod'), s('copper_plate')], [s('valve', 1)], 3);
+machine('turn_precision_gear', 'lathe', [s('steel_gear')], [s('precision_gear', 1)], 4);
+
+// ——— Packager (electric) ———
+machine('pack_gears', 'packager', [s('iron_gear', 10), s('plank')], [s('packed_gears', 1)], 3);
+machine('pack_plates', 'packager', [s('iron_plate', 10), s('plank')], [s('packed_plates', 1)], 3);
+machine('pack_steel', 'packager', [s('steel_plate', 10), s('plank')], [s('packed_steel', 1)], 3);
+machine('pack_wire', 'packager', [s('copper_wire', 20), s('plank')], [s('packed_wire', 1)], 3);
+machine('pack_bread', 'packager', [s('bread', 10), s('plank')], [s('packed_bread', 1)], 3);
 
 // ——— Blast furnace ———
 machine('make_steel', 'blast_furnace', [s('iron_ingot'), s('coal')], [s('steel_ingot', 1)], 5);

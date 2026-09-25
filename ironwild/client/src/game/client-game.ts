@@ -35,6 +35,7 @@ import { BeltItems } from '../render/belt-items';
 import { TS } from '../render/draw';
 import { Effects } from '../render/effects';
 import { FishingFloats } from '../render/fishing';
+import { WireRenderer } from '../render/wires';
 import { EntityViews } from '../render/entity-views';
 import { Lighting } from '../render/lighting';
 import { NodeRenderer } from '../render/nodes';
@@ -87,6 +88,7 @@ export class ClientGame {
   private belts!: BeltItems;
   private effects!: Effects;
   private fishing!: FishingFloats;
+  private wires!: WireRenderer;
   private lighting!: Lighting;
   private overlay!: Overlay;
   private hud!: Hud;
@@ -148,6 +150,7 @@ export class ClientGame {
     this.belts = new BeltItems(this.r, this.world);
     this.effects = new Effects(this.r);
     this.fishing = new FishingFloats(this.r, (pid) => this.entities.rodTip(pid));
+    this.wires = new WireRenderer(this.r, this.world);
     this.structures.targetNear = (x, y, range) => {
       let best: { x: number; y: number } | null = null;
       let bestD = range;
@@ -176,10 +179,12 @@ export class ClientGame {
       structAdded: (s) => {
         this.structures.add(s);
         this.lighting.structAdded(s);
+        this.wires.changed(s);
       },
       structRemoved: (s) => {
         this.structures.remove(s);
         this.lighting.structRemoved(s);
+        this.wires.changed(s);
       },
       structChanged: (s) => {
         this.structures.changed(s);
@@ -369,6 +374,10 @@ export class ClientGame {
         this.state.company = msg.info;
         this.state.companyInvite = msg.invite;
         if (this.windows.isOpen('company')) this.windows.refresh('company');
+        break;
+      case 'power':
+        this.world.powerNets = new Map(msg.nets.map(([id, supply, demand]) => [id, { supply, demand }]));
+        if (msg.of) this.world.powerOf = new Map(msg.of);
         break;
       case 'fluids':
         this.world.fluidNets = new Map(msg.nets.map(([id, fluid, fill, flow]) => [id, { fluid, fill: fill / 1000, flow: flow / 10 }]));
@@ -614,6 +623,7 @@ export class ClientGame {
     this.belts.update(renderTick);
     this.effects.update(dt);
     this.fishing.update(now);
+    this.wires.update();
     this.lighting.update(dt, (this.state.minutes / 60) % 24);
     this.ambientEffects(now);
     this.updateOverlay(mouse, pos);
@@ -1056,6 +1066,22 @@ export class ClientGame {
         } else if (s.def.kinetic?.role === 'consumer')
           content.append(h('div', { class: 'bad' }, 'No power — connect it to a water wheel with shafts'));
       }
+      if (s.def.electric) {
+        const gid = this.world.powerOf.get(s.id);
+        const g = gid !== undefined ? this.world.powerNets.get(gid) : undefined;
+        if (!g)
+          content.append(h('div', { class: 'bad' }, s.def.electric.role === 'pole' ? 'Not connected' : 'No power pole within 3 tiles'));
+        else {
+          const short = g.demand > g.supply;
+          content.append(
+            h(
+              'div',
+              { class: short ? 'bad' : '' },
+              `Grid: ${g.supply} power made, ${g.demand} used${short ? ` — short, everything runs at ${Math.round((g.supply / g.demand) * 100)}%` : ''}`,
+            ),
+          );
+        }
+      }
       if (s.def.fluid?.role === 'pipe' || s.def.fluid?.role === 'tank') {
         const f = this.world.fluidAt(s.id);
         if (!f?.fluid) content.append(h('div', { class: 'muted' }, 'Empty'));
@@ -1128,6 +1154,7 @@ export class ClientGame {
         if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'boiler');
       } else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);
       else if (s.type === 'saw' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'wood', 2, 70);
+      else if (s.type === 'lathe' && Math.random() < 0.35) this.effects.sparks(s.x + 0.4, s.y + 0.5, 3);
     }
   }
 

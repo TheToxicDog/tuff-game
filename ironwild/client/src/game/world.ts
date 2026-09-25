@@ -96,6 +96,9 @@ export class ClientWorld implements CollisionWorld {
   /** Fluid networks (fluid, fill 0–1, flow per second) and which network each pipe or tank is in. */
   fluidNets = new Map<number, { fluid: string; fill: number; flow: number }>();
   fluidOf = new Map<number, number>();
+  /** Power grids (supply, demand) and which grid each pole and device is on. */
+  powerNets = new Map<number, { supply: number; demand: number }>();
+  powerOf = new Map<number, number>();
 
   constructor(welcome: WelcomeMessage) {
     const w = welcome.world;

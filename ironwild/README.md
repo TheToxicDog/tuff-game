@@ -75,6 +75,9 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Power machines** with water wheels, windmills, hand cranks and steam engines. Rotation travels
   through shafts and gearboxes; speed gearboxes double speed (and stress). Every network has a
   stress capacity — overload it and everything stalls.
+- **Electrify**: generators on a rotation network feed power poles, which string cables to each
+  other; electric motors turn power back into rotation anywhere on the grid, lamps light the
+  night, lathes turn springs, valves and precision gears, and packagers crate goods for export.
 - **Raise steam**: a mechanical pump on the river bank lifts water into pipes; a coal-fired boiler
   turns it into steam; pipe the steam to engines (32 RPM, 256 torque each). Pipes show what they
   carry and how full they are; tanks buffer a network.

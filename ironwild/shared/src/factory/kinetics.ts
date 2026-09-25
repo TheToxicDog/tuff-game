@@ -23,6 +23,8 @@ export interface KineticBlock {
   rpm?: number;
   /** Consumers only: stress multiplier (overclocked machines). */
   stressMul?: number;
+  /** Sources only: share of their torque available (electric motors on a weak grid). */
+  torqueMul?: number;
 }
 
 export interface BeltGroup {
@@ -182,7 +184,7 @@ export function solveKinetics(blocks: readonly KineticBlock[], belts: readonly B
     for (const id of net.blocks) {
       const b = byId.get(id);
       if (!b || b.def.kinetic?.role !== 'source' || !b.active) continue;
-      net.capacity += (b.def.kinetic.torque ?? 0) * ((omega * base.get(id)!) / BASE_RPM);
+      net.capacity += (b.def.kinetic.torque ?? 0) * (b.torqueMul ?? 1) * ((omega * base.get(id)!) / BASE_RPM);
     }
   }
   for (const c of consumers) {

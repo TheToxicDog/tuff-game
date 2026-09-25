@@ -45,6 +45,7 @@ export class Lighting {
     sp.anchor.set(0.5);
     sp.position.set((s.x + s.w / 2) * TS, (s.y + s.h / 2) * TS);
     sp.width = sp.height = light * TS * 1.6;
+    if (s.def.electric) sp.tint = 0xe8f4ff;
     this.r.lights.addChild(sp);
     this.glows.set(s.id, sp);
     this.structChanged(s);

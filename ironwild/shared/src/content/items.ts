@@ -375,6 +375,23 @@ item('copper_wire', 'Copper Wire', 'component', ['component'], 8, 100, { shape: 
 item('bearing', 'Bearing', 'component', ['component'], 30, 50, { shape: 'bearing', color: 0x8e99a8 });
 item('gearbox_unit', 'Gearbox Unit', 'component', ['component'], 140, 20, { shape: 'box', color: 0x6f7c8f, accent: 0xe0b84c });
 item('industrial_pump', 'Industrial Pump', 'component', ['component', 'machine'], 410, 10, { shape: 'pump', color: 0x3f6f9a });
+item('spring', 'Spring', 'component', ['component'], 14, 50, { shape: 'wire', color: 0xb0b5bd });
+item('valve', 'Valve', 'component', ['component'], 42, 50, { shape: 'pump', color: 0xc27a45 });
+item('precision_gear', 'Precision Gear', 'component', ['component'], 95, 50, { shape: 'gear', color: 0xd9dde3 });
+// Packed goods: crates of ten (or twenty) made by a packager; worth a little more than loose.
+item('packed_gears', 'Crate of Iron Gears', 'component', ['component'], 420, 20, { shape: 'box', color: 0x8a6a45, accent: 0xa9afb8 });
+item('packed_plates', 'Crate of Iron Plates', 'component', ['metal', 'component'], 300, 20, {
+  shape: 'box',
+  color: 0x8a6a45,
+  accent: 0xc4cad3,
+});
+item('packed_steel', 'Crate of Steel Plates', 'component', ['metal', 'component'], 510, 20, {
+  shape: 'box',
+  color: 0x8a6a45,
+  accent: 0x6f7c8f,
+});
+item('packed_wire', 'Spool Crate of Copper Wire', 'component', ['component'], 180, 20, { shape: 'box', color: 0x8a6a45, accent: 0xd27a45 });
+item('packed_bread', 'Crate of Bread', 'food', ['food'], 135, 20, { shape: 'box', color: 0x8a6a45, accent: 0xc98a3e });
 item('cut_gem', 'Cut Ruby', 'luxury', ['luxury'], 310, 20, { shape: 'cutgem', color: 0xe0405e }, { quality: true });
 
 // ——— Tools & weapons ———
@@ -695,6 +712,36 @@ item(
     desc: 'Set it on a rail: it runs by itself, stops at stations to load or unload, and turns back at the end of the line.',
   },
 );
+place(
+  'generator',
+  'Generator',
+  'machine',
+  950,
+  5,
+  0x3f6f9a,
+  'Turns rotation into electricity: 100 power at 16 RPM (more when faster). 64 stress.',
+);
+place(
+  'power_pole',
+  'Power Pole',
+  'machine',
+  40,
+  50,
+  0x7a5230,
+  'Carries power: poles within 9 tiles wire themselves together; devices use a pole within 3.',
+);
+place(
+  'electric_motor',
+  'Electric Motor',
+  'machine',
+  780,
+  5,
+  0x3f5670,
+  'Rotation from electricity anywhere on the grid: 16 RPM, 48 torque, draws 100 power.',
+);
+place('electric_lamp', 'Electric Lamp', 'building', 60, 20, 0xf2e6a0, 'Bright light at night. Draws 6 power.');
+place('lathe', 'Lathe', 'machine', 1500, 5, 0x6d7482, 'Turns springs, valves and precision gears. Runs on electricity (50).');
+place('packager', 'Packager', 'machine', 1200, 5, 0x9a6b3f, 'Packs goods into crates worth more than loose. Runs on electricity (40).');
 place('rail', 'Rail', 'machine', 6, 100, 0x7a5230, 'Track for minecarts. Joins the rails next to it; E on a junction flips its switch.');
 place(
   'rail_station',

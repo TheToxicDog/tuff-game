@@ -36,7 +36,7 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 | 9   | Agriculture and animals        | ✅     | Tilling, four crops, chickens/sheep/cows producing eggs/wool/milk, pens with gates.                                                                           |
 | 10  | Vehicles and logistics         | ✅     | Hand carts, horse wagons (48 slots), railways: minecarts that run on their own, stations that load and unload, junction switches; shipping crates (§35–36).   |
 | 11  | Steam technology               | ✅     | Pumps lift river water into pipes, coal-fired boilers make steam, steam engines turn it into 32 RPM / 256 torque; tanks buffer; blast furnaces for steel.     |
-| 12  | Industrial technology          | 🟡     | Assemblers make bearings, gearbox units and industrial pumps. Missing: electricity, motors, machine tools, packaging.                                         |
+| 12  | Industrial technology          | ✅     | Generators, power poles and wires, electric motors and lamps; lathes turn springs, valves and precision gears; packagers crate goods; assemblers.             |
 | 13  | Company systems                | ✅     | Companies own land handed to them and everything on it; owner / officer / member roles; company shops and shipping pay the treasury, with a day's ledger (C). |
 | 14  | Expanded world economy         | 🟡     | Port Meridian with imports and exports; town growth opens new stalls (§54); market events move a town's prices for a day. Missing: oil, more towns.           |
 
@@ -55,6 +55,10 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 - Steam (§19): mechanical pumps, pipes that join into networks holding one fluid, fluid tanks,
   boilers (water in at the back and sides, steam out the front) and steam engines that run on piped
   steam. One pump feeds one boiler; one boiler feeds two engines.
+- Electricity (§19): generators (100 power from 64 stress at 16 RPM) feed grids of poles that wire
+  themselves together within 9 tiles; devices use a pole within 3. Electric motors (48 torque for
+  100 power — power back to rotation loses a quarter), lamps, lathes (springs, valves, precision
+  gears) and packagers (crates of ten, worth more than loose). Short grids share power out evenly.
 - Railways (§36): rails join their neighbours (straight, curves, junctions with a switch); minecarts
   run by themselves, stop at stations to load from or unload into what stands beside the platform,
   and turn back at the end of the line. Horse wagons carry 48 slots.

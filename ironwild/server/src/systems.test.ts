@@ -723,3 +723,57 @@ describe('wagons (§36)', () => {
     expect(wagon.puller).toBe(0);
   });
 });
+
+describe('electricity (§19)', () => {
+  it('carries power from a generator over poles to a lathe, and shares it out when short', () => {
+    const spot = openGround(12, 4, 120);
+    const { x, y } = spot;
+    const p = join('sparky', x + 6.5, y + 4.5);
+    place(p, 'windmill', x, y);
+    place(p, 'gearbox', x, y + 1);
+    const gen = place(p, 'generator', x + 1, y + 1);
+    place(p, 'power_pole', x + 1, y + 2);
+    place(p, 'power_pole', x + 9, y + 2);
+    const lathe = place(p, 'lathe', x + 10, y + 1);
+    ticks(2);
+    expect(gen.speed).toBeGreaterThan(0);
+    // Nothing to do yet: the lathe asks for nothing.
+    expect(game.power.gridAt(lathe)!.demand).toBe(0);
+    lathe.machine!.in[0] = { id: 'iron_rod', n: 10 };
+    ticks(20 * 6);
+    expect(game.power.gridAt(lathe)!.demand).toBe(50);
+    expect(game.power.gridAt(lathe)!.share).toBe(1);
+    expect(countItem(lathe.machine!.out, 'spring')).toBeGreaterThanOrEqual(4);
+    // An electric motor on the same grid asks for 100 more than a windmill can give.
+    const motor = place(p, 'electric_motor', x + 11, y + 2);
+    ticks(5);
+    const grid = game.power.gridAt(motor)!;
+    expect(grid.demand).toBe(150);
+    expect(grid.share).toBeLessThan(1);
+    expect(motor.power).toBeLessThan(1);
+    expect(motor.power).toBeGreaterThan(0);
+    // A lathe with no pole in reach does not run.
+    const lonely = place(p, 'lathe', x + 5, y + 3);
+    lonely.machine!.in[0] = { id: 'iron_rod', n: 2 };
+    ticks(3);
+    expect(lonely.machine!.status).toBe('No power pole nearby');
+  });
+});
+
+describe('packaging (§12)', () => {
+  it('packs ten gears and a plank into a crate worth more than the loose gears', () => {
+    const spot = openGround(3, 3, 130);
+    const p = join('packer', spot.x + 1.5, spot.y + 3.5);
+    const pack = place(p, 'packager', spot.x, spot.y);
+    place(p, 'power_pole', spot.x + 1, spot.y);
+    // Power: windmill → gearbox → generator, all beside the pole.
+    place(p, 'windmill', spot.x + 2, spot.y - 1);
+    place(p, 'gearbox', spot.x + 2, spot.y);
+    place(p, 'generator', spot.x + 2, spot.y + 1);
+    pack.machine!.in[0] = { id: 'iron_gear', n: 20, q: 1 };
+    pack.machine!.in[1] = { id: 'plank', n: 2 };
+    ticks(20 * 8);
+    expect(countItem(pack.machine!.out, 'packed_gears')).toBe(2);
+    expect(ITEM_BY_ID.get('packed_gears')!.value).toBeGreaterThan(ITEM_BY_ID.get('iron_gear')!.value * 10);
+  });
+});

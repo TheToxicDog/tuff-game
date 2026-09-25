@@ -393,6 +393,8 @@ export interface MachineUi {
   /** Fluid machines: what they hold, and how much they move per second. */
   tanks?: { fluid: string; amount: number; capacity: number }[];
   rate?: { fluid: string; perSec: number };
+  /** Electric machines: their grid (null when no pole is in reach). */
+  grid?: { supply: number; demand: number; share: number } | null;
 }
 
 /** A fluid network: [id, fluid ('' when empty), fill ‰ (0–1000), flow per second × 10]. */
@@ -513,4 +515,6 @@ export type ServerMessage =
   | ({ t: 'stats' } & FactoryStats)
   | { t: 'towns'; list: TownInfo[] }
   /** Fluid networks; `of` maps pipes and tanks to networks and comes when the pipes change. */
-  | { t: 'fluids'; nets: FluidNetTuple[]; of?: [number, number][] };
+  | { t: 'fluids'; nets: FluidNetTuple[]; of?: [number, number][] }
+  /** Power grids [id, supply, demand]; `of` maps poles and devices to grids after changes. */
+  | { t: 'power'; nets: [number, number, number][]; of?: [number, number][] };

@@ -18,3 +18,4 @@ export * from './factory/kinetics';
 export * from './factory/belts';
 export * from './factory/fluids';
 export * from './factory/rails';
+export * from './factory/electric';
