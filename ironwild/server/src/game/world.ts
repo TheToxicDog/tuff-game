@@ -124,6 +124,8 @@ export interface Structure {
   town?: boolean;
   /** Monuments: the game minute they were raised. */
   raised?: number;
+  /** Drills: the vein, seam or rock they stand over (it comes back when the drill is taken away). */
+  node?: number;
   /** Electric devices: share of the power they asked for this tick (0–1). */
   power?: number;
   /** Rail junctions: the way the switch sends carts; stations: what they do with them. */

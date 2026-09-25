@@ -18,6 +18,7 @@ import {
   STRUCTURE_BY_ID,
   TILES,
   Tile,
+  drillNode,
   rotatedSize,
   type ClientMessage,
   type Fluid,
@@ -879,8 +880,11 @@ export class ClientGame {
         if (def.layer === 'floor' ? this.world.floorAtTile(tx, ty) : this.world.structAt(tx, ty)) return false;
       }
     }
+    // A drill has to stand over a vein, seam or rock.
+    const vein = def.drill ? drillNode(this.world.nodesNear(x + w / 2, y + hgt / 2, Math.max(w, hgt)), x, y, w, hgt) : undefined;
+    if (def.drill && (!vein || vein.def.tier > def.drill.tier)) return false;
     for (const n of this.world.nodesNear(x + w / 2, y + hgt / 2, Math.max(w, hgt))) {
-      if (!n.def.solid || n.state === 0) continue;
+      if (n === vein || !n.def.solid || n.state === 0) continue;
       const nx = Math.max(x, Math.min(n.x, x + w));
       const ny = Math.max(y, Math.min(n.y, y + hgt));
       if (Math.hypot(n.x - nx, n.y - ny) < n.def.radius) return false;

@@ -411,6 +411,33 @@ export const NODES: readonly NodeDef[] = N;
 export const NODE_BY_ID: ReadonlyMap<string, NodeDef> = new Map(N.map((n) => [n.id, n]));
 export const NODE_INDEX: ReadonlyMap<string, number> = new Map(N.map((n, i) => [n.id, i]));
 
+/** Seconds a mechanical drill takes per load at 16 RPM (§62). */
+export const DRILL_TIME = 3;
+
+/** Nodes a drill can stand over: veins, seams and rocks worked with a pickaxe. */
+export const drillable = (def: NodeDef): boolean => def.tool === 'pickaxe';
+
+/** The vein, seam or rock a drill with footprint (x, y, w, h) stands over: the one whose centre is inside it. */
+export function drillNode<T extends { x: number; y: number; def: NodeDef }>(
+  nodes: Iterable<T>,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): T | undefined {
+  let best: T | undefined;
+  let bestD = Infinity;
+  for (const n of nodes) {
+    if (!drillable(n.def) || n.x < x || n.x >= x + w || n.y < y || n.y >= y + h) continue;
+    const d = Math.hypot(n.x - (x + w / 2), n.y - (y + h / 2));
+    if (d < bestD) {
+      bestD = d;
+      best = n;
+    }
+  }
+  return best;
+}
+
 export function nodeDef(id: string): NodeDef {
   const d = NODE_BY_ID.get(id);
   if (!d) throw new Error(`Unknown node "${id}"`);

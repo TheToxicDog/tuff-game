@@ -2,6 +2,8 @@
 // station; anvil recipes run the smithing minigame and roll quality. Machine recipes are processed
 // over time by furnaces and powered machines, and may have fractional yields (10 ore → 7 ingots).
 
+import { DRILL_TIME, NODES, drillable } from './nodes';
+
 export interface RecipeStack {
   item: string;
   n: number;
@@ -57,6 +59,7 @@ export const STATION_NAMES: Record<string, string> = {
   packager: 'Packager',
   refinery: 'Refinery',
   pumpjack: 'Pumpjack',
+  drill: 'Mechanical Drill',
 };
 
 /** Fish that cook into grilled fish. */
@@ -170,6 +173,7 @@ craft(
   [s('circuit', 100), s('steel_plate', 150), s('electric_lamp', 30), s('cut_gem', 20), s('glass', 60)],
   'grand_works',
 );
+craft('drill', 'workbench', [s('drill')], [s('steel_plate', 8), s('steel_gear', 4), s('iron_rod', 6), s('iron_gear', 4)], 'deep_mining');
 craft('lathe', 'workbench', [s('lathe')], [s('steel_plate', 6), s('iron_gear', 4), s('copper_wire', 12)], 'electricity');
 craft('electric_motor', 'workbench', [s('electric_motor')], [s('iron_plate', 4), s('copper_wire', 16), s('spring', 2)], 'industry');
 craft('packager', 'workbench', [s('packager')], [s('plank', 20), s('iron_plate', 4), s('spring', 4), s('valve', 1)], 'industry');
@@ -306,6 +310,18 @@ machine(
   10,
   'industrial_pump',
 );
+
+// Mechanical drills: one load of whatever the vein, seam or rock under them gives by the pickaxe (§62).
+for (const n of NODES)
+  if (drillable(n))
+    machine(
+      `drill_${n.id}`,
+      'drill',
+      [],
+      n.drops.map((d) => s(d.item, Math.round(d.rate * (d.chance ?? 1) * 100) / 100)),
+      DRILL_TIME,
+      n.id,
+    );
 
 export const RECIPES: readonly Recipe[] = R;
 export const RECIPE_BY_ID: ReadonlyMap<string, Recipe> = new Map(R.map((r) => [r.id, r]));

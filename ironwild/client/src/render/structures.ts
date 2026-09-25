@@ -319,6 +319,22 @@ function neighbour(c: DrawCtx, dir: number): ClientStruct | undefined {
 
 // ——— Drawings ———
 
+/** Rock colours round a drill's bore, by the node it stands over. */
+const VEIN_COLORS: Record<string, number> = {
+  rock: 0x8f8f8f,
+  boulder: 0x8a8a86,
+  coal_vein: 0x2c2a28,
+  iron_vein: 0xb5652f,
+  rich_iron: 0xa04a25,
+  copper_vein: 0x3f9a7a,
+  silver_vein: 0xd8dde6,
+  gold_vein: 0xe0b030,
+  gem_rock: 0xc23a52,
+  clay_deposit: 0xa0643c,
+  sand_dune: 0xe0cf94,
+  salt_deposit: 0xf0f0ea,
+};
+
 const DRAW: Record<string, (c: DrawCtx) => void> = {
   wood_wall(c) {
     const { hw, hh } = half(c);
@@ -402,6 +418,55 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   },
   pen_gate(c) {
     fenceLike(c, true);
+  },
+  drill(c) {
+    const { hw, hh } = half(c);
+    const g = c.g;
+    // What it stands over shows round the bore: rust for iron, green for copper, black for coal…
+    const vein = VEIN_COLORS[c.s.st.mode ?? ''] ?? 0x8a8a8a;
+    g.circle(0, 4, 40).fill(shade(vein, 0.55)).stroke({ width: 3, color: OUTLINE });
+    let seed = c.s.id * 7919 + 17;
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < 14; i++) {
+      const a = rnd() * Math.PI * 2;
+      const r = 26 + rnd() * 12;
+      g.circle(Math.cos(a) * r, 4 + Math.sin(a) * r, 2.5 + rnd() * 3).fill(i % 3 === 0 ? vein : shade(vein, 0.8));
+    }
+    // A steel frame braced across the corners, the gear housing on the north side.
+    for (const [x0, y0, x1, y1] of [
+      [-hw + 8, -hh + 8, hw - 8, -hh + 8],
+      [hw - 8, -hh + 8, hw - 8, hh - 8],
+      [hw - 8, hh - 8, -hw + 8, hh - 8],
+      [-hw + 8, hh - 8, -hw + 8, -hh + 8],
+      [-hw + 8, -hh + 8, -20, -12],
+      [hw - 8, -hh + 8, 20, -12],
+      [-hw + 8, hh - 8, -24, 24],
+      [hw - 8, hh - 8, 24, 24],
+    ])
+      g.moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 9, color: OUTLINE })
+        .moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 5, color: 0x7a8088 });
+    g.roundRect(-22, -hh + 4, 44, 26, 5)
+      .fill(0x8e6f3f)
+      .stroke({ width: 3, color: OUTLINE });
+    bolts(g, hw, hh);
+    outputMark(g, hh);
+    // The bit: an auger turning at the network's speed.
+    const bit = new Graphics();
+    bit.circle(0, 0, 25).fill(0x55595f).stroke({ width: 3, color: OUTLINE });
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      bit
+        .moveTo(Math.cos(a) * 6, Math.sin(a) * 6)
+        .quadraticCurveTo(Math.cos(a + 0.9) * 20, Math.sin(a + 0.9) * 20, Math.cos(a + 1.6) * 24, Math.sin(a + 1.6) * 24)
+        .stroke({ width: 5, color: 0xb0b5bd });
+    }
+    bit.circle(0, 0, 7).fill(0xd9b23d).stroke({ width: 2, color: OUTLINE });
+    bit.position.set(0, 4);
+    spinner(c, bit, 0, parity(c.s));
   },
   pumpjack(c) {
     const { hw, hh } = half(c);

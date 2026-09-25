@@ -520,6 +520,8 @@ export class Factory {
   }
 
   private recipesFor(s: Structure): Recipe[] {
+    // A drill only knows what it stands over.
+    if (s.def.drill && !s.machine?.mode) return [];
     return machineRecipes(s.def.machine!.station, s.machine?.mode);
   }
 
@@ -767,7 +769,7 @@ export class Factory {
       id: s.id,
       type: s.type,
       title: s.def.name,
-      in: s.def.fluid ? [] : (m?.in ?? []),
+      in: s.def.fluid || s.def.drill ? [] : (m?.in ?? []),
       fuel: m?.fuel ?? undefined,
       out: s.def.fluid && s.def.fluid.role !== 'refinery' ? [] : (m?.out ?? []),
       progress: Math.round((m?.progress ?? 0) * 100) / 100,
@@ -951,6 +953,7 @@ export class Factory {
     if (s.sw !== undefined) data.sw = s.sw;
     if (s.town) data.town = true;
     if (s.raised !== undefined) data.raised = s.raised;
+    if (s.node !== undefined) data.node = s.node;
     if (s.rmode) data.rmode = s.rmode;
     if (s.buf && (s.buf.water > 0 || s.buf.steam > 0)) data.buf = s.buf;
     return {
@@ -1013,6 +1016,7 @@ export class Factory {
     if (d.sw !== undefined) s.sw = d.sw;
     if (d.town) s.town = true;
     if (d.raised !== undefined) s.raised = d.raised;
+    if (d.node !== undefined) s.node = d.node;
     if (d.rmode) s.rmode = d.rmode;
     if (d.buf) s.buf = d.buf;
     w.addStructure(s);

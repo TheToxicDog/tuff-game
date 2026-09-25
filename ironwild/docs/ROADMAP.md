@@ -76,6 +76,10 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   10,000 items by rail, a 1,000-power grid, ₡250,000 sold in one town, ₡50,000 to town projects, a
   Masterwork. Worth counts Crests, what you carry and everything you own with its contents; a
   company's achievements count for its members. Standings (L) rank players and companies.
+- Mechanical drills (§62, "big mines tap near-unlimited deposits with machinery"): research Deep
+  Mining; a 2×2 drill stood over an ore vein, coal seam or rock (up to tier 2) takes its place and
+  mines it without end — one pickaxe load every 3 s at 16 RPM for 48 stress — pushing ore and
+  spoil out of its front. Take it away and the vein is back.
 - Monuments (§64), the late money sinks: research Grand Works, then a Stone Obelisk (₡8,400 of
   bricks, gold and cut rubies), a Grand Fountain (rest by it to get your wind back and heal), a
   Statue of Industry (₡19,650 of steel, precision gears and gold) and a Beacon of Progress
@@ -90,4 +94,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Tier 3–4 technology: mechanical drills on deposits, steam turbines (§58–62, §64).
+- Tier 4 power: steam turbines and big power plants (§64).

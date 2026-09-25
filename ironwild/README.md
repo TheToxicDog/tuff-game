@@ -87,7 +87,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Automate**: crushers, ore washers, presses (plates, gears, rods, wire), millstones, saws,
   assemblers, furnaces, ovens and blast furnaces; conveyors (straight and curved), splitters,
   filters, hoppers, storage and shipping crates. Crushing and washing before smelting turns 10 ore
-  into 10 ingots instead of 7.
+  into 10 ingots instead of 7. Stand a mechanical drill (research Deep Mining) over an ore vein,
+  a coal seam or a rock and turn it: it mines without end and pushes out what it digs.
 - **Run the factory**: the overview (O) shows output and value per minute, utilization, problems
   and bottleneck hints. Overclock machines to 125 % or 150 % for disproportionately more stress or
   fuel; machines wear slowly and an iron gear repairs them.

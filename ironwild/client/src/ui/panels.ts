@@ -322,6 +322,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
       const r = RECIPE_BY_ID.get(id);
       if (!r) continue;
       const line = h('div', { class: 'row' });
+      if (!r.inputs.length && !r.fluid) line.append('Each load');
       r.inputs.forEach((i, k) => {
         if (k) line.append('+');
         line.append(iconImg(i.item, 20), `${i.n} ${itemName(i.item)}`);

@@ -115,6 +115,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     row: 1,
   },
   {
+    id: 'deep_mining',
+    name: 'Deep Mining',
+    cost: 90,
+    requires: ['steel'],
+    desc: 'Mechanical drills: stood over a vein, a seam or a rock, they mine it without end.',
+    col: 4,
+    row: 3,
+  },
+  {
     id: 'grand_works',
     name: 'Grand Works',
     cost: 120,

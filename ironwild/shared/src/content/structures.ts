@@ -90,6 +90,8 @@ export interface StructureDef {
   town?: boolean;
   /** Monuments (§64): prestige for their owner; they stand for good once raised. `refresh`: tiles within which people get their wind back. */
   monument?: { prestige: number; refresh?: number };
+  /** Mechanical drills (§62): stand over a vein, seam or rock of at most this tier and mine it without end. */
+  drill?: { tier: number };
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -565,6 +567,19 @@ const S: StructureDef[] = [
     placement: 'land',
     town: true,
     light: 16,
+  },
+  {
+    id: 'drill',
+    name: 'Mechanical Drill',
+    item: 'drill',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 900,
+    placement: 'land',
+    kinetic: { role: 'consumer', stress: 48 },
+    machine: { station: 'drill', powered: true, buffer: 0 },
+    drill: { tier: 2 },
   },
   // ——— Monuments (§64) ———
   {

@@ -928,3 +928,52 @@ describe('monuments (§64)', () => {
     expect(p.buffs.has('regen')).toBe(true);
   });
 });
+
+describe('mechanical drills (§62)', () => {
+  it('mines the vein it stands over without end, and gives it back when taken away', () => {
+    const p = join('driller');
+    const w = game.world;
+    // An iron vein with open meadow round it.
+    const vein = [...w.nodes.values()].find((n) => {
+      if (n.type !== 'iron_vein' || n.gone || w.settlementAt(n.x, n.y, 20)) return false;
+      const x = Math.floor(n.x) - 1;
+      const y = Math.floor(n.y) - 1;
+      for (let ty = y - 2; ty <= y + 4; ty++)
+        for (let tx = x - 2; tx <= x + 3; tx++)
+          if (!TILES[w.tile(tx, ty)].land || w.structAt(tx, ty) || w.claimAt(tx, ty)) return false;
+      return true;
+    })!;
+    expect(vein).toBeDefined();
+    const x = Math.floor(vein.x) - 1;
+    const y = Math.floor(vein.y) - 1;
+    for (const n of w.nodesNear(x + 1, y + 1, 5)) if (n !== vein) n.gone = true;
+    p.move.x = x + 1;
+    p.move.y = y + 3.6;
+
+    // Not over a vein: refused.
+    game.playerSystem.give(p, { id: 'drill', n: 1 }, true);
+    game.building.place(p, 'drill', x - 3, y + 2, 0);
+    expect(notices(p).some((t) => t.includes('must stand over an ore vein'))).toBe(true);
+
+    const drill = place(p, 'drill', x, y);
+    expect(drill.node).toBe(vein.id);
+    expect(vein.gone).toBe(true);
+    expect(drill.machine!.mode).toBe('iron_vein');
+    // A windmill turns it through a gearbox; a crate in front catches what it digs.
+    place(p, 'gearbox', x - 1, y);
+    place(p, 'windmill', x - 1, y - 1);
+    const crate = place(p, 'storage_crate', x, y - 1);
+    ticks(20 * 40);
+    expect(drill.speed).toBeGreaterThan(0);
+    expect(countItem(crate.store!, 'iron_ore')).toBeGreaterThan(1);
+    expect(countItem(crate.store!, 'stone')).toBeGreaterThan(0);
+    expect(game.ambitions.tallyOf(p.accountId).n['made:iron_ore']).toBeGreaterThan(1);
+
+    // Take the drill away and the vein is back, whole.
+    game.building.hammer(p, drill);
+    expect(w.structures.has(drill.id)).toBe(false);
+    expect(vein.gone).toBe(false);
+    expect(vein.amount).toBe(vein.def.amount);
+    expect(countItem(p.slots, 'drill')).toBe(2);
+  });
+});

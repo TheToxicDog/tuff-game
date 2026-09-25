@@ -774,6 +774,15 @@ place(
 place('electric_lamp', 'Electric Lamp', 'building', 60, 20, 0xf2e6a0, 'Bright light at night. Draws 6 power.');
 place('lathe', 'Lathe', 'machine', 1500, 5, 0x6d7482, 'Turns springs, valves and precision gears. Runs on electricity (50).');
 place('packager', 'Packager', 'machine', 1200, 5, 0x9a6b3f, 'Packs goods into crates worth more than loose. Runs on electricity (40).');
+place(
+  'drill',
+  'Mechanical Drill',
+  'machine',
+  1100,
+  5,
+  0x8e6f3f,
+  'Stand it over an ore vein, a coal seam or a rock and turn it (48 stress): it mines without end and pushes what it digs out of its front.',
+);
 // Monuments: no trader buys them (tags []), and once raised they stand for good.
 place('obelisk', 'Stone Obelisk', 'building', 8400, 1, 0xd8cfb8, 'A monument (+3 prestige). Once raised it stands for good.', []);
 place(

@@ -93,6 +93,11 @@ export class Replication {
     if (belts.length) session.send({ t: 'belt', k: belts });
   }
 
+  /** Sends a chunk again to everyone who has it (a node came back). */
+  resendChunk(key: number): void {
+    for (const s of this.sessionsWithChunk(key)) this.sendChunk(s, key);
+  }
+
   structSpawn(s: Structure): StructSpawn {
     const spawn: StructSpawn = { id: s.id, type: s.type, x: s.x, y: s.y, r: s.rot };
     if (s.owner) spawn.owner = s.ownerName;

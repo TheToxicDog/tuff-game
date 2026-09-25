@@ -4,6 +4,7 @@
 import {
   BUILD_RANGE,
   ITEM_BY_ID,
+  drillNode,
   PLAYER_RADIUS,
   STRUCTURE_BY_ID,
   TILES,
@@ -116,9 +117,15 @@ export class BuildSystem {
     }
     if (def.machine?.water && !w.touchesWater(x, y, fw, fh)) return `The ${def.name} must touch water.`;
     if (def.placement === 'oil' && !onOil) return 'A pumpjack must stand over an oil seep (the black pools in the desert).';
+    // A drill stands over the vein it mines.
+    const tapped = def.drill ? drillNode(w.nodesNear(cx, cy, Math.max(fw, fh)), x, y, fw, fh) : undefined;
+    if (def.drill) {
+      if (!tapped) return 'A drill must stand over an ore vein, a coal seam or a rock.';
+      if (tapped.def.tier > def.drill.tier) return `The ${tapped.def.name} is too hard for a drill.`;
+    }
     // Solid nodes block; soft ones (grass) are cleared.
     for (const n of w.nodesNear(cx, cy, Math.max(fw, fh))) {
-      if (n.regrowAt > 0 || !n.def.solid) continue;
+      if (n === tapped || n.regrowAt > 0 || !n.def.solid) continue;
       if (circleHitsBox(n.x, n.y, n.def.radius, x, y, fw, fh)) return `A ${n.def.name.toLowerCase()} is in the way.`;
     }
     if (def.solid || def.door) {
@@ -156,6 +163,9 @@ export class BuildSystem {
       return;
     }
     const s = this.game.world.makeStructure(this.game.nextStructId++, def.place, x, y, r, p.accountId, p.name);
+    const tapped = s.def.drill
+      ? drillNode(this.game.world.nodesNear(x + s.w / 2, y + s.h / 2, Math.max(s.w, s.h)), x, y, s.w, s.h)
+      : undefined;
     const stack = p.slots[slot]!;
     stack.n -= 1;
     if (stack.n <= 0) p.slots[slot] = null;
@@ -173,6 +183,13 @@ export class BuildSystem {
       s.rpm = region === 4 ? 16 : region === 3 ? 14 : 10;
     }
     this.game.factory.initStructure(s);
+    if (tapped) {
+      // The drill takes the vein's place and mines it without end.
+      s.node = tapped.id;
+      s.machine!.mode = tapped.type;
+      tapped.gone = true;
+      this.game.nodeChanged(tapped);
+    }
     w.addStructure(s);
     this.game.structAdded(s);
     this.game.factory.structureChanged(s);
@@ -225,6 +242,14 @@ export class BuildSystem {
     w.removeStructure(s);
     this.game.structRemoved(s);
     this.game.factory.structureChanged(s);
+    // Take a drill away and the vein it stood over is there again.
+    const vein = s.node !== undefined ? w.nodes.get(s.node) : undefined;
+    if (vein) {
+      vein.gone = false;
+      vein.amount = vein.def.amount;
+      vein.regrowAt = 0;
+      this.game.replication.resendChunk(vein.chunk);
+    }
     for (const p of this.game.players.values()) {
       if (p.uiTarget?.kind === 'struct' && p.uiTarget.id === s.id) this.game.playerSystem.closeUi(p);
       if (p.bed?.id === s.id) {
