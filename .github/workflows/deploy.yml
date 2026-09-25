@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [claude/ecstatic-goldberg-3lu9lm]
   workflow_dispatch: {}
 
 jobs:
@@ -18,6 +18,6 @@ jobs:
           script: |
             set -e
             cd ~/tuff-game
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin claude/ecstatic-goldberg-3lu9lm
+            git reset --hard origin/claude/ecstatic-goldberg-3lu9lm
             docker compose up --build -d
