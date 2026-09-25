@@ -977,3 +977,28 @@ describe('mechanical drills (§62)', () => {
     expect(countItem(p.slots, 'drill')).toBe(2);
   });
 });
+
+describe('interaction reach', () => {
+  it('lets you use what the prompt offers: a chest 3.3 tiles off, a horse at arm’s length', () => {
+    const spot = clearSpot(6, 3, 30);
+    const p = join('reacher', spot.x + 3, spot.y + 2);
+    const chest = place(p, 'chest', spot.x, spot.y);
+    // The client offers "E Open" up to INTERACT_RANGE + 0.6 from the nearest edge.
+    p.move.x = spot.x + 1 + 3.3;
+    p.move.y = spot.y + 0.5;
+    game.playerSystem.interact(p, 'struct', chest.id);
+    expect(p.uiTarget).toMatchObject({ kind: 'struct', id: chest.id });
+    game.playerSystem.closeUi(p);
+
+    game.playerSystem.give(p, { id: 'horse', n: 1 }, true);
+    const slot = p.slots.findIndex((x) => x?.id === 'horse');
+    game.playerSystem.useItem(p, slot, p.x + 1.5, p.y);
+    const horse = [...game.entities.values()].find((e) => e.kind === 'creature' && e.def.id === 'horse' && e.owner === p.accountId)!;
+    expect(horse).toBeDefined();
+    // It wandered a little: 3.6 tiles from us, centre to centre.
+    horse.x = p.x + 3.6;
+    horse.y = p.y;
+    game.playerSystem.interact(p, 'entity', horse.id, 'grab');
+    expect(p.mounted).toBe(horse.id);
+  });
+});

@@ -583,7 +583,8 @@ export class PlayerSystem {
       if (!s) return;
       const nx = Math.max(s.x, Math.min(p.x, s.x + s.w));
       const ny = Math.max(s.y, Math.min(p.y, s.y + s.h));
-      if (Math.hypot(nx - p.x, ny - p.y) > INTERACT_RANGE) return;
+      // As far as the client offers the prompt (INTERACT_RANGE + 0.6), and a little more for prediction.
+      if (Math.hypot(nx - p.x, ny - p.y) > INTERACT_RANGE + 0.8) return;
       if (s.def.door) {
         this.game.building.toggleDoor(p, s);
         return;
@@ -616,7 +617,9 @@ export class PlayerSystem {
     }
     if (kind === 'entity' && typeof id === 'number') {
       const e = this.game.entities.get(id);
-      if (!e || Math.hypot(e.x - p.x, e.y - p.y) > INTERACT_RANGE + 0.5) return;
+      // Measured like the client's prompt (to a creature's edge), with a little slack for things on the move.
+      const edge = e?.kind === 'creature' ? e.def.radius : 0;
+      if (!e || Math.hypot(e.x - p.x, e.y - p.y) - edge > INTERACT_RANGE + 1) return;
       if (e.kind === 'bag') {
         this.openUi(p, { kind: 'entity', id });
         return;

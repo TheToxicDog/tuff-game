@@ -162,7 +162,8 @@ select:focus {
   gap: 14px;
   pointer-events: none !important;
   z-index: 10;
-  padding: 70px 20px 120px;
+  /* Clear of the menu bar at the top, so it stays clickable with a window open. */
+  padding: 96px 20px 120px;
 }
 
 .window {
