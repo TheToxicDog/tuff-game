@@ -62,7 +62,8 @@ export class BuildSystem {
   }
 
   canRemove(p: Player, s: Structure): boolean {
-    if (s.town) return false;
+    // Town buildings belong to the town; monuments stand for good once raised (§64).
+    if (s.town || s.def.monument) return false;
     if (!s.owner || s.owner === p.accountId) return true;
     // Company property: only officers may pick it up (members could otherwise walk off with it).
     if (isCompanyAccount(s.owner)) {
@@ -177,6 +178,7 @@ export class BuildSystem {
     this.game.factory.structureChanged(s);
     this.game.emit(['sfx', 'build', Math.round((x + 0.5) * 100), Math.round((y + 0.5) * 100)], x, y, { r: 20 });
     this.game.progression.onPlace(p, s.type);
+    if (s.def.monument) this.game.ambitions.raised(p, s);
   }
 
   rotate(p: Player, id: number): void {
@@ -196,7 +198,15 @@ export class BuildSystem {
   /** Hammer hit: pick a structure back up, contents and all. */
   hammer(p: Player, s: Structure): void {
     if (!this.canRemove(p, s)) {
-      this.game.notice(p, s.town ? `That belongs to the people of ${s.ownerName}.` : `That belongs to ${s.ownerName}.`, 'bad');
+      this.game.notice(
+        p,
+        s.town
+          ? `That belongs to the people of ${s.ownerName}.`
+          : s.def.monument
+            ? 'Monuments stand for good once raised.'
+            : `That belongs to ${s.ownerName}.`,
+        'bad',
+      );
       return;
     }
     if (s.crop) {

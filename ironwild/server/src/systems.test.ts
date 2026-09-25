@@ -897,3 +897,34 @@ describe('ambitions (§63)', () => {
     expect(again.ambitions.tallyOf(p.accountId).n['made:iron_ingot']).toBe(7);
   });
 });
+
+describe('monuments (§64)', () => {
+  it('stand for good once raised, add prestige, show on every map and refresh people nearby', () => {
+    const p = join('patron');
+    const spot = clearSpot(6, 4, 40);
+    p.move.x = spot.x + 3;
+    p.move.y = spot.y + 4.6;
+    const before = game.ambitions.prestige(p.accountId);
+    const worth = game.ambitions.worth(p.accountId);
+    const obelisk = place(p, 'obelisk', spot.x, spot.y);
+    expect(obelisk.raised).toBeGreaterThan(0);
+    // The money is sunk: a raised monument adds prestige, not worth.
+    expect(game.ambitions.worth(p.accountId)).toBeCloseTo(worth, 0);
+    const chat = (p.session as unknown as { messages: ServerMessage[] }).messages.filter((m) => m.t === 'chat');
+    expect(chat.some((m) => (m as { text: string }).text.includes('patron raised a Stone Obelisk'))).toBe(true);
+    expect(game.ambitions.prestige(p.accountId)).toBe(before + 3);
+    expect(game.ambitions.monumentList()).toContainEqual({ type: 'obelisk', x: spot.x + 1, y: spot.y + 1, owner: 'patron' });
+    // No hammer takes it down, not even its owner's.
+    expect(game.building.canRemove(p, obelisk)).toBe(false);
+    ticks(20 * 5);
+    expect(game.ambitions.tallyOf(p.accountId).done).toContain('monument_builder');
+
+    // A grand fountain gives people resting by it their wind back.
+    const fountain = place(p, 'grand_fountain', spot.x + 3, spot.y);
+    expect(fountain.def.monument?.refresh).toBeGreaterThan(0);
+    p.buffs.clear();
+    ticks(20);
+    expect(p.buffs.has('stamina')).toBe(true);
+    expect(p.buffs.has('regen')).toBe(true);
+  });
+});

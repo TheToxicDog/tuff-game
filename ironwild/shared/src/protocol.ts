@@ -306,6 +306,14 @@ export interface StandingRow {
   you?: boolean;
 }
 
+/** A monument somewhere in the valley (every map shows them). */
+export interface MonumentInfo {
+  type: string;
+  x: number;
+  y: number;
+  owner: string;
+}
+
 /** The Standings window (L): your ambitions and the server's leaders. */
 export interface StandingsInfo {
   you: { worth: number; prestige: number; title: string | null; today: number; best: number };
@@ -562,6 +570,7 @@ export type ServerMessage =
   | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }
   | ({ t: 'stats' } & FactoryStats)
   | ({ t: 'standings' } & StandingsInfo)
+  | { t: 'monuments'; list: MonumentInfo[] }
   | { t: 'towns'; list: TownInfo[] }
   /** Fluid networks; `of` maps pipes and tanks to networks and comes when the pipes change. */
   | { t: 'fluids'; nets: FluidNetTuple[]; of?: [number, number][] }

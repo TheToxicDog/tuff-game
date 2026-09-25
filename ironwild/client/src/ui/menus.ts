@@ -13,7 +13,7 @@ import {
   type ItemDef,
 } from '@ironwild/shared';
 import type { UiContext } from '../game/state';
-import { h } from './dom';
+import { drawStar, h } from './dom';
 import { iconImg } from './icons';
 import type { WindowDef } from './windows';
 
@@ -243,6 +243,17 @@ function renderMap(body: HTMLElement, ctx: UiContext): void {
           style: `left:${l.x * scale}px;top:${l.y * scale - 13}px;font-size:11px;color:${l.kind === 'bandit_camp' ? '#ffb0a8' : '#ddd'}`,
         },
         l.name,
+      ),
+    );
+  }
+  // Monuments: every map shows them, with whose they are.
+  for (const mo of ctx.state.monuments) {
+    drawStar(c2, mo.x * scale, mo.y * scale, 8);
+    wrap.append(
+      h(
+        'div',
+        { class: 'map-label', style: `left:${mo.x * scale}px;top:${mo.y * scale + 10}px;font-size:11px;color:#f2d27a` },
+        `${STRUCTURE_BY_ID.get(mo.type)?.name ?? mo.type} (${mo.owner})`,
       ),
     );
   }

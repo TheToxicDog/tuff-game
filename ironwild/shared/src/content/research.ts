@@ -114,6 +114,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     col: 6,
     row: 1,
   },
+  {
+    id: 'grand_works',
+    name: 'Grand Works',
+    cost: 120,
+    requires: ['steel', 'commerce'],
+    desc: 'Monuments: an obelisk, a grand fountain, a statue and a beacon. Prestige for those who can afford them.',
+    col: 4,
+    row: 0,
+  },
   { id: 'jewelcraft', name: 'Gem Cutting', cost: 40, requires: ['smithing'], desc: 'Cut rough gems on the anvil.', col: 3, row: 4 },
   {
     id: 'precision',

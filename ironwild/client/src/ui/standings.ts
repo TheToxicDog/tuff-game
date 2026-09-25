@@ -78,7 +78,7 @@ function renderAmbitions(body: HTMLElement, list: AmbitionInfo[]): void {
     h(
       'div',
       { class: 'muted', style: 'font-size:12px;margin-bottom:6px' },
-      'Your worth is your Crests, what you carry, and everything you own out in the world — with what is in it. The highest rung you reach is shown under your name. A company you belong to counts too.',
+      'Your worth is your Crests, what you carry, and everything you own out in the world — with what is in it. Raised monuments are money spent on prestige and no longer count. The highest rung you reach is shown under your name. A company you belong to counts too.',
     ),
     ...ranks.map(row).filter((x): x is HTMLDivElement => !!x),
     h('div', { class: 'section-title' }, 'Feats'),

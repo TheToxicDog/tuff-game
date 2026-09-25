@@ -774,6 +774,38 @@ place(
 place('electric_lamp', 'Electric Lamp', 'building', 60, 20, 0xf2e6a0, 'Bright light at night. Draws 6 power.');
 place('lathe', 'Lathe', 'machine', 1500, 5, 0x6d7482, 'Turns springs, valves and precision gears. Runs on electricity (50).');
 place('packager', 'Packager', 'machine', 1200, 5, 0x9a6b3f, 'Packs goods into crates worth more than loose. Runs on electricity (40).');
+// Monuments: no trader buys them (tags []), and once raised they stand for good.
+place('obelisk', 'Stone Obelisk', 'building', 8400, 1, 0xd8cfb8, 'A monument (+3 prestige). Once raised it stands for good.', []);
+place(
+  'grand_fountain',
+  'Grand Fountain',
+  'building',
+  8680,
+  1,
+  0x4f8fd0,
+  'A monument (+4 prestige). Anyone resting by it gets their wind back faster. Once raised it stands for good.',
+  [],
+);
+place(
+  'statue_of_industry',
+  'Statue of Industry',
+  'building',
+  19650,
+  1,
+  0xb08d57,
+  'A monument (+6 prestige) bearing your name. Once raised it stands for good.',
+  [],
+);
+place(
+  'beacon_of_progress',
+  'Beacon of Progress',
+  'building',
+  26200,
+  1,
+  0xf2e6a0,
+  'A monument (+8 prestige): at night, with 40 power from a pole, it lights up the valley and shows on every map. Once raised it stands for good.',
+  [],
+);
 place('rail', 'Rail', 'machine', 6, 100, 0x7a5230, 'Track for minecarts. Joins the rails next to it; E on a junction flips its switch.');
 place(
   'rail_station',

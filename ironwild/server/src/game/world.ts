@@ -122,6 +122,8 @@ export interface Structure {
   buf?: Record<Fluid, number>;
   /** Built by a town project: nobody may take it down. */
   town?: boolean;
+  /** Monuments: the game minute they were raised. */
+  raised?: number;
   /** Electric devices: share of the power they asked for this tick (0–1). */
   power?: number;
   /** Rail junctions: the way the switch sends carts; stations: what they do with them. */
@@ -153,6 +155,7 @@ export class World implements CollisionWorld {
   /** Claim structures, for permission checks. */
   readonly claims = new Set<Structure>();
   readonly towers = new Set<Structure>();
+  readonly monuments = new Set<Structure>();
 
   constructor(seed: number) {
     this.gen = generateWorld(seed);
@@ -288,6 +291,7 @@ export class World implements CollisionWorld {
     set.add(s.id);
     if (s.def.claimRadius) this.claims.add(s);
     if (s.def.tower) this.towers.add(s);
+    if (s.def.monument) this.monuments.add(s);
   }
 
   removeStructure(s: Structure): void {
@@ -298,6 +302,7 @@ export class World implements CollisionWorld {
     this.structsByChunk.get(s.chunk)?.delete(s.id);
     this.claims.delete(s);
     this.towers.delete(s);
+    this.monuments.delete(s);
   }
 
   makeStructure(id: number, type: string, x: number, y: number, rot: number, owner: string | null, ownerName: string): Structure {

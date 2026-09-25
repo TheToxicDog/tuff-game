@@ -55,26 +55,26 @@ them and answers with state.
 shared design with Tuff), the `Game` and the HTTP/WebSocket server. `Game` owns the world and runs
 the systems in a fixed order each 50 ms tick:
 
-| System           | Responsibility                                                                                                          |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts and horses      |
-| `combat.ts`      | Swings (quick, heavy, bows), hits on creatures and players, gathering from nodes, drops and auto-pickup                 |
-| `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals  |
-| `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                               |
-| `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                     |
-| `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers, overclocking, wear, factory stats      |
-| `farming.ts`     | Tilling, crops, harvests, animal products                                                                               |
-| `electric.ts`    | Power grids of poles, generators and devices; supply, demand and the share each device gets; motor torque               |
-| `rails.ts`       | Minecarts on rails: following track, junction switches, stations that load and unload, turning at line ends             |
-| `fluids.ts`      | Pipe and tank networks (one fluid each), pumps, boilers and steam engines, network summaries for clients                |
-| `fishing.ts`     | Casting, bites and catches per kind of water                                                                            |
-| `raids.ts`       | Raids on wealthy claims (raider AI: bash, rob, sabotage, flee), structure damage and mending, spike traps, arrow towers |
-| `economy.ts`     | Markets, NPC trade, contracts, shipping crates, the Exchange, shop stands                                               |
-| `progression.ts` | Knowledge, research, discoveries and the guided first fifteen minutes                                                   |
-| `projects.ts`    | Town projects: deliveries at the contract board, completion bonuses, putting the new building up in town                |
-| `ambitions.ts`   | Ambitions and standings: tallies per account and company, net worth, the wealth ladder, prestige, leader boards         |
-| `companies.ts`   | Companies and their treasuries                                                                                          |
-| `replication.ts` | What each client sees                                                                                                   |
+| System           | Responsibility                                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts and horses         |
+| `combat.ts`      | Swings (quick, heavy, bows), hits on creatures and players, gathering from nodes, drops and auto-pickup                    |
+| `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals     |
+| `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                                  |
+| `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                        |
+| `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers, overclocking, wear, factory stats         |
+| `farming.ts`     | Tilling, crops, harvests, animal products                                                                                  |
+| `electric.ts`    | Power grids of poles, generators and devices; supply, demand and the share each device gets; motor torque                  |
+| `rails.ts`       | Minecarts on rails: following track, junction switches, stations that load and unload, turning at line ends                |
+| `fluids.ts`      | Pipe and tank networks (one fluid each), pumps, boilers and steam engines, network summaries for clients                   |
+| `fishing.ts`     | Casting, bites and catches per kind of water                                                                               |
+| `raids.ts`       | Raids on wealthy claims (raider AI: bash, rob, sabotage, flee), structure damage and mending, spike traps, arrow towers    |
+| `economy.ts`     | Markets, NPC trade, contracts, shipping crates, the Exchange, shop stands                                                  |
+| `progression.ts` | Knowledge, research, discoveries and the guided first fifteen minutes                                                      |
+| `projects.ts`    | Town projects: deliveries at the contract board, completion bonuses, putting the new building up in town                   |
+| `ambitions.ts`   | Ambitions and standings: tallies per account and company, net worth, the wealth ladder, prestige, leader boards, monuments |
+| `companies.ts`   | Companies and their treasuries                                                                                             |
+| `replication.ts` | What each client sees                                                                                                      |
 
 ### Factories
 

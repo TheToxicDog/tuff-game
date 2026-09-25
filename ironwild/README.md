@@ -119,6 +119,10 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   a steelworks, a freight network, a power company, a trade baron's hold on one town, and machines
   that add ₡100,000 of value in a day. The standings rank everyone by worth, the day's takings and
   prestige, and show who sells the most in each town.
+- **Raise a monument** (research Grand Works): a Stone Obelisk, a Grand Fountain (rest by it to
+  get your wind back), a Statue of Industry and a Beacon of Progress that lights up the valley at
+  night. They cost a fortune in bricks, gold, steel, gears and circuits, stand for good once
+  raised, show on every map, and trade wealth for prestige.
 
 ## Running a server
 

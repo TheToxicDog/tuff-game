@@ -88,6 +88,8 @@ export interface StructureDef {
   electric?: ElectricSpec;
   /** Built by a town project: belongs to the settlement and cannot be taken down. */
   town?: boolean;
+  /** Monuments (§64): prestige for their owner; they stand for good once raised. `refresh`: tiles within which people get their wind back. */
+  monument?: { prestige: number; refresh?: number };
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -506,7 +508,6 @@ const S: StructureDef[] = [
     machine: { station: 'assembler', powered: true, buffer: 20, modes: ['bearing', 'gearbox_unit', 'industrial_pump', 'circuit'] },
   },
 
-  // ——— Logistics ———
   // ——— Town buildings (from town projects) ———
   {
     id: 'warehouse',
@@ -564,6 +565,53 @@ const S: StructureDef[] = [
     placement: 'land',
     town: true,
     light: 16,
+  },
+  // ——— Monuments (§64) ———
+  {
+    id: 'obelisk',
+    name: 'Stone Obelisk',
+    item: 'obelisk',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 8000,
+    placement: 'land',
+    monument: { prestige: 3 },
+  },
+  {
+    id: 'grand_fountain',
+    name: 'Grand Fountain',
+    item: 'grand_fountain',
+    size: [3, 3],
+    solid: true,
+    layer: 'object',
+    hp: 8000,
+    placement: 'land',
+    monument: { prestige: 4, refresh: 6 },
+  },
+  {
+    id: 'statue_of_industry',
+    name: 'Statue of Industry',
+    item: 'statue_of_industry',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 8000,
+    placement: 'land',
+    monument: { prestige: 6 },
+  },
+  {
+    id: 'beacon_of_progress',
+    name: 'Beacon of Progress',
+    item: 'beacon_of_progress',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 8000,
+    placement: 'land',
+    light: 20,
+    electric: { role: 'lamp', power: 40 },
+    monument: { prestige: 8 },
   },
   {
     id: 'pumpjack',
@@ -688,6 +736,7 @@ const S: StructureDef[] = [
     low: true,
     rail: 'station',
   },
+  // ——— Logistics ———
   {
     id: 'conveyor',
     name: 'Conveyor',

@@ -15,6 +15,7 @@ import {
   rankTitle,
   type Ambition,
   type AmbitionInfo,
+  type MonumentInfo,
   type Slots,
   type StandingRow,
   type StandingsInfo,
@@ -36,7 +37,7 @@ const article = (title: string) => (/^[AEIOU]/.test(title) ? 'an' : 'a');
 
 export class Ambitions {
   private readonly tallies = new Map<string, Tally>();
-  private property: { tick: number; map: Map<string, number> } | null = null;
+  private property: { tick: number; map: Map<string, number>; monuments: Map<string, { n: number; prestige: number }> } | null = null;
   private readonly lastAsk = new Map<number, number>();
 
   constructor(private readonly game: Game) {}
@@ -134,18 +135,31 @@ export class Ambitions {
     return v;
   }
 
-  /** What everything each owner has out in the world is worth, contents included (cached for 2 s). */
-  private propertyByOwner(): Map<string, number> {
-    if (this.property && this.game.tick - this.property.tick < TICK_RATE * 2) return this.property.map;
+  /** What everything each owner has out in the world is worth, contents included, and their monuments (cached for 2 s). */
+  private survey(): NonNullable<Ambitions['property']> {
+    if (this.property && this.game.tick - this.property.tick < TICK_RATE * 2) return this.property;
     const map = new Map<string, number>();
     const add = (owner: string, v: number) => map.set(owner, (map.get(owner) ?? 0) + v);
-    for (const s of this.game.world.structures.values()) if (s.owner && !s.town) add(s.owner, this.structureValue(s));
+    // Raised monuments are money sunk for prestige: they no longer count as wealth.
+    for (const s of this.game.world.structures.values()) if (s.owner && !s.town && !s.def.monument) add(s.owner, this.structureValue(s));
     for (const e of this.game.entities.values()) {
       if (e.kind === 'cart' && e.owner) add(e.owner, (ITEM_BY_ID.get(CART_ITEM[e.type])?.value ?? 0) + this.slotsValue(e.slots));
       else if (e.kind === 'creature' && e.owner) add(e.owner, ITEM_BY_ID.get(e.def.id)?.value ?? 0);
     }
-    this.property = { tick: this.game.tick, map };
-    return map;
+    const monuments = new Map<string, { n: number; prestige: number }>();
+    for (const s of this.game.world.monuments) {
+      if (!s.owner) continue;
+      const m = monuments.get(s.owner) ?? { n: 0, prestige: 0 };
+      m.n++;
+      m.prestige += s.def.monument!.prestige;
+      monuments.set(s.owner, m);
+    }
+    this.property = { tick: this.game.tick, map, monuments };
+    return this.property;
+  }
+
+  private propertyByOwner(): Map<string, number> {
+    return this.survey().map;
   }
 
   private carried(p: Player): number {
@@ -185,9 +199,12 @@ export class Ambitions {
         return both((t) => Math.max(0, ...Object.entries(t.n).map(([k, v]) => (k.startsWith('sales:') ? v : 0))));
       case 'grid':
         return Math.max(grids.get(p.accountId) ?? 0, p.company ? (grids.get(companyAccount(p.company)) ?? 0) : 0);
+      case 'monument': {
+        const m = this.survey().monuments;
+        return Math.max(m.get(p.accountId)?.n ?? 0, p.company ? (m.get(companyAccount(p.company))?.n ?? 0) : 0);
+      }
       case 'projects':
       case 'masterwork':
-      case 'monument':
         return mine.n[a.kind] ?? 0;
     }
   }
@@ -200,6 +217,7 @@ export class Ambitions {
   }
 
   stepSecond(): void {
+    this.refresh();
     if (this.game.tick % (TICK_RATE * CHECK_SECONDS) !== 0 || this.game.players.size === 0) return;
     const grids = this.game.power.supplyByOwner();
     for (const p of this.game.players.values()) {
@@ -226,12 +244,52 @@ export class Ambitions {
     return t ? rankTitle(t.done) : null;
   }
 
+  /** Prestige: ambitions achieved plus the monuments you own. */
   prestige(accountId: string): number {
     const t = this.tallies.get(accountId);
-    if (!t) return 0;
-    let n = 0;
-    for (const a of AMBITIONS) if (t.done.includes(a.id)) n += a.prestige;
-    return n + (t.n.monument_prestige ?? 0);
+    let n = this.survey().monuments.get(accountId)?.prestige ?? 0;
+    if (t) for (const a of AMBITIONS) if (t.done.includes(a.id)) n += a.prestige;
+    return n;
+  }
+
+  // ——— Monuments (§64) ———
+
+  /** A monument went up: everyone hears of it, and every map shows it. */
+  raised(p: Player, s: Structure): void {
+    s.raised = Math.round(this.game.minutes);
+    this.property = null;
+    const town = this.game.world.nearestSettlement(s.x, s.y);
+    this.game.broadcastChat('', `${p.name} raised a ${s.def.name} near ${town.name}! (+${s.def.monument!.prestige} prestige)`, 'system');
+    for (const other of this.game.players.values())
+      this.game.emit(['sfx', 'research', Math.round(other.x * 100), Math.round(other.y * 100)], other.x, other.y, { only: other.id });
+    this.sendMonuments();
+  }
+
+  monumentList(): MonumentInfo[] {
+    return [...this.game.world.monuments].map((s) => ({ type: s.type, x: s.x + s.w / 2, y: s.y + s.h / 2, owner: s.ownerName }));
+  }
+
+  sendMonuments(p?: Player): void {
+    const msg = { t: 'monuments' as const, list: this.monumentList() };
+    if (p) p.session.send(msg);
+    else for (const pl of this.game.players.values()) pl.session.send(msg);
+  }
+
+  /** A grand fountain gives everyone resting by it their wind back, and heals them faster. */
+  private refresh(): void {
+    for (const s of this.game.world.monuments) {
+      const r = s.def.monument!.refresh;
+      if (!r) continue;
+      const cx = s.x + s.w / 2;
+      const cy = s.y + s.h / 2;
+      for (const p of this.game.players.values()) {
+        if (p.dead || Math.hypot(p.x - cx, p.y - cy) > r) continue;
+        for (const b of ['stamina', 'regen']) {
+          if (!p.buffs.has(b)) p.statusDirty = true;
+          if ((p.buffs.get(b) ?? 0) < 20) p.buffs.set(b, 20);
+        }
+      }
+    }
   }
 
   // ——— The Standings window ———

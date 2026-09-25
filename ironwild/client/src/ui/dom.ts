@@ -42,3 +42,20 @@ export function fmtTime(minutes: number): string {
   const m = Math.floor(minutes % 60);
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }
+
+/** A five-pointed star on a 2D canvas (monuments on the maps). */
+export function drawStar(c: CanvasRenderingContext2D, x: number, y: number, r: number, fill = '#f2c53d'): void {
+  c.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rr = i % 2 === 0 ? r : r * 0.45;
+    if (i === 0) c.moveTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+    else c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  c.closePath();
+  c.fillStyle = fill;
+  c.strokeStyle = '#1a1612';
+  c.lineWidth = 2;
+  c.fill();
+  c.stroke();
+}

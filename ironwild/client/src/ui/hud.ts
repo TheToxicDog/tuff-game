@@ -4,7 +4,7 @@
 
 import { MAX_STAMINA, REGION_NAMES, formatCrests } from '@ironwild/shared';
 import type { UiContext } from '../game/state';
-import { fmtTime, h } from './dom';
+import { drawStar, fmtTime, h } from './dom';
 import { slotEl } from './slots';
 
 const BUFF_NAMES: Record<string, string> = { strength: '💪 Strength', stamina: '🌾 Stamina', regen: '❤ Regeneration' };
@@ -139,6 +139,11 @@ export class Hud {
       const sx = (st.x + 0.5 - x + span / 2) * s;
       const sy = (st.y + 0.5 - y + span / 2) * s;
       if (sx >= 0 && sy >= 0 && sx <= 178 && sy <= 178) c.fillRect(sx - 1, sy - 1, 2, 2);
+    }
+    for (const m of this.ctx.state.monuments) {
+      const sx = (m.x - x + span / 2) * s;
+      const sy = (m.y - y + span / 2) * s;
+      if (sx >= -8 && sy >= -8 && sx <= 186 && sy <= 186) drawStar(c, sx, sy, 6);
     }
     c.save();
     c.translate(89, 89);

@@ -148,6 +148,28 @@ craft('refinery', 'workbench', [s('refinery')], [s('steel_plate', 10), s('pipe',
 craft('generator', 'workbench', [s('generator')], [s('iron_plate', 6), s('copper_wire', 24), s('iron_gear', 2)], 'electricity');
 craft('power_pole', 'workbench', [s('power_pole', 2)], [s('wood', 4), s('copper_wire', 4), s('glass', 1)], 'electricity');
 craft('electric_lamp', 'workbench', [s('electric_lamp', 2)], [s('glass', 2), s('copper_wire', 3), s('iron_rod', 1)], 'electricity');
+craft('obelisk', 'workbench', [s('obelisk')], [s('stone_brick', 500), s('gold_ingot', 40), s('cut_gem', 10)], 'grand_works');
+craft(
+  'grand_fountain',
+  'workbench',
+  [s('grand_fountain')],
+  [s('stone_brick', 800), s('silver_ingot', 60), s('copper_plate', 60), s('pipe', 40), s('industrial_pump', 4)],
+  'grand_works',
+);
+craft(
+  'statue_of_industry',
+  'workbench',
+  [s('statue_of_industry')],
+  [s('steel_plate', 200), s('precision_gear', 60), s('gold_ingot', 50)],
+  'grand_works',
+);
+craft(
+  'beacon_of_progress',
+  'workbench',
+  [s('beacon_of_progress')],
+  [s('circuit', 100), s('steel_plate', 150), s('electric_lamp', 30), s('cut_gem', 20), s('glass', 60)],
+  'grand_works',
+);
 craft('lathe', 'workbench', [s('lathe')], [s('steel_plate', 6), s('iron_gear', 4), s('copper_wire', 12)], 'electricity');
 craft('electric_motor', 'workbench', [s('electric_motor')], [s('iron_plate', 4), s('copper_wire', 16), s('spring', 2)], 'industry');
 craft('packager', 'workbench', [s('packager')], [s('plank', 20), s('iron_plate', 4), s('spring', 4), s('valve', 1)], 'industry');

@@ -470,6 +470,10 @@ export class ClientGame {
         this.state.standings = msg;
         if (this.windows.isOpen('standings')) this.windows.refresh('standings');
         break;
+      case 'monuments':
+        this.state.monuments = msg.list;
+        if (this.windows.isOpen('map')) this.windows.refresh('map');
+        break;
     }
   }
 
@@ -1054,7 +1058,10 @@ export class ClientGame {
     let content: HTMLElement | null = null;
     if (s) {
       content = h('div', null, h('b', null, s.def.name));
-      if (s.owner) content.append(h('div', { class: 'muted' }, `Owner: ${s.owner}`));
+      if (s.def.monument) {
+        content.append(h('div', { class: 'gold' }, `Raised by ${s.owner ?? 'someone'} · ★ ${s.def.monument.prestige} prestige`));
+        if (s.def.monument.refresh) content.append(h('div', { class: 'muted' }, 'Rest nearby to get your wind back and heal faster.'));
+      } else if (s.owner) content.append(h('div', { class: 'muted' }, `Owner: ${s.owner}`));
       if (s.def.kinetic || s.def.logistics === 'conveyor' || s.def.logistics === 'splitter' || s.def.logistics === 'filter') {
         const net = s.net !== undefined ? this.world.networks.get(s.net) : undefined;
         const speed = s.spin[0] ?? 0;

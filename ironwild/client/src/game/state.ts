@@ -5,6 +5,7 @@ import type {
   CompanyInfo,
   ContractInfo,
   FactoryStats,
+  MonumentInfo,
   PlayerStatus,
   ResearchState,
   Slots,
@@ -38,6 +39,8 @@ export class ClientState {
   companyInvite: string | undefined;
   stats: FactoryStats | null = null;
   standings: StandingsInfo | null = null;
+  /** Every monument in the valley (shown on the maps). */
+  monuments: MonumentInfo[] = [];
   minutes = 360;
   stamina = 100;
   dead: { by: string; crests: number; items: number } | null = null;

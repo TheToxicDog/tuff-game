@@ -78,6 +78,7 @@ export const AMBITIONS: readonly Ambition[] = [
   },
   { id: 'freight_network', title: 'Freight Network', desc: 'Deliver 10,000 items by rail.', kind: 'freight', n: 10_000, prestige: 3 },
   { id: 'power_company', title: 'Power Company', desc: 'Run a power grid supplying 1,000 power.', kind: 'grid', n: 1_000, prestige: 3 },
+  { id: 'monument_builder', title: 'Monument Builder', desc: 'Raise a monument.', kind: 'monument', n: 1, prestige: 2 },
   { id: 'big_day', title: 'A ₡100,000 Day', desc: 'Take in ₡100,000 in a single day.', kind: 'day_income', n: 100_000, prestige: 4 },
   {
     id: 'trade_baron',

@@ -205,7 +205,7 @@ export class StructureRenderer {
     root.addChild(inner);
     const g = new Graphics();
     inner.addChild(g);
-    const top = ['windmill', 'arrow_tower', 'power_pole', 'lighthouse'].includes(s.type) ? new Container() : null;
+    const top = ['windmill', 'arrow_tower', 'power_pole', 'lighthouse', 'beacon_of_progress'].includes(s.type) ? new Container() : null;
     const anims: Anim[] = [];
     const ctx: DrawCtx = {
       s,
@@ -637,6 +637,176 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
     c.top.addChild(beam);
     c.anims.push((dt) => {
       beam.rotation += dt * 0.6;
+    });
+  },
+  // ——— Monuments (§64) ———
+  obelisk(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    const g = c.g;
+    // The needle is tall: its shadow runs far out to the south-east.
+    g.poly([20, -20, -20, 20, 100, 118, 118, 100], true).fill({ color: 0x000000, alpha: 0.17 });
+    // A plinth in two steps.
+    g.rect(-hw + 6, -hh + 6, hw * 2 - 12, hh * 2 - 12)
+      .fill(0xb3aa94)
+      .stroke({ width: 4, color: OUTLINE });
+    g.rect(-hw + 18, -hh + 18, hw * 2 - 36, hh * 2 - 36)
+      .fill(0xcfc6ae)
+      .stroke({ width: 3, color: OUTLINE });
+    // The needle from above: four faces rising to a gilded tip, lit from the north-west.
+    const n = 22;
+    g.poly([-n, -n, n, -n, 0, 0], true).fill(0xe8e0cc);
+    g.poly([-n, -n, -n, n, 0, 0], true).fill(0xd6cdb6);
+    g.poly([n, -n, n, n, 0, 0], true).fill(0xb3aa94);
+    g.poly([-n, n, n, n, 0, 0], true).fill(0xa39a84);
+    g.moveTo(-n, -n).lineTo(n, n).moveTo(n, -n).lineTo(-n, n).stroke({ width: 1.5, color: OUTLINE, alpha: 0.45 });
+    g.rect(-n, -n, n * 2, n * 2).stroke({ width: 4, color: OUTLINE });
+    g.poly([0, -9, 9, 0, 0, 9, -9, 0], true).fill(0xe0b030).stroke({ width: 2, color: OUTLINE });
+    g.poly([0, -9, 0, 0, -9, 0], true).fill(0xfff0a0);
+    // An inscription on the south step.
+    for (let i = 0; i < 5; i++)
+      g.moveTo(-24 + i * 10, hh - 12)
+        .lineTo(-18 + i * 10, hh - 12)
+        .stroke({ width: 2, color: 0x6f6a5a });
+  },
+  grand_fountain(c) {
+    const { hw } = half(c);
+    c.inner.rotation = 0;
+    const g = c.g;
+    const R = hw - 8;
+    g.circle(4, 5, R + 3).fill({ color: 0x000000, alpha: 0.16 });
+    // Stone rim, and the basin with coins glinting at the bottom.
+    g.circle(0, 0, R).fill(0xbdb4a0).stroke({ width: 5, color: OUTLINE });
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      g.moveTo(Math.cos(a) * (R - 13), Math.sin(a) * (R - 13))
+        .lineTo(Math.cos(a) * R, Math.sin(a) * R)
+        .stroke({ width: 2, color: 0x8a826e });
+    }
+    g.circle(0, 0, R - 13)
+      .fill(0x3f7fc0)
+      .stroke({ width: 3, color: OUTLINE });
+    for (const [x, y] of [
+      [-40, 30],
+      [35, 44],
+      [52, -18],
+      [-22, -54],
+      [8, 60],
+      [-58, -10],
+    ])
+      g.circle(x, y, 3).fill({ color: 0xf2c53d, alpha: 0.85 });
+    const ripples = new Graphics();
+    const pedestal = new Graphics();
+    pedestal.circle(0, 0, 30).fill(0xcfc6ae).stroke({ width: 4, color: OUTLINE });
+    pedestal.circle(0, 0, 22).fill(0x4f8fd0).stroke({ width: 2, color: OUTLINE });
+    pedestal.circle(0, 0, 7).fill(0xcfc6ae).stroke({ width: 2, color: OUTLINE });
+    const jets = new Graphics();
+    c.inner.addChild(ripples, pedestal, jets);
+    c.anims.push((_dt, t) => {
+      ripples.clear();
+      for (let k = 0; k < 3; k++) {
+        const f = (t * 0.35 + k / 3) % 1;
+        ripples.circle(0, 0, 34 + f * (R - 50)).stroke({ width: 2, color: 0xcfe8ff, alpha: 0.5 * (1 - f) });
+      }
+      // Eight jets arc out from the spout and fall into the basin.
+      jets.clear();
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.2;
+        for (let k = 0; k < 4; k++) {
+          const f = (t * 0.9 + k / 4 + i * 0.13) % 1;
+          const r = 8 + f * 48;
+          jets.circle(Math.cos(a) * r, Math.sin(a) * r, 2.2 + (1 - f) * 1.4).fill({ color: 0xe8f6ff, alpha: 0.9 - f * 0.5 });
+        }
+      }
+    });
+  },
+  statue_of_industry(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    const g = c.g;
+    const bronze = 0xb08d57;
+    g.poly([16, -16, -16, 16, 72, 96, 96, 72], true).fill({ color: 0x000000, alpha: 0.16 });
+    // A granite plinth with a gold plaque on the front.
+    g.rect(-hw + 6, -hh + 6, hw * 2 - 12, hh * 2 - 12)
+      .fill(0x807a72)
+      .stroke({ width: 4, color: OUTLINE });
+    g.rect(-hw + 16, -hh + 16, hw * 2 - 32, hh * 2 - 32)
+      .fill(0x9d978d)
+      .stroke({ width: 3, color: OUTLINE });
+    g.roundRect(-22, hh - 15, 44, 9, 2)
+      .fill(0xd9b23d)
+      .stroke({ width: 2, color: OUTLINE });
+    // The figure from above: a gear raised high in one hand, a hammer in the other.
+    const limb = (x0: number, y0: number, x1: number, y1: number) =>
+      g
+        .moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 11, color: OUTLINE })
+        .moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 7, color: bronze });
+    limb(12, -8, 28, -34);
+    limb(-12, 8, -28, 22);
+    g.rect(-42, 15, 20, 11).fill(0x5a5f66).stroke({ width: 2, color: OUTLINE });
+    g.ellipse(0, 0, 27, 18).fill(bronze).stroke({ width: 4, color: OUTLINE });
+    g.circle(2, -2, 13).fill(shade(bronze, 1.15)).stroke({ width: 3, color: OUTLINE });
+    const gear = new Graphics(gearContext(15, 10, 0xd9b23d, 4));
+    gear.position.set(31, -39);
+    c.inner.addChild(gear);
+  },
+  beacon_of_progress(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    const g = c.g;
+    const on = !!c.s.st.on;
+    const oct = (r: number) => {
+      const pts: number[] = [];
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+        pts.push(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      return pts;
+    };
+    // An octagonal steel base braced to the corners, and the lantern on top.
+    g.poly(oct(hw - 6), true)
+      .fill(0x5a5f66)
+      .stroke({ width: 4, color: OUTLINE });
+    for (const [x, y] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ])
+      g.moveTo(x * 22, y * 22)
+        .lineTo(x * (hw - 16), y * (hh - 16))
+        .stroke({ width: 7, color: OUTLINE })
+        .moveTo(x * 22, y * 22)
+        .lineTo(x * (hw - 16), y * (hh - 16))
+        .stroke({ width: 3.5, color: 0x8e99a8 });
+    g.poly(oct(34), true).fill(0x6f757d).stroke({ width: 4, color: OUTLINE });
+    g.circle(0, 0, 24)
+      .fill(on ? 0xfff6c8 : 0xa8c8d8)
+      .stroke({ width: 4, color: OUTLINE });
+    g.moveTo(-24, 0).lineTo(24, 0).moveTo(0, -24).lineTo(0, 24).stroke({ width: 3, color: 0xb08d57 });
+    g.circle(0, 0, 8)
+      .fill(on ? 0xffffff : 0xd9dde3)
+      .stroke({ width: 2, color: OUTLINE });
+    if (!c.top || !on) return;
+    // Lit: three beams sweep the valley and the lantern pulses.
+    const beams = new Graphics();
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      beams
+        .poly([0, 0, Math.cos(a - 0.09) * 760, Math.sin(a - 0.09) * 760, Math.cos(a + 0.09) * 760, Math.sin(a + 0.09) * 760], true)
+        .fill({ color: 0xfff6c8, alpha: 0.13 });
+    }
+    const halo = new Graphics();
+    halo.circle(0, 0, 58).fill({ color: 0xfff6c8, alpha: 0.22 });
+    for (const x of [beams, halo]) x.position.set(c.s.w * TS * 0.5, c.s.h * TS * 0.5);
+    c.top.addChild(beams, halo);
+    c.anims.push((dt, t) => {
+      beams.rotation += dt * 0.35;
+      halo.scale.set(1 + Math.sin(t * 3) * 0.12);
     });
   },
   generator(c) {

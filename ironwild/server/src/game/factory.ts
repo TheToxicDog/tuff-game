@@ -950,6 +950,7 @@ export class Factory {
     if (s.fluid?.kind && s.fluid.amount > 0) data.fluid = s.fluid;
     if (s.sw !== undefined) data.sw = s.sw;
     if (s.town) data.town = true;
+    if (s.raised !== undefined) data.raised = s.raised;
     if (s.rmode) data.rmode = s.rmode;
     if (s.buf && (s.buf.water > 0 || s.buf.steam > 0)) data.buf = s.buf;
     return {
@@ -1011,6 +1012,7 @@ export class Factory {
     if (d.fluid) s.fluid = d.fluid;
     if (d.sw !== undefined) s.sw = d.sw;
     if (d.town) s.town = true;
+    if (d.raised !== undefined) s.raised = d.raised;
     if (d.rmode) s.rmode = d.rmode;
     if (d.buf) s.buf = d.buf;
     w.addStructure(s);
