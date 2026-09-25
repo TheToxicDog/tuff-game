@@ -25,9 +25,8 @@ jobs:
             --parameters 'commands=[
               "set -e",
               "cd /opt/tuff-game",
-              "git config --global --add safe.directory /opt/tuff-game",
-              "sudo -u tuff git fetch origin claude/ecstatic-goldberg-3lu9lm",
-              "sudo -u tuff git reset --hard origin/claude/ecstatic-goldberg-3lu9lm",
+              "sudo -u tuff env HOME=/opt/tuff-game git fetch origin claude/ecstatic-goldberg-3lu9lm",
+              "sudo -u tuff env HOME=/opt/tuff-game git reset --hard origin/claude/ecstatic-goldberg-3lu9lm",
               "sudo -u tuff env HOME=/opt/tuff-game npm ci",
               "sudo -u tuff env HOME=/opt/tuff-game npm run build",
               "systemctl restart tuff-game.service"
