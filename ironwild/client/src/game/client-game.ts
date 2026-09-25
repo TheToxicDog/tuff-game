@@ -406,11 +406,15 @@ export class ClientGame {
         this.windows.refresh(...this.windows.ids().filter((w) => ['inventory', 'build', 'server', 'contracts'].includes(w)));
         if (this.placing && this.state.count(this.placing) === 0) this.stopPlacement();
         break;
-      case 'status':
+      case 'status': {
+        const crestsChanged = msg.crests !== this.state.status.crests;
         this.state.status = msg;
         this.hud.renderStatus();
-        if (this.windows.isOpen('server') && this.state.ui?.kind === 'trade') this.windows.refresh('server');
+        // What you can afford changes with your Crests (status also arrives twice a second without them changing).
+        if (crestsChanged && this.windows.isOpen('server') && (this.state.ui?.kind === 'trade' || this.state.ui?.kind === 'shop'))
+          this.windows.refresh('server');
         break;
+      }
       case 'research':
         this.state.research = { kp: msg.kp, unlocked: msg.unlocked, blueprints: msg.blueprints };
         this.windows.refresh(...this.windows.ids().filter((w) => ['research', 'inventory', 'build'].includes(w)));

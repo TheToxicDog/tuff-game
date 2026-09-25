@@ -22,9 +22,30 @@ interface Open {
 export class Windows {
   readonly root = h('div', { class: 'windows' });
   private readonly open = new Map<string, Open>();
+  /** The window a pointer is held down in: re-rendering it now would swallow the click. */
+  private pressedIn: Open | null = null;
+  private readonly pending = new Set<string>();
 
   constructor(ui: HTMLElement) {
     ui.append(this.root);
+    window.addEventListener(
+      'pointerdown',
+      (e) => {
+        const el = (e.target as HTMLElement | null)?.closest?.('.window');
+        this.pressedIn = [...this.open.values()].find((w) => w.el === el) ?? null;
+      },
+      true,
+    );
+    const release = () => {
+      this.pressedIn = null;
+      // Catch up once the click has landed.
+      setTimeout(() => {
+        for (const id of [...this.pending]) this.render(id);
+        this.pending.clear();
+      }, 0);
+    };
+    window.addEventListener('pointerup', release, true);
+    window.addEventListener('pointercancel', release, true);
   }
 
   show(id: string, def: WindowDef): void {
@@ -49,6 +70,10 @@ export class Windows {
   render(id: string): void {
     const w = this.open.get(id);
     if (!w) return;
+    if (this.pressedIn === w) {
+      this.pending.add(id);
+      return;
+    }
     const title = w.def.title();
     w.header.replaceChildren(
       typeof title === 'string' ? h('span', null, title) : title,

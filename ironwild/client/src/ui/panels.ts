@@ -398,6 +398,8 @@ function shop(body: HTMLElement, ui: ShopUi, ctx: UiContext): void {
   for (const p of listed) {
     let stock = 0;
     for (const s of ui.store) if (s && s.id === p.item && (p.q === undefined || s.q === p.q)) stock += s.n;
+    // Like a trader's stall: you can only press for what you can afford.
+    const afford = Math.min(stock, Math.floor(ctx.state.status.crests / Math.max(0.01, p.price)));
     body.append(
       h(
         'div',
@@ -413,6 +415,7 @@ function shop(body: HTMLElement, ui: ShopUi, ctx: UiContext): void {
           'button',
           {
             class: 'small',
+            disabled: afford < 1,
             onclick: () => ctx.send({ t: 'shop', id: ui.id, op: 'buy', item: p.item, ...(p.q !== undefined ? { q: p.q } : {}), n: 1 }),
           },
           '1',
@@ -421,7 +424,7 @@ function shop(body: HTMLElement, ui: ShopUi, ctx: UiContext): void {
           'button',
           {
             class: 'small',
-            disabled: stock < 10,
+            disabled: afford < 10,
             onclick: () => ctx.send({ t: 'shop', id: ui.id, op: 'buy', item: p.item, ...(p.q !== undefined ? { q: p.q } : {}), n: 10 }),
           },
           '10',
