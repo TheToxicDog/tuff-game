@@ -51,7 +51,7 @@ describe('IRONWILD server', () => {
     const bot = await Bot.connect(base, 'alice', await Bot.register(base, 'alice'));
     await ticks(3);
     await bot.waitFor(() => bot.inv !== null && bot.status !== null && bot.me !== null);
-    expect(bot.welcome!.world.settlements.map((s) => s.name)).toEqual(['Westhaven', 'Stonehaven', 'Greenfield']);
+    expect(bot.welcome!.world.settlements.map((s) => s.name)).toEqual(['Westhaven', 'Stonehaven', 'Greenfield', 'Port Meridian']);
     expect(bot.count('stone_axe')).toBe(1);
     expect(bot.count('stone_pickaxe')).toBe(1);
     expect(bot.status!.crests).toBe(25);

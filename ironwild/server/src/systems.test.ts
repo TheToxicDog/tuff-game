@@ -439,3 +439,18 @@ describe('market events (§14)', () => {
     expect(game.economy.ask(town, bread)).toBeCloseTo(breadPrice, 5);
   });
 });
+
+describe('Port Meridian (§14)', () => {
+  it('sells imports that are worth more inland, and pays well for finished goods', () => {
+    const port = SETTLEMENT_BY_ID.get('port_meridian')!;
+    const west = SETTLEMENT_BY_ID.get('westhaven')!;
+    expect(game.world.settlements.some((s) => s.id === 'port_meridian')).toBe(true);
+    const spices = ITEM_BY_ID.get('spices')!;
+    const buyer = game.economy.bestBuyer(west, spices)!;
+    expect(game.economy.bid(west, buyer, spices)).toBeGreaterThan(game.economy.ask(port, spices));
+    const gear = ITEM_BY_ID.get('iron_gear')!;
+    const exporter = game.economy.bestBuyer(port, gear)!;
+    expect(exporter.id).toBe('exporter');
+    expect(game.economy.bid(port, exporter, gear)).toBeGreaterThan(game.economy.bid(west, game.economy.bestBuyer(west, gear)!, gear));
+  });
+});

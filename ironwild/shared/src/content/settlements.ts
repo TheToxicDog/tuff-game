@@ -202,6 +202,39 @@ export const PROFESSIONS: readonly Profession[] = [
     lines: ['Herbs from the marsh make the best remedies.', 'Eat properly. You heal faster on a full stomach.'],
   },
   {
+    id: 'fishmonger',
+    title: 'Fishmonger',
+    buys: ['fish'],
+    sells: ['perch', 'mackerel', 'cooked_fish', 'fishing_rod', 'rope'],
+    bidRate: 0.95,
+    color: 0x3f7a9a,
+    lines: ['Fresh off the boats, or fresh off your line — I buy both.', 'Salmon and sea bass fetch the best prices.'],
+  },
+  {
+    id: 'importer',
+    title: 'Importer',
+    buys: ['luxury', 'import'],
+    sells: ['spices', 'silk', 'tea', 'glass', 'steel_ingot', 'copper_ingot'],
+    bidRate: 0.8,
+    color: 0xa0522d,
+    lines: [
+      'Spices from the south, silk from the east. The valley pays well for both.',
+      'Buy here, sell inland. That is how merchants get rich.',
+    ],
+  },
+  {
+    id: 'exporter',
+    title: 'Export Agent',
+    buys: ['component', 'machine', 'metal', 'tool', 'weapon', 'luxury'],
+    sells: ['shipping_crate'],
+    bidRate: 0.97,
+    color: 0x2f4f7a,
+    lines: [
+      'The ships carry anything well made: gears, plates, pumps, tools.',
+      'Raw ore is ballast. Bring me finished goods and I pay top Crest.',
+    ],
+  },
+  {
     id: 'provisioner',
     title: 'Provisioner',
     buys: ['food', 'farm', 'hunt', 'wood'],
@@ -262,6 +295,8 @@ export interface SettlementDef {
   /** Traders that open stalls as the settlement prospers from trade (§54). */
   growth: { at: number; trader: string }[];
   desc: string;
+  /** Built on the coast, with a pier and a ship. */
+  coastal?: boolean;
 }
 
 export const SETTLEMENTS: readonly SettlementDef[] = [
@@ -362,6 +397,31 @@ export const SETTLEMENTS: readonly SettlementDef[] = [
       { at: 40000, trader: 'builder' },
     ],
     desc: 'Farming country. Food is cheap and plentiful; tools and machines are dear.',
+  },
+  {
+    id: 'port_meridian',
+    name: 'Port Meridian',
+    kind: 'town',
+    radius: 13,
+    scale: 0.9,
+    coastal: true,
+    traders: ['general', 'fishmonger', 'importer', 'exporter', 'provisioner', 'builder', 'board'],
+    factors: { component: 1.2, machine: 1.15, luxury: 1.2, metal: 1.1, wood: 1.25, fish: 0.75, food: 1.05, import: 0.7, ore: 1.1 },
+    contracts: [
+      { item: 'gearbox_unit', min: 2, max: 8 },
+      { item: 'steel_plate', min: 10, max: 50 },
+      { item: 'iron_gear', min: 10, max: 60 },
+      { item: 'cooked_fish', min: 20, max: 80 },
+      { item: 'rope', min: 20, max: 80 },
+      { item: 'hardwood_plank', min: 40, max: 160 },
+      { item: 'bread', min: 20, max: 80 },
+    ],
+    growth: [
+      { at: 6000, trader: 'blacksmith' },
+      { at: 15000, trader: 'jeweler' },
+      { at: 30000, trader: 'engineer' },
+    ],
+    desc: 'The harbour on the south coast. Ships bring spices, silk and tea, and carry away whatever the valley makes.',
   },
 ];
 

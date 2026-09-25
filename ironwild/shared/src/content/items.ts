@@ -36,7 +36,9 @@ export type MarketTag =
   | 'component'
   | 'luxury'
   | 'animal'
-  | 'blueprint';
+  | 'blueprint'
+  | 'fish'
+  | 'import';
 
 export type ToolKind = 'fist' | 'axe' | 'pickaxe' | 'sword' | 'spear' | 'club' | 'hammer' | 'hoe' | 'bow' | 'rod';
 
@@ -251,24 +253,51 @@ item(
 );
 
 // ——— Fish (§11) ———
-item('perch', 'Perch', 'food', ['food', 'hunt'], 4, 50, { shape: 'fish', color: 0x8fa35a, accent: 0xd9822b }, { food: { hunger: 4 } });
+item(
+  'perch',
+  'Perch',
+  'food',
+  ['food', 'hunt', 'fish'],
+  4,
+  50,
+  { shape: 'fish', color: 0x8fa35a, accent: 0xd9822b },
+  { food: { hunger: 4 } },
+);
 item(
   'trout',
   'River Trout',
   'food',
-  ['food', 'hunt'],
+  ['food', 'hunt', 'fish'],
   8,
   50,
   { shape: 'fish', color: 0x9aa88f, accent: 0xd06080 },
   { food: { hunger: 5 } },
 );
-item('carp', 'Carp', 'food', ['food', 'hunt'], 6, 50, { shape: 'fish', color: 0xb58a3e, accent: 0x7a5a2a }, { food: { hunger: 5 } });
-item('pike', 'Pike', 'food', ['food', 'hunt'], 13, 50, { shape: 'fish', color: 0x5f7a4a, accent: 0xc6d08a }, { food: { hunger: 6 } });
+item(
+  'carp',
+  'Carp',
+  'food',
+  ['food', 'hunt', 'fish'],
+  6,
+  50,
+  { shape: 'fish', color: 0xb58a3e, accent: 0x7a5a2a },
+  { food: { hunger: 5 } },
+);
+item(
+  'pike',
+  'Pike',
+  'food',
+  ['food', 'hunt', 'fish'],
+  13,
+  50,
+  { shape: 'fish', color: 0x5f7a4a, accent: 0xc6d08a },
+  { food: { hunger: 6 } },
+);
 item(
   'salmon',
   'Salmon',
   'food',
-  ['food', 'hunt', 'luxury'],
+  ['food', 'hunt', 'fish', 'luxury'],
   16,
   50,
   { shape: 'fish', color: 0xa0a8b0, accent: 0xf08a6a },
@@ -278,7 +307,7 @@ item(
   'mackerel',
   'Mackerel',
   'food',
-  ['food', 'hunt'],
+  ['food', 'hunt', 'fish'],
   6,
   50,
   { shape: 'fish', color: 0x3f6f9a, accent: 0xbfe3f0 },
@@ -288,7 +317,7 @@ item(
   'sea_bass',
   'Sea Bass',
   'food',
-  ['food', 'hunt'],
+  ['food', 'hunt', 'fish'],
   12,
   50,
   { shape: 'fish', color: 0x6f7c8f, accent: 0xe4e8f0 },
@@ -298,11 +327,25 @@ item(
   'cooked_fish',
   'Grilled Fish',
   'food',
-  ['food'],
+  ['food', 'fish'],
   11,
   50,
   { shape: 'fish', color: 0xc98a3e, accent: 0x7a4e2d },
   { food: { hunger: 24, heal: 8, buff: 'regen', buffSeconds: 60 } },
+);
+
+// ——— Imports (Port Meridian) ———
+item('spices', 'Spices', 'luxury', ['food', 'luxury', 'import'], 28, 50, { shape: 'sack', color: 0xc2552e, accent: 0xf2c53d });
+item('silk', 'Silk', 'luxury', ['luxury', 'import'], 44, 50, { shape: 'wool', color: 0xb05ac2, accent: 0xf0c8f5 });
+item(
+  'tea',
+  'Tea',
+  'food',
+  ['food', 'import'],
+  16,
+  50,
+  { shape: 'sack', color: 0x5a8a4a, accent: 0xc6e07a },
+  { food: { hunger: 3, buff: 'stamina', buffSeconds: 180 } },
 );
 item('soggy_boot', 'Soggy Boot', 'resource', ['hunt'], 0.5, 10, { shape: 'boot', color: 0x5c3a20 });
 

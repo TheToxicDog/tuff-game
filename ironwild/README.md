@@ -59,8 +59,10 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Gather** from 24 kinds of resource nodes across a 512 × 512 island: meadows, forest, highlands,
   mountains, fertile plains, marshes and desert. Nodes deplete and regrow; better tools gather more
   and reach richer deposits.
-- **Trade** with 17 NPC professions in three settlements — Westhaven (the river town), Stonehaven
-  (mining village) and Greenfield (farming village). Prices follow each town's stock: sell too much
+- **Trade** with 20 NPC professions in four settlements — Westhaven (the river town), Stonehaven
+  (mining village), Greenfield (farming village) and Port Meridian, the harbour on the south coast,
+  where ships bring spices, silk and tea to carry inland and an export agent pays top Crest for
+  gears, plates and machines. Prices follow each town's stock: sell too much
   of one thing and the price falls, then recovers over a day or so. Ore is cheap in Stonehaven, food
   is cheap in Greenfield, tools are dear there — trade routes emerge. Trade makes a settlement
   prosper, and prosperous villages open new stalls (a lumber merchant, butcher, engineer, …).

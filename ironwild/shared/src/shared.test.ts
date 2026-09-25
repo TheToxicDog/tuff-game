@@ -113,7 +113,9 @@ describe('world generation', () => {
     const b = generateWorld(42, 256);
     expect(a.tiles).toEqual(b.tiles);
     expect(a.nodes).toEqual(b.nodes);
-    expect(a.settlements).toHaveLength(3);
+    expect(a.settlements.map((s) => s.id)).toEqual(['westhaven', 'stonehaven', 'greenfield', 'port_meridian']);
+    // Port Meridian has its ship moored at the pier.
+    expect(a.houses.some((h) => h.style === 'ship')).toBe(true);
     for (const s of a.settlements) {
       const t = a.tiles[Math.floor(s.y) * a.size + Math.floor(s.x)];
       expect(TILES[t].walk).toBe(true);

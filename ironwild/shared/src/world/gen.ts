@@ -5,7 +5,7 @@
 // marsh lake, fed by a creek from the highlands.
 
 import { NODE_BY_ID } from '../content/nodes';
-import { SETTLEMENTS, NPC_FIRST_NAMES } from '../content/settlements';
+import { SETTLEMENTS, NPC_FIRST_NAMES, type SettlementDef } from '../content/settlements';
 import { clamp, dist, fbm, Rng } from '../math';
 import { Region, Tile } from './terrain';
 
@@ -35,7 +35,7 @@ export interface GenHouse {
   y: number;
   w: number;
   h: number;
-  style: 'house' | 'tent' | 'ruin' | 'hall';
+  style: 'house' | 'tent' | 'ruin' | 'hall' | 'ship';
   color: number;
 }
 
@@ -372,9 +372,7 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
   };
 
   let npcCounter = 0;
-  for (const def of SETTLEMENTS) {
-    const [u, v] = SETTLEMENT_SPOTS[def.id] ?? [0.5, 0.5];
-    const [cx, cy] = findSpot(u, v, def.radius);
+  const buildSettlement = (def: SettlementDef, cx: number, cy: number, rng: Rng): GenSettlement => {
     const R = def.radius;
     const plazaR = R - 4.5;
     clearZones.push({ x: cx + 0.5, y: cy + 0.5, r: R + 3 });
@@ -430,7 +428,15 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
         ...(unlock !== undefined ? { unlock } : {}),
       });
     });
-    settlements.push({ id: def.id, name: def.name, x: cx + 0.5, y: cy + 0.5, radius: R, npcs });
+    const town: GenSettlement = { id: def.id, name: def.name, x: cx + 0.5, y: cy + 0.5, radius: R, npcs };
+    settlements.push(town);
+    return town;
+  };
+  for (const def of SETTLEMENTS) {
+    if (def.coastal) continue;
+    const [u, v] = SETTLEMENT_SPOTS[def.id] ?? [0.5, 0.5];
+    const [cx, cy] = findSpot(u, v, def.radius);
+    buildSettlement(def, cx, cy, rng);
   }
 
   // ——— Roads between settlements ———
@@ -605,6 +611,100 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
           break;
         }
       }
+    }
+  }
+
+  // ——— Port Meridian (§14) ———
+  // The harbour is laid out last, from its own random stream, so the inland world does not shift:
+  // a coastal town on the south shore with a pier, a moored ship and a road to Greenfield.
+  for (const def of SETTLEMENTS) {
+    if (!def.coastal) continue;
+    const portRng = new Rng(seed + 131);
+    const R = def.radius;
+    const oceanNear = (x: number, y: number, r: number): number => {
+      let n = 0;
+      for (let oy = -r; oy <= r; oy += 2)
+        for (let ox = -r; ox <= r; ox += 2)
+          if (inside(x + ox, y + oy) && tiles[idx(x + ox, y + oy)] === Tile.DeepWater && regions[idx(x + ox, y + oy)] === Region.Ocean) n++;
+      return n;
+    };
+    let spot: [number, number] | null = null;
+    const bx = Math.round(0.62 * S);
+    const by = Math.round(0.9 * S);
+    for (let ring = 0; ring < 90 && !spot; ring++) {
+      for (let a = 0; a < Math.max(1, ring * 6) && !spot; a++) {
+        const ang = (a / Math.max(1, ring * 6)) * Math.PI * 2;
+        const x = Math.round(bx + Math.cos(ang) * ring);
+        const y = Math.round(by + Math.sin(ang) * ring);
+        if (!landAround(x, y, R + 1)) continue;
+        if (oceanNear(x, y, R + 9) < 6) continue;
+        if (settlements.some((t) => dist(x, y, t.x, t.y) < t.radius + R + 30)) continue;
+        spot = [x, y];
+      }
+    }
+    if (!spot) continue;
+    const [cx, cy] = spot;
+    const port = buildSettlement(def, cx, cy, portRng);
+    // The pier runs from the square toward the nearest open sea, three tiles wide.
+    let best = { dx: 0, dy: 1, d: Infinity };
+    for (const [dx, dy] of [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ]) {
+      for (let d = R - 4; d < R + 20; d++) {
+        const x = cx + dx * d;
+        const y = cy + dy * d;
+        if (!inside(x, y)) break;
+        if (tiles[idx(x, y)] === Tile.DeepWater) {
+          if (d < best.d) best = { dx, dy, d };
+          break;
+        }
+      }
+    }
+    if (best.d < Infinity) {
+      const end = best.d + 7;
+      for (let d = Math.floor(R - 4.5); d <= end; d++) {
+        for (let w = -1; w <= 1; w++) {
+          const x = cx + best.dx * d + (best.dy !== 0 ? w : 0);
+          const y = cy + best.dy * d + (best.dx !== 0 ? w : 0);
+          if (inside(x, y) && tiles[idx(x, y)] !== Tile.Plaza) tiles[idx(x, y)] = Tile.Bridge;
+        }
+      }
+      // A merchant ship moored alongside the end of the pier.
+      const len = 7;
+      const cells: [number, number][] = [];
+      for (let a = end - len + 1; a <= end; a++)
+        for (let q = 2; q <= 4; q++) cells.push([cx + best.dx * a + (best.dy !== 0 ? q : 0), cy + best.dy * a + (best.dx !== 0 ? q : 0)]);
+      const water = (x: number, y: number) => inside(x, y) && (tiles[idx(x, y)] === Tile.DeepWater || tiles[idx(x, y)] === Tile.Water);
+      if (cells.every(([x, y]) => water(x, y))) {
+        for (const [x, y] of cells) tiles[idx(x, y)] = Tile.House;
+        const hx = Math.min(...cells.map((c) => c[0]));
+        const hy = Math.min(...cells.map((c) => c[1]));
+        const w = Math.max(...cells.map((c) => c[0])) - hx + 1;
+        const h = Math.max(...cells.map((c) => c[1])) - hy + 1;
+        houses.push({ x: hx, y: hy, w, h, style: 'ship', color: 0x6b4a2a });
+      }
+    }
+    road(green, port, seed + 87);
+    clearZones.push({ x: cx + 0.5, y: cy + 0.5, r: R + 3 });
+    // Clear resource nodes from the town, the pier and the new road.
+    const blocked = (x: number, y: number) => {
+      const t = tiles[idx(Math.floor(x), Math.floor(y))];
+      return t === Tile.Road || t === Tile.Plaza || t === Tile.House || t === Tile.Bridge || t === Tile.Water || t === Tile.DeepWater;
+    };
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i];
+      if (
+        dist(n.x, n.y, cx + 0.5, cy + 0.5) < R + 4 ||
+        blocked(n.x, n.y) ||
+        blocked(n.x + 0.8, n.y) ||
+        blocked(n.x - 0.8, n.y) ||
+        blocked(n.x, n.y + 0.8) ||
+        blocked(n.x, n.y - 0.8)
+      )
+        nodes.splice(i, 1);
     }
   }
 

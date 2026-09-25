@@ -109,6 +109,42 @@ function house(h: HouseInfo): Container {
       .stroke({ width: 4, color: OUTLINE });
     g.poly([x + w / 2, y + 4, x + w - 6, y + hh - 4, x + w / 2, y + hh - 4], true).fill(0x6b5234);
     g.poly([x + w / 2 - 8, y + hh - 4, x + w / 2, y + hh - 26, x + w / 2 + 8, y + hh - 4], true).fill(0x2a1a14);
+  } else if (h.style === 'ship') {
+    // Drawn along its long axis: pointed bow, deck planks, a stern cabin, two masts with furled sails.
+    const long = Math.max(w, hh);
+    const beam = Math.min(w, hh);
+    const ship = new Graphics();
+    const L = long / 2;
+    const B = beam / 2 - 6;
+    ship
+      .poly([-L + 10, -B, L - 40, -B, L - 2, 0, L - 40, B, -L + 10, B, -L + 2, 0], true)
+      .fill(0x6b4a2a)
+      .stroke({ width: 5, color: OUTLINE });
+    ship.poly([-L + 18, -B + 8, L - 44, -B + 8, L - 16, 0, L - 44, B - 8, -L + 18, B - 8], true).fill(0xa47a45);
+    for (let i = -L + 30; i < L - 40; i += 18)
+      ship
+        .moveTo(i, -B + 9)
+        .lineTo(i, B - 9)
+        .stroke({ width: 1.5, color: 0x7a5230 });
+    ship
+      .roundRect(-L + 20, -B + 12, 60, B * 2 - 24, 5)
+      .fill(0x8a5a33)
+      .stroke({ width: 3, color: OUTLINE });
+    for (const mx of [-L * 0.2, L * 0.3]) {
+      ship
+        .roundRect(mx - 5, -B - 10, 10, B * 2 + 20, 4)
+        .fill(0xe8e0c8)
+        .stroke({ width: 3, color: OUTLINE });
+      ship.circle(mx, 0, 9).fill(0x5e3b22).stroke({ width: 3, color: OUTLINE });
+    }
+    ship
+      .moveTo(L - 2, 0)
+      .lineTo(L + 30, 0)
+      .stroke({ width: 4, color: 0x5e3b22 });
+    ship.position.set(x + w / 2, y + hh / 2);
+    if (hh > w) ship.rotation = Math.PI / 2;
+    c.addChild(ship);
+    return c;
   } else if (h.style === 'ruin') {
     const seed = h.x * 31 + h.y;
     for (let i = 0; i < 7; i++) {
