@@ -64,6 +64,7 @@ the systems in a fixed order each 50 ms tick:
 | `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                     |
 | `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers, overclocking, wear, factory stats      |
 | `farming.ts`     | Tilling, crops, harvests, animal products                                                                               |
+| `rails.ts`       | Minecarts on rails: following track, junction switches, stations that load and unload, turning at line ends             |
 | `fluids.ts`      | Pipe and tank networks (one fluid each), pumps, boilers and steam engines, network summaries for clients                |
 | `fishing.ts`     | Casting, bites and catches per kind of water                                                                            |
 | `raids.ts`       | Raids on wealthy claims (raider AI: bash, rob, sabotage, flee), structure damage and mending, spike traps, arrow towers |

@@ -34,7 +34,7 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 | 7   | Dynamic supply and demand      | ✅     | Stock-based prices with recovery, regional factors, contracts, a market report on the map. Trading grows settlement prosperity, which deepens markets.        |
 | 8   | Multiplayer trading            | ✅     | Shop stands (paid while offline), buy orders with escrow on the Exchange, `/pay` (§33–34).                                                                    |
 | 9   | Agriculture and animals        | ✅     | Tilling, four crops, chickens/sheep/cows producing eggs/wool/milk, pens with gates.                                                                           |
-| 10  | Vehicles and logistics         | 🟡     | Hand carts (24 slots) and horses; shipping crates sell automatically at dawn (§35). Missing: wagons, trucks, rail, depots.                                    |
+| 10  | Vehicles and logistics         | ✅     | Hand carts, horse wagons (48 slots), railways: minecarts that run on their own, stations that load and unload, junction switches; shipping crates (§35–36).   |
 | 11  | Steam technology               | ✅     | Pumps lift river water into pipes, coal-fired boilers make steam, steam engines turn it into 32 RPM / 256 torque; tanks buffer; blast furnaces for steel.     |
 | 12  | Industrial technology          | 🟡     | Assemblers make bearings, gearbox units and industrial pumps. Missing: electricity, motors, machine tools, packaging.                                         |
 | 13  | Company systems                | ✅     | Companies own land handed to them and everything on it; owner / officer / member roles; company shops and shipping pay the treasury, with a day's ledger (C). |
@@ -55,6 +55,9 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 - Steam (§19): mechanical pumps, pipes that join into networks holding one fluid, fluid tanks,
   boilers (water in at the back and sides, steam out the front) and steam engines that run on piped
   steam. One pump feeds one boiler; one boiler feeds two engines.
+- Railways (§36): rails join their neighbours (straight, curves, junctions with a switch); minecarts
+  run by themselves, stop at stations to load from or unload into what stands beside the platform,
+  and turn back at the end of the line. Horse wagons carry 48 slots.
 - Companies (§46): claims (and everything on them) can be handed to a company; members use and
   build on company land, officers pick up, price and manage; company shop stands and shipping
   crates pay into the treasury; the Company window (C) shows members, property and a day's income.
@@ -64,5 +67,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Wagons, depots and rail (§36).
 - Tier 3–4 technology and prestige projects (§64).

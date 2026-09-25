@@ -99,7 +99,10 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   Each water has its own fish; now and then you pull up a boot, salvage or a lost purse. Salvage
   the ruins, the old mine and shipwrecks on the beaches for scrap, parts and the odd treasure.
 - **Farm** (till, plant wheat, carrots, potatoes, cotton), keep chickens, sheep and cows, pull a hand
-  cart and ride a horse.
+  cart, ride a horse and hitch a wagon to it.
+- **Lay rails**: minecarts run along them on their own, stop at stations to load from a chest (or
+  a machine's output) and unload into a crate, a machine or a conveyor, and turn back at the end
+  of the line; E flips a junction's switch or a station's mode, G reverses a cart.
 - **Found a company** (C): pool a treasury, hand your land and factories to it, make trusted
   partners officers; company shop stands and shipping crates pay the treasury.
 
