@@ -60,6 +60,8 @@ export interface MachineState {
   made: [number, string, number][];
   /** Pumps and boilers: fluid moved per second (smoothed). */
   rate?: number;
+  /** Game minute until which lubricant stops wear. */
+  lube?: number;
 }
 
 export interface BeltItem {

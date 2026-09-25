@@ -375,6 +375,20 @@ item('copper_wire', 'Copper Wire', 'component', ['component'], 8, 100, { shape: 
 item('bearing', 'Bearing', 'component', ['component'], 30, 50, { shape: 'bearing', color: 0x8e99a8 });
 item('gearbox_unit', 'Gearbox Unit', 'component', ['component'], 140, 20, { shape: 'box', color: 0x6f7c8f, accent: 0xe0b84c });
 item('industrial_pump', 'Industrial Pump', 'component', ['component', 'machine'], 410, 10, { shape: 'pump', color: 0x3f6f9a });
+// ——— Petroleum ———
+item('fuel_oil', 'Fuel Oil', 'material', ['ore', 'machine'], 16, 50, { shape: 'bottle', color: 0x3a2e2a, accent: 0xd9822b }, { fuel: 20 });
+item(
+  'lubricant',
+  'Lubricant',
+  'material',
+  ['machine', 'component'],
+  24,
+  50,
+  { shape: 'bottle', color: 0xd9b23d, accent: 0x7a5a2a },
+  { desc: 'Oil a machine (Repair in its panel): fixes wear and keeps it from wearing for a day.' },
+);
+item('plastic', 'Plastic', 'material', ['component'], 20, 100, { shape: 'plate', color: 0xeaf0f2, accent: 0x9ad0e0 });
+item('circuit', 'Circuit Board', 'component', ['component'], 110, 50, { shape: 'box', color: 0x3f7a4f, accent: 0xd9b23d });
 item('spring', 'Spring', 'component', ['component'], 14, 50, { shape: 'wire', color: 0xb0b5bd });
 item('valve', 'Valve', 'component', ['component'], 42, 50, { shape: 'pump', color: 0xc27a45 });
 item('precision_gear', 'Precision Gear', 'component', ['component'], 95, 50, { shape: 'gear', color: 0xd9dde3 });
@@ -711,6 +725,24 @@ item(
     vehicle: 'minecart',
     desc: 'Set it on a rail: it runs by itself, stops at stations to load or unload, and turns back at the end of the line.',
   },
+);
+place(
+  'pumpjack',
+  'Pumpjack',
+  'machine',
+  1800,
+  5,
+  0x55595f,
+  'Stand it over an oil seep in the desert and give it rotation: 12 crude oil/s at 16 RPM. 40 stress.',
+);
+place(
+  'refinery',
+  'Refinery',
+  'machine',
+  2600,
+  5,
+  0x6f7c8f,
+  'Pipe crude oil in: makes fuel oil, lubricant or plastic. Runs on electricity (80).',
 );
 place(
   'generator',

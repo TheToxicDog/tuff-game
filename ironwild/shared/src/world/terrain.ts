@@ -18,6 +18,7 @@ export const Tile = {
   Plaza: 14,
   Bridge: 15,
   House: 16,
+  Oil: 17,
 } as const;
 export type Tile = (typeof Tile)[keyof typeof Tile];
 
@@ -53,6 +54,7 @@ export const TILES: readonly TileInfo[] = [
   { name: 'Plaza', walk: true, speed: 1.15, land: false, water: false, flowing: false, color: 0xcfc2a8 },
   { name: 'Bridge', walk: true, speed: 1.15, land: false, water: false, flowing: false, color: 0xa0784c },
   { name: 'House', walk: false, speed: 0, land: false, water: false, flowing: false, color: 0x9c6b4a },
+  { name: 'Oil Seep', walk: true, speed: 0.8, land: true, water: false, flowing: false, color: 0x2e2a28 },
 ];
 
 export const Region = {

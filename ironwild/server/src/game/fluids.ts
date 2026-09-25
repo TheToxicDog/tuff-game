@@ -7,8 +7,10 @@ import {
   BOIL_RATE,
   BOIL_SECONDS_PER_FUEL,
   ENGINE_STEAM,
+  FLUIDS,
   FLUID_NAMES,
   ITEM_BY_ID,
+  PUMPJACK_RATE,
   PUMP_RATE,
   TICK_RATE,
   fluidFace,
@@ -69,6 +71,14 @@ export class FluidSystem {
         case 'engine':
           this.stepEngine(s, dt);
           break;
+        case 'pumpjack':
+          this.stepPumpjack(s, dt);
+          break;
+        case 'refinery': {
+          const buf = this.buffer(s);
+          buf.crude += this.take(this.ports.get(s.id), 'crude', s.def.fluid!.capacity - buf.crude);
+          break;
+        }
       }
     }
     if (this.game.tick % 10 === 0) {
@@ -109,7 +119,7 @@ export class FluidSystem {
       }
       if (this.netOf.has(s.id)) continue;
       const net: FluidNet = { id: this.nextId++, fluid: null, amount: 0, capacity: 0, members: [], moved: 0, flow: 0 };
-      const held: Record<Fluid, number> = { water: 0, steam: 0 };
+      const held: Record<Fluid, number> = { water: 0, steam: 0, crude: 0 };
       const stack = [s];
       this.netOf.set(s.id, net);
       while (stack.length > 0) {
@@ -125,7 +135,7 @@ export class FluidSystem {
         }
       }
       // One fluid per network: when two meet, the larger share wins and the rest is vented.
-      const kind: Fluid = held.water >= held.steam ? 'water' : 'steam';
+      const kind = FLUIDS.reduce((a, b) => (held[b] > held[a] ? b : a));
       if (held[kind] > EPS) {
         net.fluid = kind;
         net.amount = Math.min(net.capacity, held[kind]);
@@ -191,7 +201,9 @@ export class FluidSystem {
   }
 
   private buffer(s: Structure): Record<Fluid, number> {
-    return (s.buf ??= { water: 0, steam: 0 });
+    const b = (s.buf ??= { water: 0, steam: 0, crude: 0 });
+    b.crude ??= 0;
+    return b;
   }
 
   /** Fills a machine's own buffer directly (a boiler bolted to an engine). */
@@ -219,6 +231,25 @@ export class FluidSystem {
       m.status = 'No pipe';
     } else {
       moved = this.give(p, 'water', PUMP_RATE * (rpm / BASE_RPM) * dt);
+      m.status = moved > EPS ? 'Running' : 'Pipes full';
+    }
+    m.active = moved > EPS;
+    m.rate = (m.rate ?? 0) + (moved / dt - (m.rate ?? 0)) * Math.min(1, dt * 2);
+    if (m.active !== was) this.game.structVisual(s);
+  }
+
+  private stepPumpjack(s: Structure, dt: number): void {
+    const m = s.machine!;
+    const was = m.active;
+    const rpm = s.speed ?? 0;
+    const p = this.ports.get(s.id);
+    let moved = 0;
+    if (rpm <= 0) {
+      const net = this.game.factory.netSummary(s.net);
+      m.status = net?.stalled ? 'Overstressed' : 'No power';
+    } else if (!p || (p.outs.length === 0 && p.direct.length === 0)) m.status = 'No pipe';
+    else {
+      moved = this.give(p, 'crude', PUMPJACK_RATE * (rpm / BASE_RPM) * dt);
       m.status = moved > EPS ? 'Running' : 'Pipes full';
     }
     m.active = moved > EPS;
@@ -290,7 +321,7 @@ export class FluidSystem {
     const role = s.def.fluid?.role;
     const m = s.machine;
     const cap = s.def.fluid?.capacity ?? 0;
-    const buf = s.buf ?? { water: 0, steam: 0 };
+    const buf = s.buf ?? { water: 0, steam: 0, crude: 0 };
     const round = (v: number) => Math.round(v * 10) / 10;
     if (role === 'pump') return { rate: { fluid: FLUID_NAMES.water, perSec: round(m?.rate ?? 0) } };
     if (role === 'boiler')
@@ -302,6 +333,8 @@ export class FluidSystem {
         rate: { fluid: FLUID_NAMES.steam, perSec: round(m?.rate ?? 0) },
       };
     if (role === 'engine') return { tanks: [{ fluid: FLUID_NAMES.steam, amount: round(buf.steam), capacity: cap }] };
+    if (role === 'pumpjack') return { rate: { fluid: FLUID_NAMES.crude, perSec: round(m?.rate ?? 0) } };
+    if (role === 'refinery') return { tanks: [{ fluid: FLUID_NAMES.crude, amount: round(buf.crude ?? 0), capacity: cap }] };
     return {};
   }
 

@@ -26,6 +26,7 @@ import {
   type BeltKeyframe,
   type ClientMessage,
   type FactoryStats,
+  type Fluid,
   type ItemStack,
   type KineticBlock,
   type KineticSolution,
@@ -537,8 +538,8 @@ export class Factory {
     this.pushOutput(s, dt);
     m.util += ((wasActive ? 1 : 0) - m.util) * Math.min(1, dt / 30);
 
-    // Pumps, boilers and engines are run by the fluid system.
-    if (s.def.fluid) return;
+    // Pumps, boilers and engines are run by the fluid system (refineries process recipes here).
+    if (s.def.fluid && s.def.fluid.role !== 'refinery') return;
 
     let rate = 1;
     if (def.electric) {
@@ -612,6 +613,7 @@ export class Factory {
   private currentRecipe(s: Structure): Recipe | null {
     const m = s.machine!;
     const has = (r: Recipe) =>
+      (!r.fluid || (s.buf?.[r.fluid.fluid as Fluid] ?? 0) >= r.fluid.amount) &&
       r.inputs.every((i) => {
         let n = 0;
         for (const x of m.in) if (x && x.id === i.item) n += x.n;
@@ -640,6 +642,7 @@ export class Factory {
   private finish(s: Structure, recipe: Recipe): void {
     const m = s.machine!;
     let quality: number | undefined;
+    if (recipe.fluid && s.buf) s.buf[recipe.fluid.fluid as Fluid] = Math.max(0, s.buf[recipe.fluid.fluid as Fluid] - recipe.fluid.amount);
     for (const i of recipe.inputs) {
       let left = i.n;
       for (let k = 0; k < m.in.length && left > 0; k++) {
@@ -666,7 +669,8 @@ export class Factory {
       made += whole;
     }
     m.outputs += made;
-    m.wear = Math.min(1, m.wear + WEAR_PER_OP * (OVERCLOCK[m.oc]?.cost ?? 1));
+    // Lubricated machines don't wear for a while.
+    if (!m.lube || this.game.minutes >= m.lube) m.wear = Math.min(1, m.wear + WEAR_PER_OP * (OVERCLOCK[m.oc]?.cost ?? 1));
     while (m.made.length > 0 && m.made[0][0] < now - 60_000) m.made.shift();
     if (s.owner && made > 0) {
       const owner = this.game.byAccount.get(s.owner);
@@ -758,7 +762,7 @@ export class Factory {
       title: s.def.name,
       in: s.def.fluid ? [] : (m?.in ?? []),
       fuel: m?.fuel ?? undefined,
-      out: s.def.fluid ? [] : (m?.out ?? []),
+      out: s.def.fluid && s.def.fluid.role !== 'refinery' ? [] : (m?.out ?? []),
       progress: Math.round((m?.progress ?? 0) * 100) / 100,
       status: m?.status ?? (s.filter ? `Passing ${ITEM_BY_ID.get(s.filter)?.name ?? s.filter}` : 'Set a filter item'),
       rpm: Math.round(rpm * 10) / 10,
@@ -789,18 +793,22 @@ export class Factory {
       s.machine.oc = msg.level;
       this.powerDirty = true;
     } else if (msg.op === 'repair' && s.machine) {
-      if (s.machine.wear < 0.01) return;
+      // Lubricant repairs and keeps the machine from wearing for a day; an iron gear just repairs.
+      const lube = p.slots.findIndex((x) => x?.id === 'lubricant');
       const gear = p.slots.findIndex((x) => x?.id === 'iron_gear');
-      if (gear < 0) {
-        this.game.notice(p, 'Repairs need an Iron Gear.', 'bad');
+      if (s.machine.wear < 0.01 && lube < 0) return;
+      const slot = lube >= 0 ? lube : gear;
+      if (slot < 0) {
+        this.game.notice(p, 'Repairs need an Iron Gear (or Lubricant).', 'bad');
         return;
       }
-      const g = p.slots[gear]!;
+      const g = p.slots[slot]!;
       g.n -= 1;
-      if (g.n <= 0) p.slots[gear] = null;
+      if (g.n <= 0) p.slots[slot] = null;
       p.invDirty = true;
       s.machine.wear = 0;
-      this.game.notice(p, `${s.def.name} repaired.`, 'good');
+      if (lube >= 0) s.machine.lube = this.game.minutes + 1440;
+      this.game.notice(p, lube >= 0 ? `${s.def.name} oiled: no wear for a day.` : `${s.def.name} repaired.`, 'good');
     } else if (msg.op === 'filter' && s.def.logistics === 'filter') {
       s.filter = msg.item && ITEM_BY_ID.has(msg.item) ? msg.item : null;
       this.game.structVisual(s);

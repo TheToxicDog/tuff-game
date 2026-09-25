@@ -212,6 +212,16 @@ export class TerrainRenderer {
             if (water(1, 0)) g.rect(x + TS - 6, y, 6, TS).fill(0x6b4a2a);
             break;
           }
+          case Tile.Oil:
+            // Tar pools with an oily sheen.
+            g.ellipse(x + 32 + (r1 - 0.5) * 10, y + 32 + (r2 - 0.5) * 10, 24, 18).fill({ color: 0x151210, alpha: 0.7 });
+            arcPath(g, x + 26 + r1 * 10, y + 24 + r2 * 10, 8, Math.PI * 1.1, Math.PI * 1.7).stroke({
+              width: 2.5,
+              color: 0x8a7ab0,
+              alpha: 0.5,
+            });
+            if (r0 > 0.6) g.circle(x + 40 + r2 * 8, y + 38, 2.5).fill({ color: 0xffffff, alpha: 0.35 });
+            break;
           case Tile.Water:
           case Tile.DeepWater:
             if (r0 < 0.2)

@@ -401,6 +401,87 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   pen_gate(c) {
     fenceLike(c, true);
   },
+  pumpjack(c) {
+    const { hw, hh } = half(c);
+    // Base frame over the well, a walking beam rocking on its post, the horsehead at the well end.
+    c.g
+      .roundRect(-hw + 6, -hh + 10, hw * 2 - 12, hh * 2 - 16, 6)
+      .fill(0x3a3c40)
+      .stroke({ width: 4, color: OUTLINE });
+    c.g
+      .circle(-hw + 30, 0, 12)
+      .fill(0x2a241c)
+      .stroke({ width: 3, color: OUTLINE });
+    c.g
+      .roundRect(-6, -hh + 20, 12, hh * 2 - 40, 3)
+      .fill(0x6f757d)
+      .stroke({ width: 2, color: OUTLINE });
+    const crank = new Graphics(gearContext(16, 8, 0x55595f));
+    crank.position.set(hw - 28, 0);
+    c.inner.addChild(crank);
+    const beam = new Container();
+    const bg = new Graphics();
+    bg.roundRect(-hw + 26, -7, hw * 2 - 44, 14, 4)
+      .fill(0xc9973a)
+      .stroke({ width: 3, color: OUTLINE });
+    bg.roundRect(-hw + 16, -16, 22, 32, 8)
+      .fill(0xd9b23d)
+      .stroke({ width: 3, color: OUTLINE });
+    bg.circle(0, 0, 6).fill(0x3a3c40);
+    beam.addChild(bg);
+    c.inner.addChild(beam);
+    const rod = new Graphics();
+    c.inner.addChild(rod);
+    c.anims.push(() => {
+      const a = c.angle(0);
+      crank.rotation = a;
+      // The beam nods with the crank; drawn top-down it slides and tilts a little.
+      const nod = Math.sin(a);
+      beam.rotation = nod * 0.12;
+      beam.scale.set(1 - Math.abs(nod) * 0.04, 1);
+      rod.clear();
+      rod
+        .moveTo(hw - 28 + Math.cos(a) * 12, Math.sin(a) * 12)
+        .lineTo(hw - 26, nod * 4)
+        .stroke({ width: 4, color: 0xb0b5bd });
+    });
+  },
+  refinery(c) {
+    const { hw, hh } = half(c);
+    c.g
+      .roundRect(-hw + 4, -hh + 12, hw * 2 - 8, hh * 2 - 16, 6)
+      .fill(0x55595f)
+      .stroke({ width: 4, color: OUTLINE });
+    // Distillation column, storage tanks and pipework.
+    c.g
+      .circle(-hw + 34, -4, 22)
+      .fill(0x9aa0a6)
+      .stroke({ width: 4, color: OUTLINE });
+    for (let i = 0; i < 3; i++) c.g.circle(-hw + 34, -4, 16 - i * 5).stroke({ width: 2, color: 0x6f757d });
+    for (const [x, y] of [
+      [hw - 30, -hh + 36],
+      [hw - 30, hh - 30],
+    ])
+      c.g.circle(x, y, 16).fill(0xdfe6ea).stroke({ width: 3, color: OUTLINE });
+    c.g
+      .moveTo(-hw + 56, -4)
+      .lineTo(hw - 46, -hh + 36)
+      .moveTo(-hw + 56, 4)
+      .lineTo(hw - 46, hh - 30)
+      .stroke({ width: 5, color: 0xc27a45 });
+    const flame = new Graphics()
+      .circle(-hw + 34, -4, 6)
+      .fill(0xf07a2a)
+      .circle(-hw + 34, -4, 3)
+      .fill(0xffd35a);
+    flame.visible = !!c.s.st.on;
+    c.inner.addChild(flame);
+    itemBadge(c, hw - 30, hh - 30, 18);
+    outputMark(c.g, hh);
+    c.anims.push((_dt, t) => {
+      flame.scale.set(0.8 + Math.sin(t * 9 + c.s.id) * 0.2);
+    });
+  },
   generator(c) {
     const { hw, hh } = half(c);
     stubs(c, [1, 3]);

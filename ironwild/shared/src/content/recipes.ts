@@ -21,6 +21,8 @@ export interface Recipe {
   research?: string;
   /** Machine mode (press, assembler) the recipe needs. */
   mode?: string;
+  /** Fluid the machine must have in its tank for each operation (refineries). */
+  fluid?: { fluid: string; amount: number };
 }
 
 export const CRAFT_STATIONS = ['hand', 'workbench', 'anvil', 'cooking'] as const;
@@ -53,6 +55,8 @@ export const STATION_NAMES: Record<string, string> = {
   pump: 'Mechanical Pump',
   lathe: 'Lathe',
   packager: 'Packager',
+  refinery: 'Refinery',
+  pumpjack: 'Pumpjack',
 };
 
 /** Fish that cook into grilled fish. */
@@ -139,6 +143,8 @@ craft('shop_stand', 'workbench', [s('shop_stand')], [s('plank', 20), s('rope', 4
 craft('oven', 'workbench', [s('oven')], [s('brick', 20), s('iron_plate', 2)], 'cooking');
 craft('blast_furnace', 'workbench', [s('blast_furnace')], [s('brick', 40), s('iron_plate', 10), s('stone_brick', 20)], 'steel');
 craft('assembler', 'workbench', [s('assembler')], [s('steel_plate', 8), s('steel_gear', 6), s('copper_wire', 20)], 'precision');
+craft('pumpjack', 'workbench', [s('pumpjack')], [s('steel_plate', 8), s('iron_gear', 6), s('pipe', 4)], 'petroleum');
+craft('refinery', 'workbench', [s('refinery')], [s('steel_plate', 10), s('pipe', 8), s('valve', 4), s('copper_wire', 20)], 'petroleum');
 craft('generator', 'workbench', [s('generator')], [s('iron_plate', 6), s('copper_wire', 24), s('iron_gear', 2)], 'electricity');
 craft('power_pole', 'workbench', [s('power_pole', 2)], [s('wood', 4), s('copper_wire', 4), s('glass', 1)], 'electricity');
 craft('electric_lamp', 'workbench', [s('electric_lamp', 2)], [s('glass', 2), s('copper_wire', 3), s('iron_rod', 1)], 'electricity');
@@ -204,6 +210,35 @@ for (const fish of FISH) {
 machine('bake_bread', 'oven', [s('flour')], [s('bread', 1)], 4);
 machine('oven_meat', 'oven', [s('raw_meat')], [s('cooked_meat', 1)], 2.5);
 
+// ——— Refinery (electric, crude oil piped in) ———
+R.push({
+  id: 'refine_fuel',
+  station: 'refinery',
+  inputs: [],
+  outputs: [s('fuel_oil', 2)],
+  time: 3,
+  mode: 'fuel',
+  fluid: { fluid: 'crude', amount: 20 },
+});
+R.push({
+  id: 'refine_lubricant',
+  station: 'refinery',
+  inputs: [],
+  outputs: [s('lubricant', 1)],
+  time: 3,
+  mode: 'lubricant',
+  fluid: { fluid: 'crude', amount: 20 },
+});
+R.push({
+  id: 'refine_plastic',
+  station: 'refinery',
+  inputs: [],
+  outputs: [s('plastic', 2)],
+  time: 4,
+  mode: 'plastic',
+  fluid: { fluid: 'crude', amount: 20 },
+});
+
 // ——— Lathe (electric) ———
 machine('turn_spring', 'lathe', [s('iron_rod')], [s('spring', 2)], 2);
 machine('turn_valve', 'lathe', [s('iron_rod'), s('copper_plate')], [s('valve', 1)], 3);
@@ -240,6 +275,7 @@ machine('saw_wood', 'saw', [s('wood')], [s('plank', 4)], 1.2);
 machine('saw_hardwood', 'saw', [s('hardwood')], [s('hardwood_plank', 4)], 1.5);
 machine('assemble_bearing', 'assembler', [s('steel_plate')], [s('bearing', 2)], 3, 'bearing');
 machine('assemble_gearbox', 'assembler', [s('steel_gear', 2), s('steel_plate', 1)], [s('gearbox_unit', 1)], 6, 'gearbox_unit');
+machine('assemble_circuit', 'assembler', [s('copper_wire', 6), s('plastic', 2), s('glass', 1)], [s('circuit', 1)], 4, 'circuit');
 machine(
   'assemble_pump',
   'assembler',

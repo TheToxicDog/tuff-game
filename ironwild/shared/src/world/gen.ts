@@ -51,7 +51,7 @@ export interface GenSettlement {
 export interface Landmark {
   id: string;
   name: string;
-  kind: 'bandit_camp' | 'ruins' | 'mine' | 'lake' | 'wreck';
+  kind: 'bandit_camp' | 'ruins' | 'mine' | 'lake' | 'wreck' | 'oil';
   x: number;
   y: number;
 }
@@ -739,6 +739,47 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
   wrecks
     .slice(0, WRECK_NAMES.length)
     .forEach((w, i) => landmarks.push({ id: `wreck${i + 1}`, name: WRECK_NAMES[i], kind: 'wreck', x: w.x, y: w.y }));
+
+  // Oil seeps in the desert (§25–27), for pumpjacks. Also last, from their own stream.
+  const oilRng = new Rng(seed + 149);
+  const seeps: { x: number; y: number }[] = [];
+  for (let attempt = 0; attempt < 8000 && seeps.length < 14; attempt++) {
+    const x = Math.floor(oilRng.range(10, S - 10));
+    const y = Math.floor(oilRng.range(10, S - 10));
+    if (regions[idx(x, y)] !== Region.Desert || tiles[idx(x, y)] !== Tile.Desert) continue;
+    if (seeps.some((o) => dist(x, y, o.x, o.y) < 22)) continue;
+    if (settlements.some((st) => dist(x, y, st.x, st.y) < st.radius + 10)) continue;
+    let ok = true;
+    for (let oy = -2; oy <= 2 && ok; oy++)
+      for (let ox = -2; ox <= 2 && ok; ox++) if (tiles[idx(x + ox, y + oy)] !== Tile.Desert) ok = false;
+    if (!ok) continue;
+    seeps.push({ x, y });
+    // A small irregular pool: the centre, its four neighbours and a couple more.
+    const cells: [number, number][] = [
+      [0, 0],
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    for (const [ox, oy] of [
+      [1, 1],
+      [-1, 1],
+      [1, -1],
+      [-1, -1],
+    ])
+      if (oilRng.next() < 0.5) cells.push([ox, oy]);
+    for (const [ox, oy] of cells) tiles[idx(x + ox, y + oy)] = Tile.Oil;
+  }
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    for (const o of seeps)
+      if (dist(n.x, n.y, o.x + 0.5, o.y + 0.5) < 3) {
+        nodes.splice(i, 1);
+        break;
+      }
+  }
+  if (seeps.length) landmarks.push({ id: 'oilfield', name: 'Tar Flats', kind: 'oil', x: seeps[0].x + 0.5, y: seeps[0].y + 0.5 });
 
   const spawn = { x: west.x, y: west.y + west.radius - 3 };
   return { seed, size: S, tiles, regions, nodes, settlements, houses, landmarks, spawn };

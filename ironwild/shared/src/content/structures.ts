@@ -57,7 +57,7 @@ export interface StructureDef {
   /** Floors live on their own layer under other structures. */
   layer: 'floor' | 'object';
   hp: number;
-  placement: 'land' | 'water' | 'any' | 'farmland';
+  placement: 'land' | 'water' | 'any' | 'farmland' | 'oil';
   kinetic?: KineticSpec;
   machine?: MachineSpec;
   container?: number;
@@ -501,10 +501,37 @@ const S: StructureDef[] = [
     hp: 600,
     placement: 'land',
     kinetic: { role: 'consumer', stress: 60 },
-    machine: { station: 'assembler', powered: true, buffer: 20, modes: ['bearing', 'gearbox_unit', 'industrial_pump'] },
+    machine: { station: 'assembler', powered: true, buffer: 20, modes: ['bearing', 'gearbox_unit', 'industrial_pump', 'circuit'] },
   },
 
   // ——— Logistics ———
+  {
+    id: 'pumpjack',
+    name: 'Pumpjack',
+    item: 'pumpjack',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 900,
+    placement: 'oil',
+    kinetic: { role: 'consumer', stress: 40 },
+    machine: { station: 'pumpjack', powered: true, buffer: 0 },
+    fluid: { role: 'pumpjack', capacity: 0 },
+  },
+  {
+    id: 'refinery',
+    name: 'Refinery',
+    item: 'refinery',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 1000,
+    placement: 'land',
+    light: 3,
+    machine: { station: 'refinery', buffer: 0, electric: true, modes: ['fuel', 'lubricant', 'plastic'] },
+    electric: { role: 'machine', power: 80 },
+    fluid: { role: 'refinery', capacity: 200 },
+  },
   {
     id: 'generator',
     name: 'Generator',

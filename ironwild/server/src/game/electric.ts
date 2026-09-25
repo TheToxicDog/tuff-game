@@ -133,7 +133,7 @@ export class PowerSystem {
       case 'lamp':
         return this.game.night;
       case 'machine':
-        return !!d.machine && (d.machine.in.some((x) => x) || d.machine.progress > 0);
+        return !!d.machine && (d.machine.in.some((x) => x) || d.machine.progress > 0 || (d.buf?.crude ?? 0) >= 20);
       default:
         return false;
     }

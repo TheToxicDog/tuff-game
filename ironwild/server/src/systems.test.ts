@@ -777,3 +777,37 @@ describe('packaging (§12)', () => {
     expect(ITEM_BY_ID.get('packed_gears')!.value).toBeGreaterThan(ITEM_BY_ID.get('iron_gear')!.value * 10);
   });
 });
+
+describe('oil (§25–27)', () => {
+  it('pumps crude from a seep through pipes to a refinery that makes plastic', () => {
+    const w = game.world;
+    // Find an oil seep with room around it.
+    let seep: { x: number; y: number } | null = null;
+    for (let y = 10; y < w.size - 10 && !seep; y++)
+      for (let x = 10; x < w.size - 10 && !seep; x++)
+        if (w.tile(x, y) === Tile.Oil && w.tile(x - 1, y) === Tile.Oil) seep = { x: x - 1, y };
+    expect(seep).not.toBeNull();
+    const { x, y } = seep!;
+    for (const n of w.nodesNear(x + 3, y, 9)) n.gone = true;
+    const p = join('oilman', x + 3.5, y + 4.5);
+    // Pumpjack on the seep, driven by a windmill; pipe east to a refinery powered by a generator.
+    const jack = place(p, 'pumpjack', x, y);
+    place(p, 'windmill', x - 2, y - 1);
+    place(p, 'gearbox', x - 2, y);
+    place(p, 'gearbox', x - 1, y);
+    place(p, 'pipe', x + 2, y);
+    const refinery = place(p, 'refinery', x + 3, y, 1);
+    refinery.machine!.mode = 'plastic';
+    place(p, 'power_pole', x + 5, y + 2);
+    place(p, 'windmill', x + 6, y + 2);
+    place(p, 'gearbox', x + 6, y + 3);
+    place(p, 'generator', x + 5, y + 3);
+    ticks(20 * 12);
+    expect(jack.machine!.status).toBe('Running');
+    expect(countItem(refinery.machine!.out, 'plastic')).toBeGreaterThan(0);
+    // Off the seep, a pumpjack cannot be placed.
+    game.playerSystem.give(p, { id: 'pumpjack', n: 1 }, true);
+    game.building.place(p, 'pumpjack', x + 1, y + 4, 0);
+    expect(notices(p).slice(-1)[0]).toMatch(/oil seep/);
+  });
+});

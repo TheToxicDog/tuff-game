@@ -78,6 +78,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Electrify**: generators on a rotation network feed power poles, which string cables to each
   other; electric motors turn power back into rotation anywhere on the grid, lamps light the
   night, lathes turn springs, valves and precision gears, and packagers crate goods for export.
+- **Strike oil**: a pumpjack over a tar seep in the desert pipes crude to a refinery for fuel oil,
+  lubricant (which keeps machines from wearing) or plastic for circuit boards.
 - **Raise steam**: a mechanical pump on the river bank lifts water into pipes; a coal-fired boiler
   turns it into steam; pipe the steam to engines (32 RPM, 256 torque each). Pipes show what they
   carry and how full they are; tanks buffer a network.

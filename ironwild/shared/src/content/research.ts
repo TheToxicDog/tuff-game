@@ -105,6 +105,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     col: 5,
     row: 1,
   },
+  {
+    id: 'petroleum',
+    name: 'Petroleum',
+    cost: 180,
+    requires: ['industry'],
+    desc: 'Pumpjacks and refineries: fuel oil, lubricant, plastic and circuit boards.',
+    col: 6,
+    row: 1,
+  },
   { id: 'jewelcraft', name: 'Gem Cutting', cost: 40, requires: ['smithing'], desc: 'Cut rough gems on the anvil.', col: 3, row: 4 },
   {
     id: 'precision',

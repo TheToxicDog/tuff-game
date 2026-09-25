@@ -2,6 +2,7 @@
 // claims, the contract board and the exchange.
 
 import {
+  FLUID_NAMES,
   ITEMS,
   ITEM_BY_ID,
   OVERCLOCK,
@@ -10,6 +11,7 @@ import {
   formatCrests,
   type BoardUi,
   type ClaimRole,
+  type Fluid,
   type ClaimUi,
   type ContainerUi,
   type ExchangeUi,
@@ -324,6 +326,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
         if (k) line.append('+');
         line.append(iconImg(i.item, 20), `${i.n} ${itemName(i.item)}`);
       });
+      if (r.fluid) line.append(`${r.inputs.length ? ' + ' : ''}${r.fluid.amount} ${FLUID_NAMES[r.fluid.fluid as Fluid] ?? r.fluid.fluid}`);
       line.append(' → ');
       for (const o of r.outputs) line.append(iconImg(o.item, 20), `${Math.round(o.n * 100) / 100} ${itemName(o.item)}`);
       line.append(h('span', { class: 'muted' }, ` (${r.time}s)`));

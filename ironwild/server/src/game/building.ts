@@ -84,6 +84,7 @@ export class BuildSystem {
     const cy = y + fh / 2;
     if (Math.hypot(cx - p.x, cy - p.y) > BUILD_RANGE) return 'Too far away.';
     if (w.settlementAt(cx, cy, 3)) return 'You cannot build inside a settlement.';
+    let onOil = false;
     for (let ty = y; ty < y + fh; ty++) {
       for (let tx = x; tx < x + fw; tx++) {
         const t = w.tile(tx, ty);
@@ -91,6 +92,10 @@ export class BuildSystem {
         switch (def.placement) {
           case 'land':
             if (!info.land) return 'This needs solid ground.';
+            break;
+          case 'oil':
+            if (!info.land) return 'This needs solid ground.';
+            if (t === Tile.Oil) onOil = true;
             break;
           case 'water':
             if (!info.flowing) return 'Water wheels must be placed on a river.';
@@ -107,6 +112,7 @@ export class BuildSystem {
       }
     }
     if (def.machine?.water && !w.touchesWater(x, y, fw, fh)) return `The ${def.name} must touch water.`;
+    if (def.placement === 'oil' && !onOil) return 'A pumpjack must stand over an oil seep (the black pools in the desert).';
     // Solid nodes block; soft ones (grass) are cleared.
     for (const n of w.nodesNear(cx, cy, Math.max(fw, fh))) {
       if (n.regrowAt > 0 || !n.def.solid) continue;

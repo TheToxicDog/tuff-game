@@ -49,7 +49,7 @@ const BUILD_GROUPS: { name: string; test: (d: ItemDef) => boolean }[] = [
   },
   { name: 'Machines', test: (d) => ['crusher', 'washer', 'press', 'millstone', 'saw', 'assembler'].includes(d.id) },
   { name: 'Logistics', test: (d) => ['conveyor', 'hopper', 'splitter', 'filter', 'rail', 'rail_station'].includes(d.id) },
-  { name: 'Steam & fluids', test: (d) => ['pump', 'pipe', 'fluid_tank', 'boiler'].includes(d.id) },
+  { name: 'Steam, fluids & oil', test: (d) => ['pump', 'pipe', 'fluid_tank', 'boiler', 'pumpjack', 'refinery'].includes(d.id) },
   { name: 'Electricity', test: (d) => ['generator', 'power_pole', 'electric_motor', 'electric_lamp', 'lathe', 'packager'].includes(d.id) },
   { name: 'Defenses', test: (d) => ['spike_trap', 'arrow_tower'].includes(d.id) },
 ];
@@ -123,7 +123,7 @@ export function researchWindow(ctx: UiContext): WindowDef {
   return {
     title: () => h('span', null, 'Research ', h('span', { class: 'kp' }, `${ctx.state.research.kp} knowledge`)),
     order: 1,
-    width: 1040,
+    width: 1205,
     render: (body) => {
       const st = ctx.state.research;
       body.append(
@@ -138,7 +138,7 @@ export function researchWindow(ctx: UiContext): WindowDef {
       const H = 124;
       const svgNS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('width', '1000');
+      svg.setAttribute('width', '1165');
       svg.setAttribute('height', '620');
       for (const n of RESEARCH) {
         for (const req of n.requires) {
@@ -231,7 +231,7 @@ function renderMap(body: HTMLElement, ctx: UiContext): void {
     );
   }
   for (const l of ctx.world.landmarks) {
-    c2.fillStyle = l.kind === 'bandit_camp' ? '#e8645a' : l.kind === 'wreck' ? '#8fd0f0' : '#b3ab94';
+    c2.fillStyle = l.kind === 'bandit_camp' ? '#e8645a' : l.kind === 'wreck' ? '#8fd0f0' : l.kind === 'oil' ? '#2e2a28' : '#b3ab94';
     c2.beginPath();
     c2.arc(l.x * scale, l.y * scale, 4, 0, Math.PI * 2);
     c2.fill();

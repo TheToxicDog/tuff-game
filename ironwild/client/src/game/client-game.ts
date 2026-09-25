@@ -8,6 +8,7 @@ import {
   DY,
   EntityFlags,
   FIST,
+  FLUID_NAMES,
   INPUT_DT,
   INTERACT_RANGE,
   ITEM_BY_ID,
@@ -19,6 +20,7 @@ import {
   Tile,
   rotatedSize,
   type ClientMessage,
+  type Fluid,
   type GameEvent,
   type InputTuple,
   type ServerMessage,
@@ -1090,7 +1092,7 @@ export class ClientGame {
             h(
               'div',
               null,
-              `${f.fluid === 'water' ? 'Water' : 'Steam'} — ${Math.round(f.fill * 100)}% full${f.flow > 0.05 ? `, ${f.flow.toFixed(1)}/s flowing in` : ''}`,
+              `${FLUID_NAMES[f.fluid as Fluid] ?? f.fluid} — ${Math.round(f.fill * 100)}% full${f.flow > 0.05 ? `, ${f.flow.toFixed(1)}/s flowing in` : ''}`,
             ),
           );
       }
@@ -1149,7 +1151,14 @@ export class ClientGame {
     for (const s of this.world.structs.values()) {
       if (!s.st.on) continue;
       if (s.x < v.x0 || s.x > v.x1 || s.y < v.y0 || s.y > v.y1) continue;
-      if (s.type === 'furnace' || s.type === 'blast_furnace' || s.type === 'oven' || s.type === 'boiler' || s.type === 'steam_engine') {
+      if (
+        s.type === 'furnace' ||
+        s.type === 'blast_furnace' ||
+        s.type === 'oven' ||
+        s.type === 'boiler' ||
+        s.type === 'steam_engine' ||
+        s.type === 'refinery'
+      ) {
         // Coal smoke from fires; white puffs of spent steam from engines.
         if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'boiler');
       } else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);

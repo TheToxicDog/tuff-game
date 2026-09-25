@@ -6,10 +6,11 @@
 import { rotateDir } from '../constants';
 import type { StructureDef } from '../content/structures';
 
-export type Fluid = 'water' | 'steam';
+export type Fluid = 'water' | 'steam' | 'crude';
 
-export const FLUID_NAMES: Record<Fluid, string> = { water: 'Water', steam: 'Steam' };
-export const FLUID_COLORS: Record<Fluid, number> = { water: 0x4f8fd0, steam: 0xdfe6ea };
+export const FLUIDS: readonly Fluid[] = ['water', 'steam', 'crude'];
+export const FLUID_NAMES: Record<Fluid, string> = { water: 'Water', steam: 'Steam', crude: 'Crude Oil' };
+export const FLUID_COLORS: Record<Fluid, number> = { water: 0x4f8fd0, steam: 0xdfe6ea, crude: 0x3a2e2a };
 
 /** Water a pump lifts per second at 16 RPM (it scales with speed). */
 export const PUMP_RATE = 20;
@@ -18,8 +19,10 @@ export const BOIL_RATE = 20;
 export const BOIL_SECONDS_PER_FUEL = 5;
 /** Steam a running engine uses per second. */
 export const ENGINE_STEAM = 10;
+/** Crude oil a pumpjack lifts per second at 16 RPM. */
+export const PUMPJACK_RATE = 12;
 
-export type FluidRole = 'pipe' | 'tank' | 'pump' | 'boiler' | 'engine';
+export type FluidRole = 'pipe' | 'tank' | 'pump' | 'boiler' | 'engine' | 'pumpjack' | 'refinery';
 
 export interface FluidSpec {
   role: FluidRole;
@@ -49,6 +52,11 @@ export function fluidFace(def: StructureDef, rot: number, dir: number): FluidFac
     case 'engine':
       // The front carries the drive shaft.
       return dir === front ? null : { fluid: 'steam', io: 'in' };
+    case 'pumpjack':
+      return { fluid: 'crude', io: 'out' };
+    case 'refinery':
+      // Products leave by the front.
+      return dir === front ? null : { fluid: 'crude', io: 'in' };
   }
 }
 
