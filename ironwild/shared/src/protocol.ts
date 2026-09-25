@@ -200,6 +200,7 @@ export interface Snapshot {
   /** World time in game minutes. */
   tm: number;
   me?: MeState;
+  /** Entities whose state changed since the last snapshot; the others stay where they were. */
   e: EntityTuple[];
   sp?: EntitySpawn[];
   d?: number[];

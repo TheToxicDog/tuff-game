@@ -108,6 +108,10 @@ export class ClientGame {
   private deathEl: HTMLElement | null = null;
   private lastSmoke = 0;
   private currentSettlement: string | null = null;
+  /** When the player closed a server panel (late refreshes for it are ignored briefly). */
+  private uiClosedAt = 0;
+  /** The inventory was opened automatically alongside a server panel. */
+  private autoInventory = false;
   private running = true;
 
   constructor(
@@ -363,6 +367,8 @@ export class ClientGame {
       case 'uiclose':
         this.state.ui = null;
         this.windows.hide('server');
+        if (this.autoInventory) this.windows.hide('inventory');
+        this.autoInventory = false;
         break;
       case 'notice':
         this.hud.notice(msg.text, msg.kind);
@@ -392,6 +398,7 @@ export class ClientGame {
   }
 
   private openServerUi(ui: UiState): void {
+    if (!this.windows.isOpen('server') && performance.now() - this.uiClosedAt < 700 && ui.kind !== 'station') return;
     const wasOpen =
       this.windows.isOpen('server') &&
       this.state.ui?.kind === ui.kind &&
@@ -408,7 +415,12 @@ export class ClientGame {
     def.onClose = () => {
       if (this.state.ui === ui || this.state.ui?.kind === ui.kind) {
         this.state.ui = null;
+        this.uiClosedAt = performance.now();
         this.send({ t: 'close' });
+        if (this.autoInventory) {
+          this.autoInventory = false;
+          this.windows.hide('inventory');
+        }
       }
     };
     if (wasOpen) {
@@ -939,7 +951,7 @@ export class ClientGame {
             h(
               'div',
               { class: net.stalled ? 'bad' : '' },
-              `Stress ${net.load} / ${net.cap}${net.stalled ? ' — OVERLOADED' : ''}${net.conflict ? ' — gears locked' : ''}`,
+              `Stress ${net.load.toFixed(1)} / ${net.cap.toFixed(0)}${net.stalled ? ' — OVERLOADED' : ''}${net.conflict ? ' — gears locked' : ''}`,
             ),
             h(
               'div',

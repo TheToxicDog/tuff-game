@@ -1,5 +1,8 @@
 # Tuff
 
+> This repository also contains **IRONWILD**, a top-down multiplayer gathering, trading and
+> factory-building game — see [`ironwild/README.md`](ironwild/README.md) (`npm run ironwild:dev`).
+
 A grim, top-down multiplayer zombie survival sandbox that runs in the browser. Scavenge houses and
 stores, fight zombies up close, treat your wounds and bring supplies back to a shelter — in a
 persistent world shared by up to ten players.

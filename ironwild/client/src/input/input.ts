@@ -49,6 +49,11 @@ export class Input {
       if (e.button === 2) this.mouseRight = false;
     });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Buttons must not keep focus, or Space/Enter would click them again instead of playing.
+    window.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement | null)?.closest?.('button');
+      if (b) b.blur();
+    });
     target.addEventListener(
       'wheel',
       (e) => {

@@ -182,7 +182,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
       h(
         'div',
         { class: 'muted', style: 'font-size:12px;margin-top:6px' },
-        `Power network: ${ui.net.load} / ${ui.net.cap} stress${ui.net.stalled ? ' — overloaded!' : ''}${ui.net.conflict ? ' — gears locked (conflicting ratios)' : ''}`,
+        `Power network: ${ui.net.load.toFixed(1)} / ${ui.net.cap.toFixed(0)} stress${ui.net.stalled ? ' — overloaded!' : ''}${ui.net.conflict ? ' — gears locked (conflicting ratios)' : ''}`,
       ),
       h('div', { class: 'stress' }, h('div', { style: `width:${pct}%;background:${color}` })),
     );

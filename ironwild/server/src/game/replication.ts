@@ -29,6 +29,8 @@ const q100 = (v: number) => Math.round(v * 100);
 export class Replication {
   /** Per session: entity id → spawn signature, to resend when appearance changes. */
   private readonly signatures = new WeakMap<ClientSession, Map<number, string>>();
+  /** Per session: last tuple sent per entity; unchanged entities are left out of snapshots. */
+  private readonly lastTuples = new WeakMap<ClientSession, Map<number, EntityTuple>>();
 
   constructor(private readonly game: Game) {}
 
@@ -186,7 +188,15 @@ export class Replication {
   private snapshot(session: ClientSession, p: Player): Snapshot {
     let sigs = this.signatures.get(session);
     if (!sigs) this.signatures.set(session, (sigs = new Map()));
+    let last = this.lastTuples.get(session);
+    if (!last) this.lastTuples.set(session, (last = new Map()));
     const e: EntityTuple[] = [];
+    const push = (t: EntityTuple) => {
+      const prev = last.get(t[0]);
+      if (prev && prev[1] === t[1] && prev[2] === t[2] && prev[3] === t[3] && prev[4] === t[4] && prev[5] === t[5]) return;
+      last.set(t[0], t);
+      e.push(t);
+    };
     const sp: EntitySpawn[] = [];
     const seen = new Set<number>();
     const view = (x: number, y: number) => Math.abs(x - p.x) <= ENTITY_VIEW && Math.abs(y - p.y) <= ENTITY_VIEW;
@@ -195,15 +205,15 @@ export class Replication {
       if (other.dead && other !== p) continue;
       if (!view(other.x, other.y)) continue;
       seen.add(other.id);
-      this.track(session, sigs, sp, this.playerSpawn(other));
-      e.push([other.id, q100(other.x), q100(other.y), q100(other.angle), other.healthPct(), this.playerFlags(other)]);
+      if (this.track(session, sigs, sp, this.playerSpawn(other))) last.delete(other.id);
+      push([other.id, q100(other.x), q100(other.y), q100(other.angle), other.healthPct(), this.playerFlags(other)]);
     }
     for (const ent of this.game.entities.values()) {
       if (!view(ent.x, ent.y)) continue;
       if (ent.kind === 'creature' && ent.rider) continue;
       seen.add(ent.id);
-      this.track(session, sigs, sp, this.entitySpawn(ent));
-      e.push(this.entityTuple(ent));
+      if (this.track(session, sigs, sp, this.entitySpawn(ent))) last.delete(ent.id);
+      push(this.entityTuple(ent));
     }
     const d: number[] = [];
     for (const id of session.known) {
@@ -211,6 +221,7 @@ export class Replication {
         d.push(id);
         session.known.delete(id);
         sigs.delete(id);
+        last.delete(id);
       }
     }
     const ev: GameEvent[] = [];
@@ -246,12 +257,15 @@ export class Replication {
     return snap;
   }
 
-  private track(session: ClientSession, sigs: Map<number, string>, out: EntitySpawn[], spawn: EntitySpawn): void {
+  /** Sends the spawn record for new entities and changed appearances; true if sent. */
+  private track(session: ClientSession, sigs: Map<number, string>, out: EntitySpawn[], spawn: EntitySpawn): boolean {
     const sig = `${spawn.held ?? ''}|${spawn.name ?? ''}|${spawn.n ?? ''}|${spawn.tag ?? ''}|${spawn.owner ?? ''}`;
-    if (session.known.has(spawn.id) && sigs.get(spawn.id) === sig) return;
+    if (session.known.has(spawn.id) && sigs.get(spawn.id) === sig) return false;
+    const isNew = !session.known.has(spawn.id);
     session.known.add(spawn.id);
     sigs.set(spawn.id, sig);
     out.push(spawn);
+    return isNew;
   }
 
   private playerSpawn(p: Player): EntitySpawn {

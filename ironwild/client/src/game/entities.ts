@@ -71,10 +71,20 @@ export class EntityStore {
 
   applySnapshot(snap: Snapshot): void {
     for (const sp of snap.sp ?? []) this.spawn(sp, snap.k);
+    const updated = new Set<number>();
     for (const [id, x, y, a, hp, flags] of snap.e) {
       const e = this.map.get(id);
       if (!e) continue;
+      updated.add(id);
       e.samples.push({ k: snap.k, x: x / 100, y: y / 100, a: a / 100, hp, flags });
+      if (e.samples.length > 12) e.samples.shift();
+    }
+    // Unchanged entities were left out: they hold still at this tick.
+    for (const e of this.map.values()) {
+      if (updated.has(e.id)) continue;
+      const lastSample = e.samples[e.samples.length - 1];
+      if (!lastSample || lastSample.k >= snap.k) continue;
+      e.samples.push({ ...lastSample, k: snap.k });
       if (e.samples.length > 12) e.samples.shift();
     }
     for (const id of snap.d ?? []) {

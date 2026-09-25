@@ -310,6 +310,7 @@ export class Game {
       time: this.minutes,
     };
     session.send(welcome);
+    session.send({ t: 'kin', s: [], nets: this.factory.netSummaries(), of: [] });
     this.playerSystem.joined(player);
     this.broadcastChat('', `${player.name} arrived in the valley.`, 'system');
     this.log(`${account.username} joined (${this.players.size} online)`);
