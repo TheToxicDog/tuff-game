@@ -50,9 +50,11 @@ export type ClientMessage =
   | { t: 'order'; op: 'cancel' | 'collect'; id: string }
   | { t: 'order'; op: 'fill'; id: string; n: number }
   | { t: 'company'; op: 'create'; name: string }
-  | { t: 'company'; op: 'invite' | 'kick'; name: string }
-  | { t: 'company'; op: 'leave' | 'accept' }
+  | { t: 'company'; op: 'invite' | 'kick' | 'promote' | 'demote'; name: string }
+  | { t: 'company'; op: 'leave' | 'accept' | 'decline' | 'info' }
   | { t: 'company'; op: 'deposit' | 'withdraw'; amount: number }
+  /** Hand a land claim you own, and everything of yours on it, to your company. */
+  | { t: 'company'; op: 'transfer'; claim: number }
   | { t: 'markets' }
   | { t: 'respawn' };
 
@@ -234,6 +236,21 @@ export interface NpcInfo {
   unlock?: number;
 }
 
+export type CompanyRole = 'owner' | 'officer' | 'member';
+
+/** Company overview (§46). */
+export interface CompanyInfo {
+  id: string;
+  name: string;
+  treasury: number;
+  you: CompanyRole;
+  members: { name: string; role: CompanyRole; online: boolean }[];
+  /** Structures the company owns: how many, their base value, and the most common kinds. */
+  property: { count: number; value: number; kinds: [string, number][] };
+  /** Money in and out over the last game day, by source. */
+  income: [string, number][];
+}
+
 /** A settlement's growth and market news (§14, §54). */
 export interface TownInfo {
   id: string;
@@ -402,6 +419,8 @@ export interface ClaimUi {
   mine: boolean;
   members: { name: string; role: ClaimRole }[];
   radius: number;
+  /** Set when you own the claim and are in a company: it can be handed over. */
+  company?: string;
 }
 
 export interface ExchangeUi {
@@ -481,6 +500,8 @@ export type ServerMessage =
   | { t: 'uiclose' }
   | { t: 'notice'; text: string; kind: 'info' | 'good' | 'bad' | 'money' }
   | { t: 'chat'; from: string; text: string; kind?: 'system' | 'admin' | 'company' }
+  /** Your company (null when you have none), and a pending invitation. */
+  | { t: 'company'; info: CompanyInfo | null; invite?: string }
   | ({ t: 'research' } & ResearchState)
   | ({ t: 'tutorial' } & TutorialState)
   | { t: 'contracts'; list: ContractInfo[] }

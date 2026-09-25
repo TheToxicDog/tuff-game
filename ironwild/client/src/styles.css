@@ -1217,3 +1217,22 @@ select:focus {
   margin-top: 4px;
   color: #f2d27a;
 }
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b6b6b;
+  display: inline-block;
+}
+
+.dot.on {
+  background: #8fd45a;
+}
+
+.invite {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-3);
+  color: #f2d27a;
+}

@@ -66,6 +66,15 @@ function clearSpot(w: number, h: number, minRadius = 25): { x: number; y: number
   throw new Error('no clear spot');
 }
 
+/** A clear spot far enough from every claim to put down a new one. */
+function claimSpot(): { x: number; y: number } {
+  for (let r = 40; r < 160; r += 4) {
+    const s = clearSpot(3, 3, r);
+    if ([...game.world.claims].every((c) => Math.abs(c.x - s.x) > 33 || Math.abs(c.y - s.y) > 33)) return s;
+  }
+  throw new Error('no spot for a claim');
+}
+
 function place(p: Player, item: string, x: number, y: number, rot = 0): Structure {
   game.playerSystem.give(p, { id: item, n: 1 }, true);
   game.building.place(p, item, x, y, rot);
@@ -523,5 +532,57 @@ describe('steam power (§19)', () => {
     const save = game.serialize();
     const saved = save.structures.find((s) => s.id === tank.id)!;
     expect((saved.data as { fluid?: { kind: string } }).fluid?.kind).toBe('water');
+  });
+});
+
+describe('companies (§46)', () => {
+  it('owns land handed to it, lets officers manage it and banks its shop sales', () => {
+    const founder = join('founder');
+    const hand = join('farmhand');
+    const customer = join('patron');
+    founder.crests = 2000;
+    game.companies.handle(founder, { t: 'company', op: 'create', name: 'Acme Works' });
+    expect(founder.company).not.toBeNull();
+    game.companies.handle(founder, { t: 'company', op: 'invite', name: 'farmhand' });
+    game.companies.handle(hand, { t: 'company', op: 'accept' });
+    expect(hand.company).toBe(founder.company);
+
+    const spot = claimSpot();
+    for (const p of [founder, hand, customer]) {
+      p.move.x = spot.x + 1.5;
+      p.move.y = spot.y + 3.5;
+    }
+    const claim = place(founder, 'land_claim', spot.x, spot.y);
+    const stand = place(founder, 'shop_stand', spot.x + 2, spot.y);
+    game.companies.handle(founder, { t: 'company', op: 'transfer', claim: claim.id });
+    expect(claim.owner).toBe(`co:${founder.company}`);
+    expect(stand.ownerName).toBe('Acme Works');
+
+    // Members use company property; only officers may pick it up.
+    expect(game.building.canUse(hand, stand)).toBe(true);
+    expect(game.building.canRemove(hand, stand)).toBe(false);
+    expect(game.building.canRemove(founder, stand)).toBe(true);
+    game.companies.handle(founder, { t: 'company', op: 'promote', name: 'farmhand' });
+    expect(game.building.canRemove(hand, stand)).toBe(true);
+    expect(game.building.canRemove(customer, stand)).toBe(false);
+
+    // Shop sales go to the treasury, not to anyone's pocket.
+    stand.store![0] = { id: 'iron_gear', n: 10, q: 1 };
+    game.economy.shopPrice(founder, stand.id, 'iron_gear', 1, 40);
+    customer.crests = 500;
+    const pocket = founder.crests;
+    game.economy.shopBuy(customer, stand.id, 'iron_gear', 1, 5);
+    expect(founder.crests).toBe(pocket);
+    const sent = (founder.session as unknown as { messages: ServerMessage[] }).messages.filter((m) => m.t === 'company');
+    const info = (sent[sent.length - 1] as Extract<ServerMessage, { t: 'company' }>).info!;
+    expect(info.treasury).toBe(200);
+    expect(info.income).toContainEqual(['Shop sales', 200]);
+    expect(info.property.count).toBe(2);
+
+    // When the last member leaves, the property reverts to them.
+    game.companies.handle(hand, { t: 'company', op: 'leave' });
+    game.companies.handle(founder, { t: 'company', op: 'leave' });
+    expect(claim.owner).toBe(founder.accountId);
+    expect(founder.crests).toBe(pocket + 200);
   });
 });

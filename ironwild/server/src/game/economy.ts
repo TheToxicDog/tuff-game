@@ -35,6 +35,7 @@ import {
   type UiState,
 } from '@ironwild/shared';
 import type { ContractSave, OrderSave, WorldSave } from '../persistence/storage';
+import { isCompanyAccount } from './companies';
 import type { Game } from './game';
 import type { Player } from './player';
 import type { Structure } from './world';
@@ -658,7 +659,9 @@ export class Economy {
     }
     for (const [owner, t] of totals) {
       const value = roundCrests(t.value);
-      this.credit(owner, value);
+      this.credit(owner, value, 'Shipping');
+      if (isCompanyAccount(owner))
+        this.game.companies.notify(owner, `The merchant wagon sold ${t.items} items in ${t.where} for ${formatCrests(value)}.`);
       const p = this.game.byAccount.get(owner);
       if (p) {
         p.stats.earned += value;
@@ -671,9 +674,13 @@ export class Economy {
     }
   }
 
-  /** Adds Crests to an account, online or not. */
-  credit(accountId: string, amount: number): void {
+  /** Adds Crests to an account (online or not) or to a company's treasury. */
+  credit(accountId: string, amount: number, source = 'Income'): void {
     if (amount <= 0) return;
+    if (isCompanyAccount(accountId)) {
+      this.game.companies.income(accountId, amount, source);
+      return;
+    }
     const p = this.game.byAccount.get(accountId);
     if (p) {
       p.crests = roundCrests(p.crests + amount);
@@ -803,7 +810,7 @@ export class Economy {
       kind: 'shop',
       id: s.id,
       owner: s.ownerName,
-      mine: s.owner === p.accountId,
+      mine: this.game.building.canManage(p, s),
       title: `${s.ownerName}'s shop`,
       store: s.store ?? [],
       prices: s.prices ?? [],
@@ -812,7 +819,7 @@ export class Economy {
 
   shopPrice(p: Player, id: number, item: string, q: number | undefined, price: number | null): void {
     const s = this.game.world.structures.get(id);
-    if (!s?.def.shop || s.owner !== p.accountId || !ITEM_BY_ID.has(item)) return;
+    if (!s?.def.shop || !this.game.building.canManage(p, s) || !ITEM_BY_ID.has(item)) return;
     s.prices = (s.prices ?? []).filter((x) => !(x.item === item && (x.q ?? null) === (q ?? null)));
     if (price !== null && Number.isFinite(price) && price > 0)
       s.prices.push({ item, ...(q !== undefined ? { q } : {}), price: roundCrests(price) });
@@ -823,6 +830,8 @@ export class Economy {
   shopBuy(p: Player, id: number, item: string, q: number | undefined, n: number): void {
     const s = this.game.world.structures.get(id);
     if (!s?.def.shop || !s.store || s.owner === p.accountId) return;
+    // Colleagues take stock out of a company stand; they don't buy it.
+    if (s.owner && this.game.companies.sameCompany(p.accountId, s.owner)) return;
     if (Math.hypot(s.x + 0.5 - p.x, s.y + 0.5 - p.y) > 4) return;
     const listing = s.prices?.find((x) => x.item === item && (x.q ?? null) === (q ?? null));
     if (!listing) return;
@@ -841,7 +850,8 @@ export class Economy {
     p.crests = roundCrests(p.crests - cost);
     p.invDirty = p.statusDirty = true;
     if (s.owner) {
-      this.credit(s.owner, cost);
+      this.credit(s.owner, cost, 'Shop sales');
+      if (isCompanyAccount(s.owner)) this.game.companies.notify(s.owner, `${p.name} bought ${k}× ${def.name} for ${formatCrests(cost)}.`);
       const owner = this.game.byAccount.get(s.owner);
       if (owner) {
         owner.stats.earned += cost;

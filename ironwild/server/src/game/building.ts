@@ -13,6 +13,7 @@ import {
   type ClaimUi,
   type ItemStack,
 } from '@ironwild/shared';
+import { isCompanyAccount } from './companies';
 import type { Game } from './game';
 import type { Player } from './player';
 import { structureSolid, type Structure } from './world';
@@ -30,7 +31,12 @@ export class BuildSystem {
     const claim = this.game.world.claimAt(tx, ty);
     if (!claim) return 5;
     if (claim.owner === p.accountId) return 5;
-    if (claim.owner && this.game.companies.sameCompany(p.accountId, claim.owner)) return 4;
+    if (claim.owner && this.game.companies.sameCompany(p.accountId, claim.owner)) {
+      // On company land officers count as owners and members as builders; on a colleague's land, as managers.
+      if (!isCompanyAccount(claim.owner)) return 4;
+      const role = this.game.companies.roleFor(p.accountId, claim.owner);
+      return role === 'owner' || role === 'officer' ? 5 : ROLE_RANK.builder;
+    }
     const m = claim.members?.find((m) => m.id === p.accountId);
     return m ? ROLE_RANK[m.role] : 0;
   }
@@ -46,8 +52,21 @@ export class BuildSystem {
     return this.rankAt(p, s.x, s.y) >= (s.def.door ? ROLE_RANK.visitor : ROLE_RANK.worker);
   }
 
+  /** Owner-level control (shop prices and the like): the owner, or a company officer for company property. */
+  canManage(p: Player, s: Structure): boolean {
+    if (!s.owner || s.owner === p.accountId) return true;
+    if (!isCompanyAccount(s.owner)) return false;
+    const role = this.game.companies.roleFor(p.accountId, s.owner);
+    return role === 'owner' || role === 'officer';
+  }
+
   canRemove(p: Player, s: Structure): boolean {
     if (!s.owner || s.owner === p.accountId) return true;
+    // Company property: only officers may pick it up (members could otherwise walk off with it).
+    if (isCompanyAccount(s.owner)) {
+      const role = this.game.companies.roleFor(p.accountId, s.owner);
+      return role === 'owner' || role === 'officer';
+    }
     if (this.game.companies.sameCompany(p.accountId, s.owner)) return true;
     return this.rankAt(p, s.x, s.y) >= ROLE_RANK.manager;
   }
@@ -227,6 +246,7 @@ export class BuildSystem {
       mine: s.owner === p.accountId || this.rankAt(p, s.x, s.y) >= ROLE_RANK.manager,
       members: (s.members ?? []).map((m) => ({ name: m.name, role: m.role })),
       radius: s.def.claimRadius ?? 0,
+      ...(s.owner === p.accountId && p.company ? { company: this.game.companies.name(p.company) } : {}),
     };
   }
 

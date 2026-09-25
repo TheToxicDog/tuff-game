@@ -461,6 +461,27 @@ function claim(body: HTMLElement, ui: ClaimUi, ctx: UiContext): void {
       'Visitor: doors · Worker: machines & storage · Builder: build · Manager: everything',
     ),
   );
+  if (ui.company) {
+    const company = ui.company;
+    body.append(
+      h('div', { class: 'section-title' }, 'Company'),
+      h(
+        'div',
+        { class: 'row' },
+        h('span', { class: 'muted', style: 'flex:1' }, `Hand this land and everything of yours on it to ${company}.`),
+        h(
+          'button',
+          {
+            class: 'small gold',
+            onclick: () =>
+              confirm(`Give this land claim and your structures on it to ${company}? Officers will manage it.`) &&
+              ctx.send({ t: 'company', op: 'transfer', claim: ui.id }),
+          },
+          'Hand over',
+        ),
+      ),
+    );
+  }
 }
 
 // ——— Contracts ———

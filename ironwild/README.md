@@ -49,7 +49,7 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 | Inventory & crafting                   | Tab or I                      |
 | Build / rotate while building / cancel | B / R / right click           |
 | Research / contracts / map & prices    | K / J / M                     |
-| Factory overview                       | O                             |
+| Factory overview / company             | O / C                         |
 | Drop selected (Ctrl: whole stack)      | Q                             |
 | Chat (`/help` for commands) / help     | Enter / H                     |
 | Zoom                                   | Mouse wheel                   |
@@ -99,7 +99,9 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   Each water has its own fish; now and then you pull up a boot, salvage or a lost purse. Salvage
   the ruins, the old mine and shipwrecks on the beaches for scrap, parts and the odd treasure.
 - **Farm** (till, plant wheat, carrots, potatoes, cotton), keep chickens, sheep and cows, pull a hand
-  cart, ride a horse, and found a **company** with a shared treasury.
+  cart and ride a horse.
+- **Found a company** (C): pool a treasury, hand your land and factories to it, make trusted
+  partners officers; company shop stands and shipping crates pay the treasury.
 
 ## Running a server
 

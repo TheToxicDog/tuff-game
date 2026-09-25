@@ -1,11 +1,31 @@
-// Companies (§46): players pool land, factories, storage and a shared treasury.
+// Companies (§46): players pool land, factories, storage and a shared treasury. A company is also
+// an owner: land claims (and everything on them) can be handed to it, after which every member
+// can use them, officers manage them, and what its shop stands and shipping crates earn goes to
+// the treasury.
 
-import { formatCrests, roundCrests, type ClientMessage } from '@ironwild/shared';
+import {
+  ITEM_BY_ID,
+  STRUCTURE_BY_ID,
+  formatCrests,
+  roundCrests,
+  type ClientMessage,
+  type CompanyInfo,
+  type CompanyRole,
+} from '@ironwild/shared';
 import type { CompanySave } from '../persistence/storage';
 import type { Game } from './game';
 import type { Player } from './player';
+import type { Structure } from './world';
 
 const NAME = /^[A-Za-z0-9 '&.-]{3,28}$/;
+const FOUNDING_FEE = 500;
+/** Owner ids of company property. */
+const PREFIX = 'co:';
+/** Game minutes of ledger kept. */
+const LEDGER_MINUTES = 2 * 1440;
+
+export const companyAccount = (id: string): string => `${PREFIX}${id}`;
+export const isCompanyAccount = (owner: string | null | undefined): owner is string => !!owner && owner.startsWith(PREFIX);
 
 export class CompanySystem {
   private companies = new Map<string, CompanySave>();
@@ -24,9 +44,22 @@ export class CompanySystem {
     return this.companies.get(id)?.name;
   }
 
+  /** The company behind an account or company owner id. */
+  private companyOf(owner: string): string | undefined {
+    return isCompanyAccount(owner) ? owner.slice(PREFIX.length) : this.memberOf.get(owner);
+  }
+
+  /** Whether two owners (accounts or companies) belong to the same company. */
   sameCompany(a: string, b: string): boolean {
-    const ca = this.memberOf.get(a);
-    return !!ca && ca === this.memberOf.get(b);
+    const ca = this.companyOf(a);
+    return !!ca && ca === this.companyOf(b);
+  }
+
+  /** A player's role in the company that owns something, if any. */
+  roleFor(accountId: string, owner: string): CompanyRole | null {
+    const id = this.companyOf(owner);
+    if (!id || this.memberOf.get(accountId) !== id) return null;
+    return this.companies.get(id)?.members.find((m) => m.id === accountId)?.role ?? null;
   }
 
   handle(p: Player, msg: Extract<ClientMessage, { t: 'company' }>): void {
@@ -40,17 +73,30 @@ export class CompanySystem {
       case 'accept':
         this.accept(p);
         break;
+      case 'decline':
+        this.invites.delete(p.accountId);
+        break;
       case 'leave':
         this.leave(p);
         break;
       case 'kick':
         this.kick(p, msg.name);
         break;
+      case 'promote':
+      case 'demote':
+        this.setRole(p, msg.name, msg.op === 'promote' ? 'officer' : 'member');
+        break;
       case 'deposit':
       case 'withdraw':
         this.treasury(p, msg.op, msg.amount);
         break;
+      case 'transfer':
+        this.transfer(p, msg.claim);
+        break;
+      case 'info':
+        break;
     }
+    this.sendInfo(p);
   }
 
   private create(p: Player, name: string): void {
@@ -62,15 +108,14 @@ export class CompanySystem {
       this.game.notice(p, 'Leave your current company first.', 'bad');
       return;
     }
-    const fee = 500;
-    if (p.crests < fee) {
-      this.game.notice(p, `Registering a company costs ${formatCrests(fee)}.`, 'bad');
+    if (p.crests < FOUNDING_FEE) {
+      this.game.notice(p, `Registering a company costs ${formatCrests(FOUNDING_FEE)}.`, 'bad');
       return;
     }
     const clean = name.trim();
     for (const c of this.companies.values())
       if (c.name.toLowerCase() === clean.toLowerCase()) return this.game.notice(p, 'That name is taken.', 'bad');
-    p.crests -= fee;
+    p.crests -= FOUNDING_FEE;
     const c: CompanySave = {
       id: `co${this.nextId++}${Date.now().toString(36)}`,
       name: clean,
@@ -78,6 +123,7 @@ export class CompanySystem {
       members: [{ id: p.accountId, name: p.name, role: 'owner' }],
       treasury: 0,
       created: Date.now(),
+      ledger: [],
     };
     this.companies.set(c.id, c);
     this.memberOf.set(p.accountId, c.id);
@@ -96,8 +142,9 @@ export class CompanySystem {
       return;
     }
     this.invites.set(target.accountId, c.id);
-    this.game.notice(target, `${p.name} invited you to ${c.name}. Type /company accept to join.`, 'good');
+    this.game.notice(target, `${p.name} invited you to ${c.name}. Open your company (C) or type /company accept.`, 'good');
     this.game.notice(p, `Invited ${target.name}.`, 'info');
+    this.sendInfo(target);
   }
 
   private accept(p: Player): void {
@@ -110,6 +157,7 @@ export class CompanySystem {
     p.company = c.id;
     p.statusDirty = true;
     this.chat(c, `${p.name} joined the company.`);
+    this.sendAll(c);
   }
 
   private leave(p: Player): void {
@@ -120,16 +168,20 @@ export class CompanySystem {
     p.company = null;
     p.statusDirty = true;
     if (c.members.length === 0) {
-      p.crests += c.treasury;
+      // The last one out takes the treasury and the property.
+      p.crests = roundCrests(p.crests + c.treasury);
+      const n = this.reassign(companyAccount(c.id), p.accountId, p.name);
       this.companies.delete(c.id);
-      this.game.notice(p, `${c.name} was dissolved.`, 'info');
+      this.game.notice(p, `${c.name} was dissolved.${n ? ` Its ${n} structures are yours again.` : ''}`, 'info');
       return;
     }
     if (c.owner === p.accountId) {
-      c.owner = c.members[0].id;
-      c.members[0].role = 'owner';
+      const heir = c.members.find((m) => m.role === 'officer') ?? c.members[0];
+      c.owner = heir.id;
+      heir.role = 'owner';
     }
     this.chat(c, `${p.name} left the company.`);
+    this.sendAll(c);
   }
 
   private kick(p: Player, name: string): void {
@@ -144,8 +196,20 @@ export class CompanySystem {
       target.company = null;
       target.statusDirty = true;
       this.game.notice(target, `You were removed from ${c.name}.`, 'bad');
+      this.sendInfo(target);
     }
     this.chat(c, `${m.name} was removed from the company.`);
+    this.sendAll(c);
+  }
+
+  private setRole(p: Player, name: string, role: 'officer' | 'member'): void {
+    const c = p.company ? this.companies.get(p.company) : undefined;
+    if (!c || c.owner !== p.accountId) return;
+    const m = c.members.find((x) => x.name.toLowerCase() === String(name).toLowerCase() && x.id !== p.accountId);
+    if (!m || m.role === role) return;
+    m.role = role;
+    this.chat(c, `${m.name} is now ${role === 'officer' ? 'an officer' : 'a member'}.`);
+    this.sendAll(c);
   }
 
   private treasury(p: Player, op: 'deposit' | 'withdraw', amount: number): void {
@@ -156,20 +220,139 @@ export class CompanySystem {
       if (a > p.crests) return;
       p.crests = roundCrests(p.crests - a);
       c.treasury = roundCrests(c.treasury + a);
+      this.log(c, `Deposits`, a);
     } else {
       const me = c.members.find((m) => m.id === p.accountId);
-      if (!me || me.role === 'member' || a > c.treasury) return;
+      if (!me || me.role === 'member' || a > c.treasury) {
+        if (me?.role === 'member') this.game.notice(p, 'Only officers can take money out.', 'bad');
+        return;
+      }
       c.treasury = roundCrests(c.treasury - a);
       p.crests = roundCrests(p.crests + a);
+      this.log(c, `Withdrawals`, -a);
     }
     p.statusDirty = true;
     this.chat(c, `${p.name} ${op === 'deposit' ? 'deposited' : 'withdrew'} ${formatCrests(a)}. Treasury: ${formatCrests(c.treasury)}.`);
+    this.sendAll(c);
   }
+
+  // ——— Property ———
+
+  /** Hands a claim the player owns, and everything of theirs on it, to their company. */
+  private transfer(p: Player, claimId: number): void {
+    const c = p.company ? this.companies.get(p.company) : undefined;
+    const claim = this.game.world.structures.get(claimId);
+    if (!c || !claim?.def.claimRadius) return;
+    if (claim.owner !== p.accountId) {
+      this.game.notice(p, 'You can only hand over land you own yourself.', 'bad');
+      return;
+    }
+    const r = claim.def.claimRadius;
+    const moved: Structure[] = [];
+    for (const s of this.game.world.structures.values())
+      if (s.owner === p.accountId && Math.abs(s.x - claim.x) <= r && Math.abs(s.y - claim.y) <= r) moved.push(s);
+    for (const s of moved) this.setOwner(s, companyAccount(c.id), c.name);
+    this.chat(c, `${p.name} handed ${moved.length} structures on their land to the company.`);
+    this.sendAll(c);
+    this.game.playerSystem.refreshUi(p, true);
+  }
+
+  /** Changes a structure's owner and shows the new name to clients. */
+  private setOwner(s: Structure, owner: string, ownerName: string): void {
+    s.owner = owner;
+    s.ownerName = ownerName;
+    this.game.structRemoved(s);
+    this.game.structAdded(s);
+  }
+
+  /** Gives everything one owner has to another; returns how many structures moved. */
+  private reassign(from: string, to: string, toName: string): number {
+    let n = 0;
+    for (const s of this.game.world.structures.values()) {
+      if (s.owner !== from) continue;
+      this.setOwner(s, to, toName);
+      n++;
+    }
+    return n;
+  }
+
+  /** Money earned by company property (shop sales, shipping). */
+  income(owner: string, amount: number, source: string): void {
+    const c = this.companies.get(owner.slice(PREFIX.length));
+    if (!c || amount <= 0) return;
+    c.treasury = roundCrests(c.treasury + amount);
+    this.log(c, source, amount);
+    this.sendAll(c);
+  }
+
+  /** A line in company chat about company property. */
+  notify(owner: string, text: string): void {
+    const c = this.companies.get(owner.slice(PREFIX.length));
+    if (c) this.chat(c, text);
+  }
+
+  private log(c: CompanySave, source: string, amount: number): void {
+    const now = this.game.minutes;
+    c.ledger ??= [];
+    c.ledger.push([Math.round(now), source, roundCrests(amount)]);
+    c.ledger = c.ledger.filter(([t]) => now - t <= LEDGER_MINUTES);
+  }
+
+  // ——— Info ———
 
   info(p: Player): string {
     const c = p.company ? this.companies.get(p.company) : undefined;
-    if (!c) return 'You are not in a company. /company create <name> (₡500)';
+    if (!c) return `You are not in a company. /company create <name> (${formatCrests(FOUNDING_FEE)})`;
     return `${c.name} — treasury ${formatCrests(c.treasury)} — members: ${c.members.map((m) => `${m.name} (${m.role})`).join(', ')}`;
+  }
+
+  private overview(p: Player, c: CompanySave): CompanyInfo {
+    const account = companyAccount(c.id);
+    let count = 0;
+    let value = 0;
+    const kinds = new Map<string, number>();
+    for (const s of this.game.world.structures.values()) {
+      if (s.owner !== account) continue;
+      count++;
+      value += ITEM_BY_ID.get(s.def.item)?.value ?? 0;
+      kinds.set(s.type, (kinds.get(s.type) ?? 0) + 1);
+    }
+    const day = this.game.minutes - 1440;
+    const income = new Map<string, number>();
+    for (const [t, source, amount] of c.ledger ?? []) if (t >= day) income.set(source, roundCrests((income.get(source) ?? 0) + amount));
+    return {
+      id: c.id,
+      name: c.name,
+      treasury: c.treasury,
+      you: c.members.find((m) => m.id === p.accountId)?.role ?? 'member',
+      members: c.members.map((m) => ({ name: m.name, role: m.role, online: this.game.byAccount.has(m.id) })),
+      property: {
+        count,
+        value: Math.round(value),
+        kinds: [...kinds]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([type, n]) => [STRUCTURE_BY_ID.get(type)?.name ?? type, n] as [string, number]),
+      },
+      income: [...income],
+    };
+  }
+
+  sendInfo(p: Player): void {
+    const c = p.company ? this.companies.get(p.company) : undefined;
+    const invite = this.invites.get(p.accountId);
+    p.session.send({
+      t: 'company',
+      info: c ? this.overview(p, c) : null,
+      ...(invite && !c ? { invite: this.companies.get(invite)?.name ?? '' } : {}),
+    });
+  }
+
+  private sendAll(c: CompanySave): void {
+    for (const m of c.members) {
+      const p = this.game.byAccount.get(m.id);
+      if (p) this.sendInfo(p);
+    }
   }
 
   chat(c: CompanySave, text: string): void {

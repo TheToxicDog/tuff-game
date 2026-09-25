@@ -47,6 +47,7 @@ import { Hud } from '../ui/hud';
 import { setStructureIcon } from '../ui/icons';
 import { InventoryWindow } from '../ui/inventory';
 import { showDeath, showMessage } from '../ui/login';
+import { companyWindow } from '../ui/company';
 import { Smithing, buildWindow, factoryWindow, helpWindow, mapWindow, researchWindow } from '../ui/menus';
 import { contractsWindow, panelFor } from '../ui/panels';
 import { initSlots, isDragging } from '../ui/slots';
@@ -221,6 +222,7 @@ export class ClientGame {
       { label: 'Map', key: 'M', action: () => this.toggle('map') },
       { label: 'Contracts', key: 'J', action: () => this.toggle('contracts') },
       { label: 'Factory', key: 'O', action: () => this.toggle('factory') },
+      { label: 'Company', key: 'C', action: () => this.toggle('company') },
       { label: 'Help', key: 'H', action: () => this.toggle('help') },
     ]);
     this.chat = new Chat(this.ui, (text) => this.send({ t: 'chat', text }));
@@ -271,6 +273,10 @@ export class ClientGame {
       case 'factory':
         this.send({ t: 'stats' });
         this.windows.show('factory', factoryWindow(this.ctx));
+        break;
+      case 'company':
+        this.send({ t: 'company', op: 'info' });
+        this.windows.show('company', companyWindow(this.ctx));
         break;
     }
   }
@@ -356,6 +362,11 @@ export class ClientGame {
         break;
       case 'belt':
         this.world.beltKeyframes(msg.k);
+        break;
+      case 'company':
+        this.state.company = msg.info;
+        this.state.companyInvite = msg.invite;
+        if (this.windows.isOpen('company')) this.windows.refresh('company');
         break;
       case 'fluids':
         this.world.fluidNets = new Map(msg.nets.map(([id, fluid, fill, flow]) => [id, { fluid, fill: fill / 1000, flow: flow / 10 }]));
@@ -707,6 +718,7 @@ export class ClientGame {
     if (inp.hit('KeyM')) this.toggle('map');
     if (inp.hit('KeyJ')) this.toggle('contracts');
     if (inp.hit('KeyO')) this.toggle('factory');
+    if (inp.hit('KeyC')) this.toggle('company');
     if (inp.hit('KeyH') || inp.hit('F1')) this.toggle('help');
     for (let i = 0; i < 8; i++) {
       if (inp.hit(`Digit${i + 1}`)) {

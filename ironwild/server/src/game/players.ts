@@ -41,6 +41,7 @@ export class PlayerSystem {
     if (p.dead) p.session.send({ t: 'dead', by: 'your wounds', crests: 0, items: 0 });
     this.game.economy.sendContracts(p);
     this.game.economy.sendTowns(p);
+    this.game.companies.sendInfo(p);
   }
 
   left(p: Player): void {

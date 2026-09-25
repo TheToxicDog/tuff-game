@@ -8,7 +8,7 @@ const HELP = [
   '/who — players online',
   '/pay <name> <amount> — give Crests',
   '/c <text> — company chat',
-  '/company create <name> | invite <name> | accept | leave | kick <name> | deposit <n> | withdraw <n> | info',
+  '/company create <name> | invite <name> | accept | leave | kick <name> | promote <name> | demote <name> | deposit <n> | withdraw <n> | transfer | info (or press C)',
   '/stuck — return to Westhaven if you are stuck',
 ];
 
@@ -80,8 +80,13 @@ export class Commands {
         const rest = args.slice(1).join(' ');
         if (op === 'info') this.reply(p, this.game.companies.info(p));
         else if (op === 'create') this.game.companies.handle(p, { t: 'company', op: 'create', name: rest });
-        else if (op === 'invite' || op === 'kick') this.game.companies.handle(p, { t: 'company', op, name: rest });
-        else if (op === 'accept' || op === 'leave') this.game.companies.handle(p, { t: 'company', op });
+        else if (op === 'invite' || op === 'kick' || op === 'promote' || op === 'demote')
+          this.game.companies.handle(p, { t: 'company', op, name: rest });
+        else if (op === 'transfer') {
+          const claim = this.game.world.claimAt(Math.floor(p.x), Math.floor(p.y));
+          if (!claim) this.reply(p, 'Stand on the land claim you want to hand over.');
+          else this.game.companies.handle(p, { t: 'company', op: 'transfer', claim: claim.id });
+        } else if (op === 'accept' || op === 'leave') this.game.companies.handle(p, { t: 'company', op });
         else if (op === 'deposit' || op === 'withdraw') this.game.companies.handle(p, { t: 'company', op, amount: Number(rest) });
         return;
       }

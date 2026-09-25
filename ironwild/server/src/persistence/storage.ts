@@ -107,6 +107,8 @@ export interface CompanySave {
   members: { id: string; name: string; role: 'owner' | 'officer' | 'member' }[];
   treasury: number;
   created: number;
+  /** Recent money in and out: [game minute, source, amount]. */
+  ledger?: [number, string, number][];
 }
 
 export interface ClaimMemberSave {

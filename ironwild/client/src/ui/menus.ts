@@ -423,6 +423,7 @@ export function helpWindow(): WindowDef {
     ['K', 'Research'],
     ['J', 'Contracts'],
     ['O', 'Factory overview: output, bottlenecks, power'],
+    ['C', 'Your company: treasury, members, property'],
     ['M', 'Map & market prices'],
     ['Enter', 'Chat (/help for commands)'],
     ['Wheel', 'Zoom'],

@@ -2,6 +2,7 @@
 
 import type {
   ClientMessage,
+  CompanyInfo,
   ContractInfo,
   FactoryStats,
   PlayerStatus,
@@ -31,6 +32,9 @@ export class ClientState {
   ui: UiState | null = null;
   markets: MarketReport[] | null = null;
   towns = new Map<string, TownInfo>();
+  company: CompanyInfo | null = null;
+  /** Name of a company that invited you. */
+  companyInvite: string | undefined;
   stats: FactoryStats | null = null;
   minutes = 360;
   stamina = 100;
