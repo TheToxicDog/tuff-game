@@ -281,6 +281,40 @@ function buildBase(type: string, depleted: boolean): GraphicsContext {
         g.circle(r * 0.35, r * 0.35, r * 0.07).fill(0x5a5e64);
         return;
       }
+      case 'shipwreck': {
+        const r = 1.4 * T;
+        if (depleted) {
+          for (let i = 0; i < 3; i++)
+            g.rect(-r * 0.5 + i * r * 0.3, -6 + i * 7, r * 0.45, 7)
+              .fill(0x5e3b22)
+              .stroke({ width: 2, color: OUTLINE });
+          return;
+        }
+        // A broken hull lying on its side, ribs showing, a snapped mast and a scrap of sail.
+        g.poly([-r * 0.9, -r * 0.1, -r * 0.5, -r * 0.45, r * 0.55, -r * 0.4, r * 0.95, 0, r * 0.5, r * 0.35, -r * 0.55, r * 0.3], true)
+          .fill(0x6b4a2a)
+          .stroke({ width: 4, color: OUTLINE });
+        g.poly([-r * 0.55, -r * 0.2, r * 0.5, -r * 0.2, r * 0.7, 0, r * 0.35, r * 0.18, -r * 0.5, r * 0.12], true).fill(0x4a321c);
+        for (let i = 0; i < 6; i++) {
+          const x = -r * 0.45 + i * r * 0.18;
+          g.moveTo(x, -r * 0.33)
+            .lineTo(x + r * 0.03, r * 0.22)
+            .stroke({ width: 4, color: 0x8a5a33 });
+        }
+        g.poly([r * 0.2, r * 0.05, r * 0.5, -r * 0.2, r * 0.6, -r * 0.1, r * 0.3, r * 0.14], true)
+          .fill(0x7d8189)
+          .stroke({ width: 2, color: OUTLINE });
+        g.moveTo(-r * 0.1, 0)
+          .lineTo(-r * 0.75, r * 0.55)
+          .stroke({ width: 7, color: OUTLINE })
+          .moveTo(-r * 0.1, 0)
+          .lineTo(-r * 0.75, r * 0.55)
+          .stroke({ width: 4, color: 0x9a6b3f });
+        g.poly([-r * 0.5, r * 0.3, -r * 0.2, r * 0.55, -r * 0.62, r * 0.7], true)
+          .fill({ color: 0xe8e0c8, alpha: 0.9 })
+          .stroke({ width: 2, color: OUTLINE });
+        return;
+      }
       default:
         g.circle(0, 0, T * 0.4)
           .fill(0x888888)

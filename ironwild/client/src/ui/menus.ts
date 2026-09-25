@@ -228,7 +228,7 @@ function renderMap(body: HTMLElement, ctx: UiContext): void {
     );
   }
   for (const l of ctx.world.landmarks) {
-    c2.fillStyle = l.kind === 'bandit_camp' ? '#e8645a' : '#b3ab94';
+    c2.fillStyle = l.kind === 'bandit_camp' ? '#e8645a' : l.kind === 'wreck' ? '#8fd0f0' : '#b3ab94';
     c2.beginPath();
     c2.arc(l.x * scale, l.y * scale, 4, 0, Math.PI * 2);
     c2.fill();
@@ -269,6 +269,24 @@ function renderMarkets(body: HTMLElement, ctx: UiContext): void {
       'What traders pay (sell) and charge (buy) right now. Buy where it is cheap, sell where it is dear.',
     ),
   );
+  // Town growth and market news.
+  const towns = h('div', { class: 'towns' });
+  for (const s of ctx.world.settlements) {
+    const t = ctx.state.towns.get(s.id);
+    if (!t) continue;
+    const card = h(
+      'div',
+      { class: 'town-card' },
+      h('div', { class: 'name' }, s.name, h('span', { class: 'sub' }, ` prosperity ${Math.round(t.prosperity).toLocaleString()}`)),
+      t.next ? h('div', { class: 'muted' }, `Next stall: ${t.next.title} at ${t.next.at.toLocaleString()}`) : null,
+    );
+    for (const e of t.events ?? []) {
+      const hours = Math.max(1, Math.round((e.ends - ctx.state.minutes) / 60));
+      card.append(h('div', { class: 'news' }, h('b', null, e.title), ` — ${e.text} `, h('span', { class: 'muted' }, `(~${hours} h left)`)));
+    }
+    towns.append(card);
+  }
+  body.append(towns);
   const table = h('table', { class: 'market-table' });
   const head = h('tr', null, h('th', null, 'Item'));
   for (const s of m) head.append(h('th', { colspan: '2' }, s.settlement));

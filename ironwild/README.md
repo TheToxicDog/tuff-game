@@ -64,6 +64,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   of one thing and the price falls, then recovers over a day or so. Ore is cheap in Stonehaven, food
   is cheap in Greenfield, tools are dear there — trade routes emerge. Trade makes a settlement
   prosper, and prosperous villages open new stalls (a lumber merchant, butcher, engineer, …).
+  Market news — an iron shortage, a harvest festival, a timber glut — moves a town's prices for a
+  day or so.
 - **Craft** by hand, at a workbench or by a campfire, and **forge** at an anvil with a timing
   minigame that decides quality (Crude → Masterwork, worth 0.6× to 3×).
 - **Build** walls, doors, floors, fences, beds, chests and land claims (with Manager / Builder /
@@ -89,7 +91,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   and run off with the loot — kill them to get it back. Spike traps and arrow towers (loaded with
   arrows by hand or conveyor) help; damaged walls mend after the raid.
 - **Fish** rivers, Mirror Lake and the sea with a rod: cast, wait for the float to dip, click.
-  Each water has its own fish; now and then you pull up a boot, salvage or a lost purse.
+  Each water has its own fish; now and then you pull up a boot, salvage or a lost purse. Salvage
+  the ruins, the old mine and shipwrecks on the beaches for scrap, parts and the odd treasure.
 - **Farm** (till, plant wheat, carrots, potatoes, cotton), keep chickens, sheep and cows, pull a hand
   cart, ride a horse, and found a **company** with a shared treasury.
 
@@ -113,7 +116,7 @@ Environment variables:
 | `IRONWILD_SEED`           | World seed                                             |
 
 Everyone can use `/who`, `/pay`, `/c` (company chat), `/company …` and `/stuck`. Admins also get
-`/give`, `/tp`, `/time`, `/crests`, `/kp`, `/spawn`, `/raid`, `/research all`, `/heal` and `/save`.
+`/give`, `/tp`, `/time`, `/crests`, `/kp`, `/spawn`, `/raid`, `/event`, `/research all`, `/heal` and `/save`.
 
 ## Development
 

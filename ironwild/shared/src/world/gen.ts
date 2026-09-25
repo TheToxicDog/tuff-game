@@ -51,7 +51,7 @@ export interface GenSettlement {
 export interface Landmark {
   id: string;
   name: string;
-  kind: 'bandit_camp' | 'ruins' | 'mine' | 'lake';
+  kind: 'bandit_camp' | 'ruins' | 'mine' | 'lake' | 'wreck';
   x: number;
   y: number;
 }
@@ -607,6 +607,38 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
       }
     }
   }
+
+  // Shipwrecks on the beaches (salvage, §11). Placed last, from their own random stream, so the
+  // rest of the world does not shift.
+  const wreckRng = new Rng(seed + 97);
+  const wrecks: { x: number; y: number }[] = [];
+  const beach = (tx: number, ty: number): boolean => {
+    if (!inside(tx, ty) || tiles[idx(tx, ty)] !== Tile.Sand) return false;
+    let sea = false;
+    for (let oy = -2; oy <= 2; oy++)
+      for (let ox = -2; ox <= 2; ox++) {
+        if (!inside(tx + ox, ty + oy)) return false;
+        const t = tiles[idx(tx + ox, ty + oy)];
+        if (t === Tile.DeepWater && regions[idx(tx + ox, ty + oy)] === Region.Ocean) sea = true;
+        if (Math.abs(ox) <= 1 && Math.abs(oy) <= 1 && t !== Tile.Sand && t !== Tile.Grass) return false;
+      }
+    return sea;
+  };
+  for (let attempt = 0; attempt < 6000 && wrecks.length < 6; attempt++) {
+    const tx = Math.floor(wreckRng.range(8, S - 8));
+    const ty = Math.floor(wreckRng.range(8, S - 8));
+    if (!beach(tx, ty)) continue;
+    const x = tx + 0.5;
+    const y = ty + 0.5;
+    if (wrecks.some((w) => dist(x, y, w.x, w.y) < 70)) continue;
+    if (settlements.some((st) => dist(x, y, st.x, st.y) < st.radius + 12)) continue;
+    wrecks.push({ x, y });
+    add('shipwreck', x, y);
+  }
+  const WRECK_NAMES = ['Wreck of the Gull', 'Wreck of the Merriweather', 'Wreck of the Iron Maid'];
+  wrecks
+    .slice(0, WRECK_NAMES.length)
+    .forEach((w, i) => landmarks.push({ id: `wreck${i + 1}`, name: WRECK_NAMES[i], kind: 'wreck', x: w.x, y: w.y }));
 
   const spawn = { x: west.x, y: west.y + west.radius - 3 };
   return { seed, size: S, tiles, regions, nodes, settlements, houses, landmarks, spawn };

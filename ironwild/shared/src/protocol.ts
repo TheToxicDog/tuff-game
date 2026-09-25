@@ -234,6 +234,16 @@ export interface NpcInfo {
   unlock?: number;
 }
 
+/** A settlement's growth and market news (§14, §54). */
+export interface TownInfo {
+  id: string;
+  prosperity: number;
+  /** The next stall to open, at what prosperity. */
+  next?: { at: number; title: string };
+  /** Market events in progress; `ends` in game minutes. */
+  events?: { title: string; text: string; ends: number }[];
+}
+
 /** Factory overview (§59). */
 export interface FactoryStats {
   machines: {
@@ -472,4 +482,4 @@ export type ServerMessage =
   | { t: 'alive' }
   | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }
   | ({ t: 'stats' } & FactoryStats)
-  | { t: 'towns'; list: { id: string; prosperity: number; next?: { at: number; title: string } }[] };
+  | { t: 'towns'; list: TownInfo[] };

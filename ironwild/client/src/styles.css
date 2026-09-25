@@ -1193,3 +1193,27 @@ select:focus {
   gap: 4px;
   margin-top: 8px;
 }
+
+.towns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.town-card {
+  background: var(--panel-3);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.town-card .name {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.town-card .news {
+  margin-top: 4px;
+  color: #f2d27a;
+}

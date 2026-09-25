@@ -38,7 +38,7 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 | 11  | Steam technology               | 🟡     | Steam engines (coal + water, 32 RPM, 256 torque) and blast furnaces for steel. Missing: boilers, pumps and pipes.                                            |
 | 12  | Industrial technology          | 🟡     | Assemblers make bearings, gearbox units and industrial pumps. Missing: electricity, motors, machine tools, packaging.                                        |
 | 13  | Company systems                | 🟡     | Companies with a treasury; members share access to each other's land, carts and animals. Missing: company-owned property and shops, officer roles in the UI. |
-| 14  | Expanded world economy         | 🟡     | Town growth: prosperity from trade opens new stalls in each settlement (§54). Missing: Port Meridian, oil, market events.                                    |
+| 14  | Expanded world economy         | 🟡     | Town growth opens new stalls (§54); market events (shortages, festivals, booms, gluts) move a town's prices for a day. Missing: Port Meridian, oil.          |
 
 ## Also done
 
@@ -49,10 +49,13 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   rob storage, sabotage machines and flee with loot; spike traps and arrow towers; damaged
   structures mend afterwards (§42).
 - Fishing in rivers, the lake and the sea, with salvage and lost purses (§11).
+- Market events (§14): iron and coal shortages, festivals, bad harvests, building booms, bandit
+  scares, gluts — announced as market news and shown on the market report.
+- Shipwrecks on the beaches to salvage for hardwood, rope, scrap and the odd treasure (§11).
 
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Market events (shortages, festivals, a bad harvest) and a fourth settlement, Port Meridian (§14).
+- A fourth settlement, Port Meridian, with sea trade (§14).
 - Boilers, pumps and pipes; wagons, depots and rail (§19, §36).
 - Tier 3–4 technology and prestige projects (§64).

@@ -21,6 +21,7 @@ const ADMIN_HELP = [
   '/spawn <creature> [count]',
   '/research all',
   '/raid — send raiders against the nearest claim (10 s warning)',
+  '/event [title] — start a market event (e.g. /event Iron shortage)',
   '/heal',
   '/save',
 ];
@@ -156,6 +157,11 @@ export class Commands {
         if (!best) this.reply(p, 'There are no claims.');
         else if (!this.game.raids.start(best, 10_000)) this.reply(p, 'The bandits found nowhere to gather.');
         else this.reply(p, `Raid on ${best.ownerName}'s claim (worth ₡${this.game.raids.wealth(best)}).`);
+        return;
+      }
+      case 'event': {
+        const e = this.game.economy.startEvent(args.join(' ') || undefined);
+        if (!e) this.reply(p, 'No such event, or every town already has one.');
         return;
       }
       case 'research':

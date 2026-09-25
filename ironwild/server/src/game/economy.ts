@@ -45,6 +45,124 @@ interface NpcRef {
   settlement: SettlementDef;
 }
 
+/** Market events (§14): news that shifts what a settlement wants for a day or so. */
+interface EventTemplate {
+  kind: string;
+  title: string;
+  /** `{town}` is replaced by the settlement's name. */
+  text: string;
+  items?: string[];
+  tags?: string[];
+  /** Target stock multiplier while it lasts (demand), and a one-off change to current stock (supply). */
+  demand: number;
+  supply: number;
+  only?: string[];
+}
+
+const EVENTS: EventTemplate[] = [
+  {
+    kind: 'shortage',
+    title: 'Iron shortage',
+    text: "{town}'s smelters have run dry: iron in any form sells dear.",
+    items: ['iron_ore', 'crushed_iron', 'iron_concentrate', 'iron_ingot', 'iron_plate', 'iron_rod'],
+    demand: 2,
+    supply: 0.5,
+  },
+  {
+    kind: 'shortage',
+    title: 'Coal shortage',
+    text: 'A cold snap in {town}: coal and charcoal are wanted.',
+    items: ['coal', 'charcoal'],
+    demand: 2.2,
+    supply: 0.4,
+  },
+  {
+    kind: 'festival',
+    title: 'Harvest festival',
+    text: '{town} is celebrating: food sells for more than usual.',
+    tags: ['food'],
+    demand: 1.8,
+    supply: 0.7,
+  },
+  {
+    kind: 'shortage',
+    title: 'Bad harvest',
+    text: 'Blight in the fields around {town}: grain, flour and bread are scarce.',
+    items: ['wheat', 'flour', 'bread', 'carrot', 'potato'],
+    demand: 2,
+    supply: 0.4,
+  },
+  {
+    kind: 'boom',
+    title: 'Building boom',
+    text: '{town} is building: planks, bricks, stone and glass are in demand.',
+    items: ['plank', 'hardwood_plank', 'stone_brick', 'brick', 'glass', 'stone', 'wood'],
+    demand: 1.8,
+    supply: 0.6,
+  },
+  {
+    kind: 'shortage',
+    title: 'Bandit scare',
+    text: 'Bandits on the roads near {town}: weapons and arrows are in demand.',
+    tags: ['weapon'],
+    demand: 2,
+    supply: 0.5,
+  },
+  {
+    kind: 'boom',
+    title: 'Mill expansion',
+    text: "{town}'s mills are expanding: gears, rods, wire and bearings are wanted.",
+    items: ['iron_gear', 'steel_gear', 'iron_rod', 'copper_wire', 'bearing', 'gearbox_unit'],
+    demand: 2,
+    supply: 0.5,
+  },
+  {
+    kind: 'festival',
+    title: 'Wedding season',
+    text: 'Wealthy families in {town} want gems, silver and gold.',
+    tags: ['luxury'],
+    demand: 1.8,
+    supply: 0.6,
+  },
+  {
+    kind: 'festival',
+    title: 'Fish week',
+    text: '{town} is off meat for the week: fish is in demand.',
+    items: ['perch', 'trout', 'carp', 'pike', 'salmon', 'mackerel', 'sea_bass', 'cooked_fish'],
+    demand: 2,
+    supply: 0.5,
+  },
+  {
+    kind: 'glut',
+    title: 'Timber glut',
+    text: 'A logging camp flooded {town} with timber: wood is cheap.',
+    items: ['wood', 'hardwood', 'plank', 'hardwood_plank'],
+    demand: 1,
+    supply: 2.5,
+  },
+  {
+    kind: 'glut',
+    title: 'Ore glut',
+    text: 'A rich new seam near {town}: ore is cheap for now.',
+    items: ['iron_ore', 'copper_ore', 'coal'],
+    demand: 1,
+    supply: 2.5,
+  },
+];
+
+export interface MarketEvent {
+  id: number;
+  settlement: string;
+  title: string;
+  text: string;
+  items: string[];
+  demand: number;
+  /** Game minute it ends. */
+  ends: number;
+}
+
+const MAX_EVENTS = 2;
+
 const OPEN_CONTRACTS = 3;
 const MAX_CONTRACTS_PER_PLAYER = 3;
 const HAULAGE_FEE = 0.1;
@@ -59,6 +177,8 @@ export class Economy {
   orders: OrderSave[] = [];
   private lastShippingDay = 0;
   private nextId = 1;
+  events: MarketEvent[] = [];
+  private lastEventHour = -1;
 
   constructor(private readonly game: Game) {
     for (const s of game.world.settlements) {
@@ -91,7 +211,9 @@ export class Economy {
 
   private target(def: ItemDef, s: SettlementDef): number {
     const growth = 1 + (this.prosperity.get(s.id) ?? 0) / 60000;
-    return targetStock(def, s) * growth;
+    let demand = 1;
+    for (const e of this.events) if (e.settlement === s.id && e.items.includes(def.id)) demand *= e.demand;
+    return targetStock(def, s) * growth * demand;
   }
 
   private stockOf(s: SettlementDef, item: string): number {
@@ -180,11 +302,68 @@ export class Economy {
       }
       this.newContract(SETTLEMENT_BY_ID.get(c.settlement)!);
     }
+    // Market news, checked once a game hour.
+    const hour = Math.floor(this.game.minutes / 60);
+    if (hour !== this.lastEventHour) {
+      this.lastEventHour = hour;
+      this.stepEvents();
+    }
     // Merchant wagons collect shipping crates at dawn (§35).
     if (this.game.hour >= 6 && this.game.day > this.lastShippingDay) {
       this.lastShippingDay = this.game.day;
       this.shipAll();
     }
+  }
+
+  // ——— Market events (§14) ———
+
+  private stepEvents(): void {
+    const now = this.game.minutes;
+    const ended = this.events.filter((e) => e.ends <= now);
+    if (ended.length) {
+      this.events = this.events.filter((e) => e.ends > now);
+      for (const e of ended) {
+        const town = SETTLEMENT_BY_ID.get(e.settlement)?.name ?? e.settlement;
+        this.game.broadcastChat('', `Market news: the ${e.title.toLowerCase()} in ${town} is over.`, 'system');
+      }
+      this.sendTowns();
+    }
+    if (this.events.length < MAX_EVENTS && Math.random() < 0.12) this.startEvent();
+  }
+
+  /** Starts a random event (or a given one) in a random settlement that trades its goods. */
+  startEvent(title?: string, settlement?: string): MarketEvent | null {
+    const towns = this.game.world.settlements.filter((g) => !settlement || g.id === settlement);
+    const options: { t: EventTemplate; s: SettlementDef; items: string[] }[] = [];
+    for (const g of towns) {
+      const def = SETTLEMENT_BY_ID.get(g.id)!;
+      const traded = this.traded.get(g.id)!;
+      for (const t of EVENTS) {
+        if (title && t.title.toLowerCase() !== title.toLowerCase()) continue;
+        if (this.events.some((e) => e.settlement === g.id && (e.title === t.title || !settlement))) continue;
+        const items = ITEMS.filter(
+          (it) => traded.has(it.id) && (t.items?.includes(it.id) || it.tags.some((tag) => t.tags?.includes(tag))),
+        ).map((it) => it.id);
+        if (items.length >= 2) options.push({ t, s: def, items });
+      }
+    }
+    if (options.length === 0) return null;
+    const pick = options[Math.floor(Math.random() * options.length)];
+    const e: MarketEvent = {
+      id: this.nextId++,
+      settlement: pick.s.id,
+      title: pick.t.title,
+      text: pick.t.text.replace('{town}', pick.s.name),
+      items: pick.items,
+      demand: pick.t.demand,
+      ends: this.game.minutes + (0.6 + Math.random() * 0.6) * 1440,
+    };
+    this.events.push(e);
+    const m = this.stock.get(pick.s.id)!;
+    for (const id of pick.items) m.set(id, this.stockOf(pick.s, id) * pick.t.supply);
+    this.game.broadcastChat('', `Market news — ${e.title}: ${e.text}`, 'system');
+    this.sendTowns();
+    return e;
   }
 
   newDay(): void {
@@ -319,10 +498,12 @@ export class Economy {
       const def = SETTLEMENT_BY_ID.get(g.id)!;
       const prosperity = Math.round(this.prosperity.get(g.id) ?? 0);
       const next = def.growth.find((x) => x.at > prosperity);
+      const events = this.events.filter((e) => e.settlement === g.id).map((e) => ({ title: e.title, text: e.text, ends: e.ends }));
       return {
         id: g.id,
         prosperity,
         ...(next ? { next: { at: next.at, title: PROFESSION_BY_ID.get(next.trader)?.title ?? next.trader } } : {}),
+        ...(events.length ? { events } : {}),
       };
     });
     const msg = { t: 'towns' as const, list };
@@ -696,6 +877,8 @@ export class Economy {
       'iron_pickaxe',
       'millstone',
     ];
+    // Whatever the news is about, too.
+    for (const e of this.events) for (const id of e.items.slice(0, 4)) if (!KEY.includes(id)) KEY.push(id);
     const list = this.game.world.settlements.map((g) => {
       const s = SETTLEMENT_BY_ID.get(g.id)!;
       const items: [string, number, number][] = [];
@@ -714,7 +897,7 @@ export class Economy {
 
   // ——— Persistence ———
 
-  save(): Pick<WorldSave, 'markets' | 'prosperity' | 'contracts' | 'orders'> {
+  save(): Pick<WorldSave, 'markets' | 'prosperity' | 'contracts' | 'orders' | 'events'> {
     const markets: Record<string, Record<string, number>> = {};
     for (const [s, m] of this.stock) {
       const def = SETTLEMENT_BY_ID.get(s)!;
@@ -722,7 +905,13 @@ export class Economy {
       for (const [item, v] of m) if (Math.abs(v - this.target(ITEM_BY_ID.get(item)!, def)) > 0.5) out[item] = Math.round(v * 10) / 10;
       markets[s] = out;
     }
-    return { markets, prosperity: Object.fromEntries(this.prosperity), contracts: this.contracts, orders: this.orders };
+    return {
+      markets,
+      prosperity: Object.fromEntries(this.prosperity),
+      contracts: this.contracts,
+      orders: this.orders,
+      events: this.events,
+    };
   }
 
   load(save: WorldSave): void {
@@ -734,6 +923,11 @@ export class Economy {
     for (const [s, v] of Object.entries(save.prosperity ?? {})) this.prosperity.set(s, v);
     this.contracts = (save.contracts ?? []).filter((c) => ITEM_BY_ID.has(c.item) && SETTLEMENT_BY_ID.has(c.settlement));
     this.orders = (save.orders ?? []).filter((o) => ITEM_BY_ID.has(o.item));
+    this.events = (save.events ?? []).filter((e) => SETTLEMENT_BY_ID.has(e.settlement));
+    for (const e of this.events) {
+      e.items = e.items.filter((id) => ITEM_BY_ID.has(id));
+      this.nextId = Math.max(this.nextId, e.id + 1);
+    }
   }
 }
 

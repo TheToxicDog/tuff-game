@@ -7,6 +7,7 @@ import type {
   PlayerStatus,
   ResearchState,
   Slots,
+  TownInfo,
   TutorialState,
   UiState,
   WelcomeMessage,
@@ -29,7 +30,7 @@ export class ClientState {
   contracts: ContractInfo[] = [];
   ui: UiState | null = null;
   markets: MarketReport[] | null = null;
-  towns = new Map<string, { prosperity: number; next?: { at: number; title: string } }>();
+  towns = new Map<string, TownInfo>();
   stats: FactoryStats | null = null;
   minutes = 360;
   stamina = 100;

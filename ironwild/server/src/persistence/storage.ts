@@ -115,6 +115,16 @@ export interface ClaimMemberSave {
   role: ClaimRole;
 }
 
+export interface MarketEventSave {
+  id: number;
+  settlement: string;
+  title: string;
+  text: string;
+  items: string[];
+  demand: number;
+  ends: number;
+}
+
 export interface WorldSave {
   version: 1;
   seed: number;
@@ -130,6 +140,8 @@ export interface WorldSave {
   prosperity: Record<string, number>;
   contracts: ContractSave[];
   orders: OrderSave[];
+  /** Market events in progress. */
+  events?: MarketEventSave[];
   entities: EntitySave[];
   companies: CompanySave[];
 }

@@ -420,7 +420,8 @@ export class ClientGame {
         if (this.windows.isOpen('map')) this.windows.refresh('map');
         break;
       case 'towns':
-        this.state.towns = new Map(msg.list.map((t) => [t.id, { prosperity: t.prosperity, next: t.next }]));
+        this.state.towns = new Map(msg.list.map((t) => [t.id, t]));
+        if (this.windows.isOpen('map')) this.windows.refresh('map');
         this.town.setProsperity(new Map(msg.list.map((t) => [t.id, t.prosperity])));
         if (this.windows.isOpen('map')) this.windows.refresh('map');
         break;

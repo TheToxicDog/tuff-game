@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { countItem, type ServerMessage } from '@ironwild/shared';
+import { ITEM_BY_ID, SETTLEMENT_BY_ID, countItem, type ServerMessage } from '@ironwild/shared';
 import type { AccountRecord } from './persistence/storage';
 import { MemoryStorage } from './persistence/memory-storage';
 import { Game } from './game/game';
@@ -416,5 +416,26 @@ describe('fishing (§11)', () => {
     expect(p.fishing).toBeNull();
     const caught = p.slots.slice(1).some((s) => s) || p.crests > before;
     expect(caught).toBe(true);
+  });
+});
+
+describe('market events (§14)', () => {
+  it('a shortage raises prices for its goods until it ends', () => {
+    const town = SETTLEMENT_BY_ID.get('westhaven')!;
+    const ingot = ITEM_BY_ID.get('iron_ingot')!;
+    const before = game.economy.ask(town, ingot);
+    const e = game.economy.startEvent('Iron shortage', 'westhaven');
+    expect(e).not.toBeNull();
+    expect(e!.items).toContain('iron_ingot');
+    const during = game.economy.ask(town, ingot);
+    expect(during).toBeGreaterThan(before * 1.5);
+    // Unrelated goods are unaffected.
+    const bread = ITEM_BY_ID.get('bread')!;
+    const breadPrice = game.economy.ask(town, bread);
+    game.minutes = e!.ends + 61;
+    game.economy.stepSecond();
+    expect(game.economy.events.some((x) => x.id === e!.id)).toBe(false);
+    expect(game.economy.ask(town, ingot)).toBeLessThan(during);
+    expect(game.economy.ask(town, bread)).toBeCloseTo(breadPrice, 5);
   });
 });
