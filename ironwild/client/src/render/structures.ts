@@ -419,6 +419,43 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   pen_gate(c) {
     fenceLike(c, true);
   },
+  wrecked_wagon(c) {
+    const { hw, hh } = half(c);
+    const g = c.g;
+    g.ellipse(0, 4, hw - 4, hh - 4).fill({ color: 0x000000, alpha: 0.14 });
+    // The overturned bed, skewed, its planks sprung.
+    g.poly([-hw + 10, -hh + 12, hw - 26, -hh + 6, hw - 18, hh - 14, -hw + 16, hh - 8], true)
+      .fill(0x6b4a2a)
+      .stroke({ width: 4, color: OUTLINE });
+    for (let i = 1; i < 5; i++)
+      g.moveTo(-hw + 10 + i * 20, -hh + 11 - i)
+        .lineTo(-hw + 15 + i * 20, hh - 9 - i)
+        .stroke({ width: 2, color: 0x4f3620 });
+    // The torn canvas cover hanging off one end.
+    g.poly([hw - 30, -hh + 8, hw - 6, -hh + 14, hw - 10, hh - 20, hw - 24, hh - 12], true)
+      .fill(0xd8cfb4)
+      .stroke({ width: 3, color: OUTLINE });
+    // One wheel knocked off, one still on its axle.
+    for (const [x, y] of [
+      [-hw + 12, hh - 12],
+      [-6, -hh + 8],
+    ]) {
+      g.circle(x, y, 11).fill(0x5a3f26).stroke({ width: 3, color: OUTLINE });
+      for (let k = 0; k < 3; k++) {
+        const a = (k * Math.PI) / 3 + x;
+        g.moveTo(x - Math.cos(a) * 9, y - Math.sin(a) * 9)
+          .lineTo(x + Math.cos(a) * 9, y + Math.sin(a) * 9)
+          .stroke({ width: 2, color: 0x3a2a1a });
+      }
+      g.circle(x, y, 3).fill(0x9aa0a6);
+    }
+    // Spilled crates, fewer as it is picked clean.
+    const crates = Math.min(4, Math.round((c.s.st.fill ?? 0) * 8));
+    for (let i = 0; i < crates; i++)
+      g.rect(8 + i * 11 - (i % 2) * 30, -4 + (i % 2) * 14, 14, 14)
+        .fill(i === 0 ? 0xb5552e : 0xc99a5b)
+        .stroke({ width: 2, color: OUTLINE });
+  },
   guard_house(c) {
     const { hw, hh } = half(c);
     const g = c.g;

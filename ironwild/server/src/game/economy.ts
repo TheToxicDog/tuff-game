@@ -569,6 +569,7 @@ export class Economy {
       npc: ref.npc.id,
       settlement: ref.settlement.name,
       contracts: this.contracts.filter((c) => c.settlement === ref.settlement.id).map((c) => this.contractInfo(c, p)),
+      quests: this.game.quests.board(ref.settlement.id, p),
       project: this.game.projects.info(ref.settlement.id),
     };
   }
@@ -577,11 +578,16 @@ export class Economy {
     p.session.send({ t: 'contracts', list: this.contracts.filter((c) => c.taker === p.accountId).map((c) => this.contractInfo(c, p)) });
   }
 
+  /** Whether a player is standing at a settlement's contract board. */
+  atBoard(p: Player, settlement: string): boolean {
+    const board = [...this.npcs.values()].find((r) => r.prof.id === 'board' && r.settlement.id === settlement);
+    return !!board && Math.hypot(board.npc.x - p.x, board.npc.y - p.y) <= 5;
+  }
+
   contract(p: Player, op: 'accept' | 'deliver' | 'abandon', id: string): void {
     const c = this.contracts.find((x) => x.id === id);
     if (!c) return;
-    const board = [...this.npcs.values()].find((r) => r.prof.id === 'board' && r.settlement.id === c.settlement);
-    const atBoard = board && Math.hypot(board.npc.x - p.x, board.npc.y - p.y) <= 5;
+    const atBoard = this.atBoard(p, c.settlement);
     if (op === 'accept') {
       if (c.taker || !atBoard) return;
       if (this.contracts.filter((x) => x.taker === p.accountId).length >= MAX_CONTRACTS_PER_PLAYER) {

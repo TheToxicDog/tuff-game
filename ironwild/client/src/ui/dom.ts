@@ -44,6 +44,20 @@ export function fmtTime(minutes: number): string {
 }
 
 /** A five-pointed star on a 2D canvas (monuments on the maps). */
+/** A quest's place on a map: a red disc with an exclamation mark. */
+export function drawQuestMark(c: CanvasRenderingContext2D, x: number, y: number, r: number): void {
+  c.beginPath();
+  c.arc(x, y, r, 0, Math.PI * 2);
+  c.fillStyle = '#d9443a';
+  c.strokeStyle = '#1a1612';
+  c.lineWidth = 2;
+  c.fill();
+  c.stroke();
+  c.fillStyle = '#fff';
+  c.fillRect(x - r * 0.14, y - r * 0.62, r * 0.28, r * 0.72);
+  c.fillRect(x - r * 0.14, y + r * 0.26, r * 0.28, r * 0.28);
+}
+
 export function drawStar(c: CanvasRenderingContext2D, x: number, y: number, r: number, fill = '#f2c53d'): void {
   c.beginPath();
   for (let i = 0; i < 10; i++) {

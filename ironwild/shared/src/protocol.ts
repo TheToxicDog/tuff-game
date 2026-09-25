@@ -45,6 +45,8 @@ export type ClientMessage =
   | { t: 'crank'; id: number; on: boolean }
   | { t: 'research'; node: string }
   | { t: 'contract'; op: 'accept' | 'deliver' | 'abandon'; id: string }
+  /** Town quests (§53): take one at a contract board, give it up, or hand in what it asked for. */
+  | { t: 'quest'; op: 'accept' | 'deliver' | 'abandon'; id: string }
   /** Deliver all you carry of one good to the town project on this board. */
   | { t: 'project'; npc: string; item: string }
   | { t: 'chat'; text: string }
@@ -491,8 +493,35 @@ export interface BoardUi {
   npc: string;
   settlement: string;
   contracts: ContractInfo[];
+  /** Quests the town has posted (§53). */
+  quests: QuestInfo[];
   /** The town project under way, if any. */
   project?: ProjectInfo;
+}
+
+/**
+ * A town quest (§53): a bounty to clear a pack from a named place, or a salvage job — bring back the
+ * cargo of a wagon wrecked out in the wilds (§11).
+ */
+export interface QuestInfo {
+  id: string;
+  /** Town that posted it. */
+  settlement: string;
+  kind: 'bounty' | 'salvage';
+  title: string;
+  desc: string;
+  /** Where to go (tiles). */
+  x: number;
+  y: number;
+  /** Bounties: what to hunt and how many; salvage: one cargo. */
+  creature?: string;
+  n: number;
+  done: number;
+  pay: number;
+  /** Game minute it runs out once taken. */
+  deadline: number;
+  taker?: string;
+  mine: boolean;
 }
 
 /** A town project (§53): what it still needs and who has helped. */
@@ -593,6 +622,8 @@ export type ServerMessage =
   | ({ t: 'research' } & ResearchState)
   | ({ t: 'tutorial' } & TutorialState)
   | { t: 'contracts'; list: ContractInfo[] }
+  /** The quests you have taken on. */
+  | { t: 'quests'; list: QuestInfo[] }
   | { t: 'dead'; by: string; crests: number; items: number }
   | { t: 'alive' }
   | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }

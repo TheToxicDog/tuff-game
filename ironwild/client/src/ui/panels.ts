@@ -2,6 +2,7 @@
 // claims, guard houses, the contract board and the exchange.
 
 import {
+  CREATURE_BY_ID,
   FLUID_NAMES,
   ITEMS,
   ITEM_BY_ID,
@@ -17,6 +18,7 @@ import {
   type ExchangeUi,
   type GuardUi,
   type MachineUi,
+  type QuestInfo,
   type ShopUi,
   type TradeListing,
   type TradeUi,
@@ -562,6 +564,52 @@ function claim(body: HTMLElement, ui: ClaimUi, ctx: UiContext): void {
 
 // ——— Contracts ———
 
+/** A quest on a board (or in your list): what it asks, what it pays, and how far along you are. */
+function questRow(q: QuestInfo, ctx: UiContext, atBoard: boolean): HTMLElement {
+  const cargo = ctx.state.count('lost_cargo') > 0;
+  const quarry = q.creature === 'wolf' ? 'wolves' : `${CREATURE_BY_ID.get(q.creature ?? '')?.name.toLowerCase() ?? 'foe'}s`;
+  const progress =
+    q.kind === 'bounty'
+      ? `${q.done}/${q.n} ${quarry} killed`
+      : cargo
+        ? `you have the cargo — hand it in at the ${q.settlement} board`
+        : 'find the wreck (marked on your map) and take its cargo';
+  return h(
+    'div',
+    { class: 'listing quest', style: 'padding:8px' },
+    iconImg(q.kind === 'bounty' ? 'iron_sword' : 'lost_cargo', 36),
+    h(
+      'div',
+      { class: 'info' },
+      h('div', { class: 'n' }, q.title),
+      h('div', { class: 'p muted' }, q.desc),
+      h(
+        'div',
+        { class: 'p' },
+        h('span', { class: 'crests' }, formatCrests(q.pay)),
+        q.mine ? ` · ${progress} · ${remaining(ctx, q.deadline)} left` : ' · two days to finish once taken',
+      ),
+      q.taker && !q.mine ? h('div', { class: 'p muted' }, `Taken by ${q.taker}`) : null,
+    ),
+    q.mine
+      ? h(
+          'div',
+          { class: 'row' },
+          atBoard && q.kind === 'salvage'
+            ? h(
+                'button',
+                { class: 'small gold', disabled: !cargo, onclick: () => ctx.send({ t: 'quest', op: 'deliver', id: q.id }) },
+                'Hand in',
+              )
+            : null,
+          h('button', { class: 'small red', onclick: () => ctx.send({ t: 'quest', op: 'abandon', id: q.id }) }, 'Give up'),
+        )
+      : q.taker || !atBoard
+        ? null
+        : h('button', { class: 'small', onclick: () => ctx.send({ t: 'quest', op: 'accept', id: q.id }) }, 'Accept'),
+  );
+}
+
 function remaining(ctx: UiContext, minute: number): string {
   const left = minute - ctx.state.minutes;
   if (left <= 0) return 'expired';
@@ -618,6 +666,11 @@ function board(body: HTMLElement, ui: BoardUi, ctx: UiContext): void {
         ),
       );
     body.append(card);
+  }
+  if (ui.quests.length) {
+    body.append(h('div', { class: 'section-title', style: pr ? '' : 'margin-top:0' }, 'Quests'));
+    for (const q of ui.quests) body.append(questRow(q, ctx, true));
+    body.append(h('div', { class: 'section-title' }, 'Contracts'));
   }
   body.append(
     h(
@@ -736,12 +789,14 @@ function exchange(body: HTMLElement, ui: ExchangeUi, ctx: UiContext): void {
 
 export function contractsWindow(ctx: UiContext): WindowDef {
   return {
-    title: () => 'Your Contracts',
+    title: () => 'Your Quests & Contracts',
     order: 3,
-    width: 480,
+    width: 520,
     render: (body) => {
       const list = ctx.state.contracts;
-      if (list.length === 0) body.append(h('div', { class: 'muted' }, 'You have no contracts. Visit a Contract Board in any settlement.'));
+      for (const q of ctx.state.quests) body.append(questRow(q, ctx, false));
+      if (list.length === 0 && ctx.state.quests.length === 0)
+        body.append(h('div', { class: 'muted' }, 'You have no quests or contracts. Visit a Contract Board in any settlement.'));
       for (const c of list) {
         body.append(
           h(

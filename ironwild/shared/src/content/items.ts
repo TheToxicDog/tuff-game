@@ -195,6 +195,17 @@ item('antler', 'Antler', 'resource', ['hunt'], 12, 50, { shape: 'antler', color:
 item('wool', 'Wool', 'resource', ['farm'], 9, 50, { shape: 'wool', color: 0xf3efe6 });
 item('cotton', 'Cotton', 'resource', ['farm'], 5, 100, { shape: 'cotton', color: 0xfafafa, accent: 0x9ab86a });
 item('scrap_metal', 'Scrap Metal', 'resource', ['metal'], 6, 50, { shape: 'scrap', color: 0x8a7f74, accent: 0xb5552e });
+// Salvage quests (§53): nobody trades it; the board that asked for it pays for its return.
+item(
+  'lost_cargo',
+  'Lost Cargo',
+  'material',
+  [],
+  0,
+  1,
+  { shape: 'box', color: 0x8a6a45, accent: 0xc0392b },
+  { desc: 'A crate of goods from a wrecked wagon. Take it back to the contract board that asked for it.' },
+);
 
 // ——— Ores ———
 item('iron_ore', 'Iron Ore', 'ore', ['ore'], 8, 50, { shape: 'ore', color: 0x8c8c8c, accent: 0xc26a3a });

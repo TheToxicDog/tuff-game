@@ -94,6 +94,14 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   Statue of Industry (₡19,650 of steel, precision gears and gold) and a Beacon of Progress
   (₡26,200; with 40 power it lights up the valley at night). They stand for good once raised,
   appear on every map, and give prestige instead of counting as wealth.
+- Town quests (§53, "keep quests economically tied to the sandbox"; salvage, §11): besides its
+  contracts, every board posts a bounty — clear the wolves from Deepcut Mine, drive the bandits out
+  of their camp, cull boars in the fields, hunt the bear of the hills — and a salvage job: a supply
+  wagon overturned off a road somewhere out in the wilds, with two bandits picking it over. Taking
+  one (one at a time) marks it on the map and minimap and sends the pack out, or puts the wreck
+  there with its cargo and salvage (scrap, planks, rods, gears, rope). A bounty pays on the last kill
+  at the place; salvage pays when the Lost Cargo is handed in at the board. Pay grows with distance;
+  two game days to finish, or the quest fails and its pack or wreck is cleared away.
 - Hired guards (§42, "guards later"): a 2×2 guard house (Fortification) takes on a guard for wages
   paid in advance — ₡150 a game day, for 1, 3 or 7 days at a time and up to two weeks ahead; the
   wages go to nobody. The guard keeps watch by the house, fights raiders and wild animals within
@@ -114,4 +122,5 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 
 ## Next up
 
-- Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
+Everything planned so far is in. Ideas for later: freight vehicles and electric trains (§36), player
+crafting orders between companies, and seasonal weather.

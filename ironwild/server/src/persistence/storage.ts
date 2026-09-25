@@ -153,6 +153,28 @@ export interface AmbitionSave {
   seen: number;
 }
 
+/** A town quest (§53) on a contract board, or taken on by someone. */
+export interface QuestSave {
+  id: string;
+  settlement: string;
+  kind: 'bounty' | 'salvage';
+  title: string;
+  desc: string;
+  x: number;
+  y: number;
+  creature?: string;
+  n: number;
+  done: number;
+  pay: number;
+  /** Game minute it went up on the board, and (once taken) when it runs out. */
+  posted: number;
+  deadline: number;
+  taker: string | null;
+  takerName: string | null;
+  /** Salvage: the wreck's structure, once the quest is taken. */
+  wreck?: number;
+}
+
 export interface WorldSave {
   version: 1;
   seed: number;
@@ -175,6 +197,7 @@ export interface WorldSave {
   /** Town projects under way and finished. */
   projects?: ProjectSave[];
   ambitions?: AmbitionSave[];
+  quests?: QuestSave[];
 }
 
 export class DuplicateUsernameError extends Error {

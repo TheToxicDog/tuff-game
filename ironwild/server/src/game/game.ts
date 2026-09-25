@@ -37,6 +37,7 @@ import { RailSystem } from './rails';
 import { RaidSystem } from './raids';
 import { Replication } from './replication';
 import { GuardSystem } from './guards';
+import { QuestSystem } from './quests';
 import type { ClientSession } from './session';
 import { World, type ResourceNode, type Structure } from './world';
 
@@ -104,6 +105,7 @@ export class Game {
   readonly power: PowerSystem;
   readonly raids: RaidSystem;
   readonly guards: GuardSystem;
+  readonly quests: QuestSystem;
   readonly rails: RailSystem;
   readonly projects: TownProjects;
   readonly ambitions: Ambitions;
@@ -140,6 +142,7 @@ export class Game {
     this.power = new PowerSystem(this);
     this.raids = new RaidSystem(this);
     this.guards = new GuardSystem(this);
+    this.quests = new QuestSystem(this);
     this.rails = new RailSystem(this);
     this.projects = new TownProjects(this);
     this.ambitions = new Ambitions(this);
@@ -157,6 +160,7 @@ export class Game {
     this.creatures.init();
     this.raids.init();
     this.guards.init();
+    this.quests.init();
     this.factory.rebuildAll();
   }
 
@@ -244,6 +248,7 @@ export class Game {
       this.progression.stepSecond();
       this.ambitions.stepSecond();
       this.guards.stepSecond();
+      this.quests.stepSecond();
       this.combat.expireEntities();
     }
     if (this.day !== prevDay) this.economy.newDay();
@@ -447,6 +452,10 @@ export class Game {
       case 'claim':
         this.building.claimMember(p, msg.id, msg.op, msg.name, msg.role);
         break;
+      case 'quest':
+        if (typeof msg.id === 'string' && (msg.op === 'accept' || msg.op === 'deliver' || msg.op === 'abandon'))
+          this.quests.handle(p, msg.op, msg.id);
+        break;
       case 'guard':
         if (typeof msg.id !== 'number') break;
         if (msg.op === 'hire' && typeof msg.days === 'number') this.guards.hire(p, msg.id, msg.days);
@@ -570,6 +579,7 @@ export class Game {
       companies: this.companies.save(),
       projects: this.projects.save(),
       ambitions: this.ambitions.save(),
+      quests: this.quests.save(),
     };
   }
 
@@ -595,6 +605,7 @@ export class Game {
     this.combat.load(save.entities);
     this.companies.load(save.companies ?? []);
     this.ambitions.load(save.ambitions);
+    this.quests.load(save.quests);
     this.log(`loaded world: day ${this.day}, ${save.structures.length} structures`);
   }
 }

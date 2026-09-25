@@ -13,7 +13,7 @@ import {
   type ItemDef,
 } from '@ironwild/shared';
 import type { UiContext } from '../game/state';
-import { drawStar, h } from './dom';
+import { drawQuestMark, drawStar, h } from './dom';
 import { iconImg } from './icons';
 import type { WindowDef } from './windows';
 
@@ -257,6 +257,12 @@ function renderMap(body: HTMLElement, ctx: UiContext): void {
         { class: 'map-label', style: `left:${mo.x * scale}px;top:${mo.y * scale + 10}px;font-size:11px;color:#f2d27a` },
         `${STRUCTURE_BY_ID.get(mo.type)?.name ?? mo.type} (${mo.owner})`,
       ),
+    );
+  }
+  for (const q of ctx.state.quests) {
+    drawQuestMark(c2, q.x * scale, q.y * scale, 8);
+    wrap.append(
+      h('div', { class: 'map-label', style: `left:${q.x * scale}px;top:${q.y * scale + 10}px;font-size:11px;color:#ff9d94` }, q.title),
     );
   }
   const px = ctx.state.playerX * scale;

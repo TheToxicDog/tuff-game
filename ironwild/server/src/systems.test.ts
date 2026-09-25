@@ -13,6 +13,7 @@ import {
   TRUCK_TILES_PER_FUEL,
   Tile,
   countItem,
+  type BoardUi,
   type ServerMessage,
   type Snapshot,
 } from '@ironwild/shared';
@@ -23,6 +24,7 @@ import { newCharacter, Player } from './game/player';
 import type { ClientSession } from './game/session';
 import type { Cart, Creature } from './game/entities';
 import { hostileCreature } from './game/guards';
+import { QUEST_RADIUS } from './game/quests';
 import type { Structure } from './game/world';
 
 let game: Game;
@@ -520,6 +522,79 @@ describe('hired guards (§42)', () => {
     expect(house.guard).toBeUndefined();
     expect(game.entities.has(replacement.id)).toBe(false);
     expect(notices(owner).some((n) => /wages at the guard house ran out/.test(n))).toBe(true);
+  });
+});
+
+describe('town quests (§53)', () => {
+  it('bounties pay on the last kill; salvage jobs put out a wreck whose cargo pays at the board', () => {
+    for (const s of game.world.settlements) {
+      const kinds = game.quests.quests.filter((q) => q.settlement === s.id).map((q) => q.kind);
+      expect(kinds.sort(), s.id).toEqual(['bounty', 'salvage']);
+    }
+    const p = join('questor');
+    const town = game.world.settlements[0];
+    const board = town.npcs.find((n) => n.profession === 'board')!;
+    const toBoard = () => {
+      p.move.x = board.x + 1;
+      p.move.y = board.y;
+    };
+    toBoard();
+    const bounty = game.quests.quests.find((q) => q.settlement === town.id && q.kind === 'bounty')!;
+    const salvage = game.quests.quests.find((q) => q.settlement === town.id && q.kind === 'salvage')!;
+    const ui = game.economy.npcUi(p, board.id) as BoardUi;
+    expect(ui.quests.map((q) => q.id).sort()).toEqual([bounty.id, salvage.id].sort());
+
+    // Taking the bounty sends the pack to its place; one quest at a time.
+    game.quests.handle(p, 'accept', bounty.id);
+    expect(bounty.taker).toBe(p.accountId);
+    const pack = [...game.entities.values()].filter((e) => e.kind === 'creature' && e.quest === bounty.id) as Creature[];
+    expect(pack).toHaveLength(bounty.n);
+    expect(pack.every((c) => c.def.id === bounty.creature && Math.hypot(c.x - bounty.x, c.y - bounty.y) < QUEST_RADIUS)).toBe(true);
+    game.quests.handle(p, 'accept', salvage.id);
+    expect(salvage.taker).toBeNull();
+    // Killing them there pays on the last one, and a new bounty goes up.
+    const before = p.crests;
+    for (const c of pack) game.creatures.damage(c, 10_000, p, 0, false);
+    expect(p.crests).toBeGreaterThanOrEqual(before + bounty.pay);
+    expect(game.quests.quests.includes(bounty)).toBe(false);
+    expect(notices(p).some((n) => n.startsWith(`Quest complete: ${bounty.title}`))).toBe(true);
+    expect(game.quests.quests.some((q) => q.settlement === town.id && q.kind === 'bounty')).toBe(true);
+
+    // Salvage: a wreck with the cargo appears out there, watched by two bandits; nobody can carry it off.
+    game.quests.handle(p, 'accept', salvage.id);
+    const wreck = game.world.structures.get(salvage.wreck!)!;
+    expect(wreck.def.wreck).toBe(true);
+    expect(countItem(wreck.store!, 'lost_cargo')).toBe(1);
+    expect([...game.entities.values()].filter((e) => e.kind === 'creature' && e.quest === salvage.id)).toHaveLength(2);
+    expect(game.building.canRemove(p, wreck)).toBe(false);
+    game.quests.handle(p, 'deliver', salvage.id);
+    expect(notices(p).slice(-1)[0]).toMatch(/Bring the lost cargo/);
+    // Search the wreck, take the cargo home, hand it in.
+    p.move.x = wreck.x + 1;
+    p.move.y = wreck.y + 1.8;
+    game.playerSystem.interact(p, 'struct', wreck.id);
+    game.playerSystem.quickMove(p, { s: 'store', i: wreck.store!.findIndex((x) => x?.id === 'lost_cargo') });
+    expect(countItem(p.slots, 'lost_cargo')).toBe(1);
+    toBoard();
+    const before2 = p.crests;
+    game.quests.handle(p, 'deliver', salvage.id);
+    expect(p.crests).toBe(before2 + salvage.pay);
+    expect(countItem(p.slots, 'lost_cargo')).toBe(0);
+    expect(game.world.structures.has(wreck.id)).toBe(false);
+    expect([...game.entities.values()].some((e) => e.kind === 'creature' && e.quest === salvage.id)).toBe(false);
+
+    // A quest not finished in two days fails and its pack goes away.
+    const next = game.quests.quests.find((q) => q.settlement === town.id && q.kind === 'bounty')!;
+    game.quests.handle(p, 'accept', next.id);
+    expect([...game.entities.values()].some((e) => e.kind === 'creature' && e.quest === next.id)).toBe(true);
+    const was = game.minutes;
+    game.minutes = next.deadline + 1;
+    game.quests.check();
+    game.minutes = was;
+    expect(game.quests.quests.includes(next)).toBe(false);
+    expect([...game.entities.values()].some((e) => e.kind === 'creature' && e.quest === next.id)).toBe(false);
+    expect(notices(p).slice(-1)[0]).toMatch(/Quest failed/);
+    expect(game.quests.save().length).toBe(game.world.settlements.length * 2);
   });
 });
 

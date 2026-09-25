@@ -98,6 +98,8 @@ export interface StructureDef {
   lubricator?: boolean;
   /** Guard houses (§42): a hired guard keeps watch from here. */
   guardHouse?: boolean;
+  /** Put there by a salvage quest (§53): anyone may search it, nobody can take it down. */
+  wreck?: boolean;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -183,6 +185,19 @@ const S: StructureDef[] = [
     container: 4,
     only: 'arrow',
     tower: { range: 9, damage: 20, every: 1.3 },
+  },
+  {
+    // A salvage quest's overturned wagon (never built by players).
+    id: 'wrecked_wagon',
+    name: 'Wrecked Wagon',
+    item: 'plank',
+    size: [2, 1],
+    solid: true,
+    layer: 'object',
+    hp: 600,
+    placement: 'land',
+    container: 8,
+    wreck: true,
   },
   {
     id: 'guard_house',

@@ -428,6 +428,11 @@ export class ClientGame {
         this.hud.renderContracts();
         if (this.windows.isOpen('contracts')) this.windows.refresh('contracts');
         break;
+      case 'quests':
+        this.state.quests = msg.list;
+        this.hud.renderContracts();
+        if (this.windows.isOpen('contracts')) this.windows.refresh('contracts');
+        break;
       case 'ui':
         this.openServerUi(msg.ui);
         break;

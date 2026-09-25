@@ -4,7 +4,7 @@
 
 import { MAX_STAMINA, REGION_NAMES, formatCrests } from '@ironwild/shared';
 import type { UiContext } from '../game/state';
-import { drawStar, fmtTime, h } from './dom';
+import { drawQuestMark, drawStar, fmtTime, h } from './dom';
 import { slotEl } from './slots';
 
 const BUFF_NAMES: Record<string, string> = { strength: '💪 Strength', stamina: '🌾 Stamina', regen: '❤ Regeneration' };
@@ -82,13 +82,21 @@ export class Hud {
 
   renderContracts(): void {
     const list = this.ctx.state.contracts;
-    if (list.length === 0) {
+    const quests = this.ctx.state.quests;
+    if (list.length === 0 && quests.length === 0) {
       this.contracts.style.display = 'none';
       return;
     }
     this.contracts.style.display = 'block';
     this.contracts.replaceChildren(
-      h('div', { class: 'title', style: 'font-family:var(--heading);color:var(--gold)' }, 'Contracts (J)'),
+      h(
+        'div',
+        { class: 'title', style: 'font-family:var(--heading);color:var(--gold)' },
+        quests.length ? 'Quests & contracts (J)' : 'Contracts (J)',
+      ),
+      ...quests.map((q) =>
+        h('div', { class: 'c quest' }, q.kind === 'bounty' ? `${q.done}/${q.n} — ${q.title}` : `${q.title} → ${q.settlement}`),
+      ),
       ...list.map((c) => h('div', { class: 'c' }, `${c.delivered}/${c.n} ${c.item.replace(/_/g, ' ')} → ${c.settlement}`)),
     );
   }
@@ -144,6 +152,18 @@ export class Hud {
       const sx = (m.x - x + span / 2) * s;
       const sy = (m.y - y + span / 2) * s;
       if (sx >= -8 && sy >= -8 && sx <= 186 && sy <= 186) drawStar(c, sx, sy, 6);
+    }
+    // Where your quest is; off the edge of the minimap, a pointer on the rim shows the way.
+    for (const q of this.ctx.state.quests) {
+      let sx = (q.x - x + span / 2) * s;
+      let sy = (q.y - y + span / 2) * s;
+      const off = sx < 8 || sy < 8 || sx > 170 || sy > 170;
+      if (off) {
+        const a = Math.atan2(sy - 89, sx - 89);
+        sx = 89 + Math.cos(a) * 80;
+        sy = 89 + Math.sin(a) * 80;
+      }
+      drawQuestMark(c, sx, sy, off ? 5 : 7);
     }
     c.save();
     c.translate(89, 89);

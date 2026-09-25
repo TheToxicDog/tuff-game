@@ -55,6 +55,8 @@ export interface Creature {
   guard?: { post: number; nav: Detour };
   /** A guard this creature is fighting back against. */
   foe?: number;
+  /** Sent out by a town quest (§53): taken away again when the quest ends. */
+  quest?: string;
   /** Next time a spike trap may hurt it. */
   trapAt?: number;
 }

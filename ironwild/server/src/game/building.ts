@@ -63,8 +63,8 @@ export class BuildSystem {
   }
 
   canRemove(p: Player, s: Structure): boolean {
-    // Town buildings belong to the town; monuments stand for good once raised (§64).
-    if (s.town || s.def.monument) return false;
+    // Town buildings belong to the town; monuments stand for good once raised (§64); quest wrecks stay put.
+    if (s.town || s.def.monument || s.def.wreck) return false;
     if (!s.owner || s.owner === p.accountId) return true;
     // Company property: only officers may pick it up (members could otherwise walk off with it).
     if (isCompanyAccount(s.owner)) {
@@ -221,7 +221,9 @@ export class BuildSystem {
           ? `That belongs to the people of ${s.ownerName}.`
           : s.def.monument
             ? 'Monuments stand for good once raised.'
-            : `That belongs to ${s.ownerName}.`,
+            : s.def.wreck
+              ? 'The wreck is too heavy to shift. Search it (E) instead.'
+              : `That belongs to ${s.ownerName}.`,
         'bad',
       );
       return;

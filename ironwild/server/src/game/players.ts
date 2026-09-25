@@ -53,6 +53,7 @@ export class PlayerSystem {
     p.invDirty = p.statusDirty = p.researchDirty = p.tutorialDirty = true;
     if (p.dead) p.session.send({ t: 'dead', by: 'your wounds', crests: 0, items: 0 });
     this.game.economy.sendContracts(p);
+    this.game.quests.send(p);
     this.game.economy.sendTowns(p);
     this.game.companies.sendInfo(p);
   }

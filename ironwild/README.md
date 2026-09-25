@@ -117,6 +117,9 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   of the line; E flips a junction's switch or a station's mode, G reverses a cart.
 - **Found a company** (C): pool a treasury, hand your land and factories to it, make trusted
   partners officers; company shop stands and shipping crates pay the treasury.
+- **Take on quests** at the contract boards: bounties (clear the wolves from the old mine, drive
+  the bandits out of their camp, hunt a bear) that pay on the last kill, and salvage jobs — find a
+  wagon wrecked out in the wilds, get its cargo past the bandits and bring it back.
 - **Build up the towns**: each settlement's contract board has a town project — a mill wheel, a
   warehouse, a clock tower, a lighthouse. Deliver the goods for a little over market; finish it and
   the building goes up in town, the town grows and its markets deepen.

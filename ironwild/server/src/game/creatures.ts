@@ -404,6 +404,7 @@ export class CreatureSystem {
     this.game.removeEntity(c.id);
     if (c.zone) this.zoneCount.set(c.zone, Math.max(0, (this.zoneCount.get(c.zone) ?? 1) - 1));
     if (c.guard) this.game.guards.fell(c);
+    this.game.quests.onKill(c);
     this.game.emit(['die', c.id], c.x, c.y);
     const loot = [];
     for (const d of c.def.drops) {

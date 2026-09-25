@@ -7,6 +7,7 @@ import type {
   FactoryStats,
   MonumentInfo,
   PlayerStatus,
+  QuestInfo,
   ResearchState,
   Slots,
   StandingsInfo,
@@ -31,6 +32,8 @@ export class ClientState {
   research: ResearchState = { kp: 0, unlocked: [], blueprints: [] };
   tutorial: TutorialState | null = null;
   contracts: ContractInfo[] = [];
+  /** The quests you have taken on (§53), marked on the maps. */
+  quests: QuestInfo[] = [];
   ui: UiState | null = null;
   markets: MarketReport[] | null = null;
   towns = new Map<string, TownInfo>();
