@@ -1216,7 +1216,17 @@ export class ClientGame {
       ) {
         // Coal smoke from fires; white puffs of spent steam from engines.
         if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'boiler');
-      } else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);
+      } else if (s.type === 'steam_turbine') {
+        // Spent steam out of the stack at the front left, turned with the turbine.
+        const [dx, dy] = [
+          [-0.83, -0.84],
+          [0.84, -0.83],
+          [0.83, 0.84],
+          [-0.84, 0.83],
+        ][s.rot];
+        if (Math.random() < 0.6) this.effects.smoke(s.x + s.w / 2 + dx, s.y + s.h / 2 + dy, true);
+      } else if (s.type === 'drill' && Math.random() < 0.35) this.effects.burst(s.x + s.w / 2, s.y + s.h / 2, 'stone', 2, 60);
+      else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);
       else if (s.type === 'saw' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'wood', 2, 70);
       else if (s.type === 'lathe' && Math.random() < 0.35) this.effects.sparks(s.x + 0.4, s.y + 0.5, 3);
     }

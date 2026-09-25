@@ -1006,3 +1006,46 @@ describe('interaction reach', () => {
     expect((horse as { rider?: number }).rider).toBeUndefined();
   });
 });
+
+describe('power plants (§64)', () => {
+  it('a steam turbine turns a boiler’s steam straight into power on the grid', () => {
+    const w = game.world;
+    const land = (x: number, y: number) => TILES[w.tile(x, y)].land && !w.structAt(x, y) && !w.claimAt(x, y) && !w.settlementAt(x, y, 8);
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 40; y < w.size - 40 && !spot; y++)
+      for (let x = 40; x < w.size - 40 && !spot; x++) {
+        if (w.tile(x - 1, y) !== Tile.Water) continue;
+        let ok = true;
+        for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = 0; dx <= 8 && ok; dx++) if (!land(x + dx, y + dy)) ok = false;
+        if (ok) spot = { x, y };
+      }
+    expect(spot).not.toBeNull();
+    const { x, y } = spot!;
+    for (const n of w.nodesNear(x + 4, y, 10)) n.gone = true;
+    for (const e of [...game.entities.values()]) if (e.kind === 'creature' && Math.hypot(e.x - x, e.y - y) < 16) game.removeEntity(e.id);
+    const p = join('plant manager', x + 3.5, y + 3.5);
+    // Windmill → gearbox → pump; pipe → boiler (steam out east) → pipe → turbine; a pole beside it.
+    place(p, 'windmill', x, y - 2);
+    place(p, 'gearbox', x, y - 1);
+    place(p, 'pump', x, y);
+    place(p, 'pipe', x + 1, y);
+    const boiler = place(p, 'boiler', x + 2, y, 1);
+    place(p, 'pipe', x + 4, y);
+    const turbine = place(p, 'steam_turbine', x + 5, y - 1);
+    place(p, 'power_pole', x + 6, y + 1);
+    ticks(20 * 4);
+    expect(turbine.machine!.status).toBe('No steam');
+    expect(game.power.gridAt(turbine)?.supply).toBe(0);
+    boiler.machine!.fuel![0] = { id: 'coal', n: 10 };
+    ticks(20 * 8);
+    // A windmill pump gives 12.5–20 water a second, so the turbine runs at 60–100 %.
+    expect(turbine.machine!.active).toBe(true);
+    const supply = game.power.gridAt(turbine)!.supply;
+    expect(supply).toBeGreaterThan(1100);
+    expect(supply).toBeLessThanOrEqual(2000);
+    const ui = game.factory.machineUi(p, turbine);
+    expect(ui.tanks?.[0].fluid).toBe('Steam');
+    expect(ui.rate?.perSec).toBeGreaterThan(10);
+    expect(ui.grid?.supply).toBe(supply);
+  });
+});

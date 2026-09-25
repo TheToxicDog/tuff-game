@@ -132,6 +132,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     col: 4,
     row: 0,
   },
+  {
+    id: 'power_plants',
+    name: 'Power Plants',
+    cost: 220,
+    requires: ['steam'],
+    desc: 'Steam turbines: 2,000 power from one boiler, no shafts needed.',
+    col: 6,
+    row: 2,
+  },
   { id: 'jewelcraft', name: 'Gem Cutting', cost: 40, requires: ['smithing'], desc: 'Cut rough gems on the anvil.', col: 3, row: 4 },
   {
     id: 'precision',

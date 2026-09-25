@@ -76,6 +76,10 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   10,000 items by rail, a 1,000-power grid, ₡250,000 sold in one town, ₡50,000 to town projects, a
   Masterwork. Worth counts Crests, what you carry and everything you own with its contents; a
   company's achievements count for its members. Standings (L) rank players and companies.
+- Power plants (§64): research Power Plants; a 3×2 steam turbine takes one boiler's steam (20/s)
+  through its back and sides and makes 2,000 power for the poles in reach — more than engines and
+  generators get from the same steam, and no shafts, at the price of steel, gearbox units,
+  bearings, precision gears, wire and valves. Short of steam, it runs at part load.
 - Mechanical drills (§62, "big mines tap near-unlimited deposits with machinery"): research Deep
   Mining; a 2×2 drill stood over an ore vein, coal seam or rock (up to tier 2) takes its place and
   mines it without end — one pickaxe load every 3 s at 16 RPM for 48 stress — pushing ore and
@@ -94,4 +98,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Tier 4 power: steam turbines and big power plants (§64).
+- Hired guards, motor trucks, warehouses and automatic lubrication (§36, §42, §58–62).

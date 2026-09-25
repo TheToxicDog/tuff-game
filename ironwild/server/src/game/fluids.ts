@@ -13,6 +13,7 @@ import {
   PUMPJACK_RATE,
   PUMP_RATE,
   TICK_RATE,
+  TURBINE_STEAM,
   fluidFace,
   fluidJoins,
   type Fluid,
@@ -73,6 +74,9 @@ export class FluidSystem {
           break;
         case 'pumpjack':
           this.stepPumpjack(s, dt);
+          break;
+        case 'turbine':
+          this.stepTurbine(s, dt);
           break;
         case 'refinery': {
           const buf = this.buffer(s);
@@ -309,6 +313,32 @@ export class FluidSystem {
     }
   }
 
+  /** A turbine burns up to a boiler's worth of steam and makes power in proportion (the grid reads `power`). */
+  private stepTurbine(s: Structure, dt: number): void {
+    const m = s.machine!;
+    const was = m.active;
+    const cap = s.def.fluid!.capacity;
+    const buf = this.buffer(s);
+    const p = this.ports.get(s.id);
+    buf.steam += this.take(p, 'steam', cap - buf.steam);
+    const need = TURBINE_STEAM * dt;
+    const used = Math.min(need, buf.steam);
+    buf.steam -= used;
+    // Smoothed, so a trickle of steam gives a steady part-load rather than flicker.
+    s.power = (s.power ?? 0) + (used / need - (s.power ?? 0)) * Math.min(1, dt * 2);
+    if (s.power < 0.005) s.power = 0;
+    m.active = s.power > 0.05;
+    m.status = m.active
+      ? s.power > 0.95
+        ? 'Running'
+        : `Short of steam (${Math.round(s.power * 100)}%)`
+      : p && (p.ins.length > 0 || this.fedDirectly(s))
+        ? 'No steam'
+        : 'Pipe it to a boiler';
+    m.rate = (m.rate ?? 0) + (used / dt - (m.rate ?? 0)) * Math.min(1, dt * 2);
+    if (m.active !== was) this.game.structVisual(s);
+  }
+
   private fedDirectly(s: Structure): boolean {
     for (const p of this.ports.values()) if (p.direct.includes(s)) return true;
     return false;
@@ -333,6 +363,11 @@ export class FluidSystem {
         rate: { fluid: FLUID_NAMES.steam, perSec: round(m?.rate ?? 0) },
       };
     if (role === 'engine') return { tanks: [{ fluid: FLUID_NAMES.steam, amount: round(buf.steam), capacity: cap }] };
+    if (role === 'turbine')
+      return {
+        tanks: [{ fluid: FLUID_NAMES.steam, amount: round(buf.steam), capacity: cap }],
+        rate: { fluid: FLUID_NAMES.steam, perSec: round(m?.rate ?? 0) },
+      };
     if (role === 'pumpjack') return { rate: { fluid: FLUID_NAMES.crude, perSec: round(m?.rate ?? 0) } };
     if (role === 'refinery') return { tanks: [{ fluid: FLUID_NAMES.crude, amount: round(buf.crude ?? 0), capacity: cap }] };
     return {};

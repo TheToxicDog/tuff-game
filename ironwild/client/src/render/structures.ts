@@ -419,6 +419,68 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   pen_gate(c) {
     fenceLike(c, true);
   },
+  steam_turbine(c) {
+    const { hw, hh } = half(c);
+    const g = c.g;
+    const on = !!c.s.st.on;
+    // Base plate, the long turbine casing, the generator drum at the east end.
+    g.roundRect(-hw + 4, -hh + 6, hw * 2 - 8, hh * 2 - 12, 8)
+      .fill(0x3a3c40)
+      .stroke({ width: 4, color: OUTLINE });
+    bolts(g, hw, hh);
+    const cx0 = -hw + 16;
+    const cx1 = hw - 58;
+    g.roundRect(cx0, -30, cx1 - cx0, 60, 28)
+      .fill(0x5a6f86)
+      .stroke({ width: 4, color: OUTLINE });
+    g.roundRect(cx0 + 4, 2, cx1 - cx0 - 8, 24, 12).fill(shade(0x5a6f86, 0.82));
+    for (let x = cx0 + 22; x < cx1 - 10; x += 16)
+      g.moveTo(x, -28)
+        .lineTo(x, 28)
+        .stroke({ width: 2, color: shade(0x5a6f86, 0.7), alpha: 0.8 });
+    g.circle(hw - 32, 0, 30)
+      .fill(0xb06a3a)
+      .stroke({ width: 4, color: OUTLINE });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      g.moveTo(hw - 32 + Math.cos(a) * 10, Math.sin(a) * 10)
+        .lineTo(hw - 32 + Math.cos(a) * 27, Math.sin(a) * 27)
+        .stroke({ width: 3, color: 0xd99a5a });
+    }
+    g.circle(hw - 32, 0, 9)
+      .fill(0x6f757d)
+      .stroke({ width: 2, color: OUTLINE });
+    // Steam comes in by the flanges at the back; the exhaust stack stands at the front.
+    for (const x of [-hw + 40, 0])
+      g.roundRect(x - 9, hh - 16, 18, 12, 3)
+        .fill(0xc27a45)
+        .stroke({ width: 2, color: OUTLINE });
+    g.roundRect(-hw + 30, -hh + 2, 26, 16, 4)
+      .fill(0x6f757d)
+      .stroke({ width: 3, color: OUTLINE });
+    // Through the inspection window the rotor spins while there is steam.
+    const window = new Graphics();
+    window.circle(0, 0, 22).fill(0x1a1612).stroke({ width: 3, color: 0xd9dde3 });
+    window.position.set(-24, -4);
+    const rotor = new Graphics();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      rotor
+        .moveTo(Math.cos(a) * 4, Math.sin(a) * 4)
+        .lineTo(Math.cos(a + 0.35) * 19, Math.sin(a + 0.35) * 19)
+        .stroke({ width: 3, color: on ? 0xe8eef2 : 0x8e99a8 });
+    }
+    rotor.circle(0, 0, 5).fill(0xd9b23d);
+    rotor.position.copyFrom(window.position);
+    c.inner.addChild(window, rotor);
+    const light = new Graphics();
+    light
+      .circle(hw - 70, -hh + 16, 5)
+      .fill(on ? 0x7ac05a : 0x5a3a2a)
+      .stroke({ width: 2, color: OUTLINE });
+    c.inner.addChild(light);
+    if (on) c.anims.push((dt) => (rotor.rotation += dt * 14));
+  },
   drill(c) {
     const { hw, hh } = half(c);
     const g = c.g;

@@ -344,6 +344,21 @@ const S: StructureDef[] = [
     fluid: { role: 'engine', capacity: 60 },
   },
   {
+    id: 'steam_turbine',
+    name: 'Steam Turbine',
+    item: 'steam_turbine',
+    size: [3, 2],
+    solid: true,
+    layer: 'object',
+    hp: 1600,
+    placement: 'land',
+    light: 4,
+    machine: { station: 'turbine', buffer: 0 },
+    fluid: { role: 'turbine', capacity: 80 },
+    // A power plant: electricity straight from steam, no shafts in between.
+    electric: { role: 'generator', power: 2000 },
+  },
+  {
     id: 'boiler',
     name: 'Boiler',
     item: 'boiler',

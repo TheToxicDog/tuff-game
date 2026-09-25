@@ -219,7 +219,7 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
       h(
         'div',
         { class: 'muted', style: 'font-size:12px;margin-top:6px' },
-        `${ui.type === 'pump' ? 'Pumping' : 'Making'} ${ui.rate.perSec} ${ui.rate.fluid.toLowerCase()} a second`,
+        `${ui.type === 'pump' ? 'Pumping' : ui.type === 'steam_turbine' ? 'Using' : 'Making'} ${ui.rate.perSec} ${ui.rate.fluid.toLowerCase()} a second`,
       ),
     );
   const statusCls = ui.status === 'Working' || ui.status === 'Running' ? 'working' : STATUS_WARN.has(ui.status) ? 'warn' : '';

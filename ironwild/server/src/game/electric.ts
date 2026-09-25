@@ -113,7 +113,12 @@ export class PowerSystem {
       let demand = 0;
       for (const d of g.devices) {
         const spec = d.def.electric!;
-        if (spec.role === 'generator') supply += spec.power * Math.min(2, Math.max(0, (d.speed ?? 0) / BASE_RPM));
+        // Generators turn with their network (up to twice their power at 32 RPM); turbines make what their steam allows.
+        if (spec.role === 'generator')
+          supply +=
+            d.def.fluid?.role === 'turbine'
+              ? spec.power * (d.power ?? 0)
+              : spec.power * Math.min(2, Math.max(0, (d.speed ?? 0) / BASE_RPM));
         // Overclocked machines draw disproportionately more (§60).
         else if (this.wants(d)) demand += spec.power * (OVERCLOCK[d.machine?.oc ?? 0]?.cost ?? 1);
       }

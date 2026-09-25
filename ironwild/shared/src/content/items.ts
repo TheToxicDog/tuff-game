@@ -661,6 +661,15 @@ place('blast_furnace', 'Blast Furnace', 'machine', 900, 5, 0x6a4a3a, 'Iron ingot
 place('assembler', 'Assembler', 'machine', 1600, 5, 0x4a6a8a, 'Builds components from parts. 60 torque.');
 place('steam_engine', 'Steam Engine', 'machine', 2400, 5, 0x8a3a2a, 'Runs on steam from a boiler: 32 RPM, 256 torque, 10 steam/s.');
 place(
+  'steam_turbine',
+  'Steam Turbine',
+  'machine',
+  7200,
+  2,
+  0x5a6f86,
+  'A power plant: pipe it 20 steam/s (one boiler) and it makes 2,000 power for the poles within reach. Steam in at the back and sides.',
+);
+place(
   'boiler',
   'Boiler',
   'machine',

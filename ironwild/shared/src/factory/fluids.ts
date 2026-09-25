@@ -21,8 +21,10 @@ export const BOIL_SECONDS_PER_FUEL = 5;
 export const ENGINE_STEAM = 10;
 /** Crude oil a pumpjack lifts per second at 16 RPM. */
 export const PUMPJACK_RATE = 12;
+/** Steam a steam turbine uses per second at full output (one boiler's worth). */
+export const TURBINE_STEAM = 20;
 
-export type FluidRole = 'pipe' | 'tank' | 'pump' | 'boiler' | 'engine' | 'pumpjack' | 'refinery';
+export type FluidRole = 'pipe' | 'tank' | 'pump' | 'boiler' | 'engine' | 'pumpjack' | 'refinery' | 'turbine';
 
 export interface FluidSpec {
   role: FluidRole;
@@ -57,6 +59,9 @@ export function fluidFace(def: StructureDef, rot: number, dir: number): FluidFac
     case 'refinery':
       // Products leave by the front.
       return dir === front ? null : { fluid: 'crude', io: 'in' };
+    case 'turbine':
+      // Steam comes in at the back and sides; the front is the exhaust.
+      return dir === front ? null : { fluid: 'steam', io: 'in' };
   }
 }
 

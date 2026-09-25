@@ -60,6 +60,7 @@ export const STATION_NAMES: Record<string, string> = {
   refinery: 'Refinery',
   pumpjack: 'Pumpjack',
   drill: 'Mechanical Drill',
+  turbine: 'Steam Turbine',
 };
 
 /** Fish that cook into grilled fish. */
@@ -187,6 +188,13 @@ craft(
   [s('steam_engine')],
   [s('steel_plate', 12), s('steel_gear', 8), s('iron_plate', 10), s('copper_plate', 6)],
   'steam',
+);
+craft(
+  'steam_turbine',
+  'workbench',
+  [s('steam_turbine')],
+  [s('steel_plate', 40), s('gearbox_unit', 4), s('bearing', 12), s('precision_gear', 12), s('copper_wire', 60), s('valve', 6)],
+  'power_plants',
 );
 
 // ——— Cooking (near a campfire or oven) ———
