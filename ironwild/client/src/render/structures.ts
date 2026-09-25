@@ -3,7 +3,7 @@
 // stamp, furnaces glow. Each view is a static drawing plus a list of per-frame animations.
 
 import { Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { CROP_BY_ID, DX, DY, ITEM_BY_ID, opposite, type StructureDef } from '@ironwild/shared';
+import { CROP_BY_ID, DX, DY, FLUID_COLORS, ITEM_BY_ID, fluidJoins, opposite, type Fluid, type StructureDef } from '@ironwild/shared';
 import type { ClientStruct, ClientWorld } from '../game/world';
 import { iconCanvas } from '../ui/icons';
 import { OUTLINE, TS, arcPath, arrow, gearContext, shade } from './draw';
@@ -39,6 +39,7 @@ const RPM_TO_RAD = (Math.PI * 2) / 60;
 const VISUAL_SPEED = 1.4;
 
 let beltTexture: Texture | null = null;
+let flowTexture: Texture | null = null;
 let shaftTexture: Texture | null = null;
 const iconTextures = new Map<string, Texture>();
 
@@ -70,6 +71,27 @@ function beltTex(): Texture {
   ctx.fillRect(0, 30, 32, 2);
   beltTexture = Texture.from(c);
   return beltTexture;
+}
+
+/** Light dashes drifting along a pipe's sight glass (tinted by the fluid). */
+function flowTex(): Texture {
+  if (flowTexture) return flowTexture;
+  const c = document.createElement('canvas');
+  c.width = 24;
+  c.height = 8;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#b8b8b8';
+  ctx.fillRect(0, 0, 24, 8);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.roundRect(2, 2, 9, 4, 2);
+  ctx.fill();
+  ctx.fillStyle = '#dcdcdc';
+  ctx.beginPath();
+  ctx.roundRect(14, 3, 5, 2, 1);
+  ctx.fill();
+  flowTexture = Texture.from(c);
+  return flowTexture;
 }
 
 function shaftTex(): Texture {
@@ -715,6 +737,169 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
       .roundRect(hw - 40, -hh + 16, 24, 20, 4)
       .fill(0x6a6f78)
       .stroke({ width: 3, color: OUTLINE });
+  },
+  pipe(c) {
+    c.inner.rotation = 0;
+    const joined = [0, 1, 2, 3].filter((d) => {
+      const n = neighbour(c, d);
+      return !!n && fluidJoins(c.s, n, d);
+    });
+    const arms = joined.length ? joined : [1, 3];
+    const BRONZE = 0xc27a45;
+    const cores: TilingSprite[] = [];
+    for (const d of arms) {
+      const a = (d * Math.PI) / 2 - Math.PI / 2;
+      const arm = new Container();
+      arm.rotation = a;
+      const g = new Graphics();
+      g.roundRect(-2, -10, 34, 20, 4).fill(BRONZE).stroke({ width: 3, color: OUTLINE });
+      g.rect(0, -7, 32, 3).fill({ color: 0xffffff, alpha: 0.25 });
+      g.roundRect(24, -13, 8, 26, 2).fill(shade(BRONZE, 0.8)).stroke({ width: 2, color: OUTLINE });
+      g.roundRect(4, -4, 20, 8, 3).fill(0x2a241c);
+      arm.addChild(g);
+      const core = new TilingSprite({ texture: flowTex(), width: 18, height: 6 });
+      core.position.set(5, -3);
+      arm.addChild(core);
+      cores.push(core);
+      c.inner.addChild(arm);
+    }
+    c.inner.addChild(
+      new Graphics().circle(0, 0, 12).fill(shade(BRONZE, 0.9)).stroke({ width: 3, color: OUTLINE }).circle(0, 0, 4).fill(0x6b4a2a),
+    );
+    const world = c.world;
+    if (!world) return;
+    c.anims.push((dt) => {
+      const f = world.fluidAt(c.s.id);
+      const fluid = f?.fluid as Fluid | '' | undefined;
+      for (const core of cores) {
+        core.visible = !!fluid;
+        if (!fluid) continue;
+        core.tint = FLUID_COLORS[fluid];
+        core.alpha = 0.45 + 0.55 * Math.min(1, f!.fill * 2);
+        core.tilePosition.x += Math.min(40, f!.flow * 2) * dt;
+      }
+    });
+  },
+  fluid_tank(c) {
+    c.inner.rotation = 0;
+    const { hw } = half(c);
+    const r = hw - 4;
+    c.g.circle(0, 0, r).fill(0x9a6b3f).stroke({ width: 4, color: OUTLINE });
+    for (let i = 0; i < 3; i++) c.g.circle(0, 0, r - 6 - i * 6).stroke({ width: 2, color: 0x7a5230, alpha: 0.7 });
+    c.g.circle(0, 0, r).stroke({ width: 5, color: 0xa9afb8 });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      c.g.circle(Math.cos(a) * r, Math.sin(a) * r, 2.5).fill(0x55595f);
+    }
+    // Sight glass with the level.
+    c.g
+      .roundRect(-6, -r + 8, 12, r * 2 - 16, 4)
+      .fill(0x2a241c)
+      .stroke({ width: 2, color: OUTLINE });
+    const level = new Graphics();
+    c.inner.addChild(level);
+    const world = c.world;
+    if (!world) return;
+    let last = -1;
+    c.anims.push(() => {
+      const f = world.fluidAt(c.s.id);
+      const fill = f?.fluid ? f.fill : 0;
+      const key = Math.round(fill * 40) + (f?.fluid === 'steam' ? 100 : 0);
+      if (key === last) return;
+      last = key;
+      level.clear();
+      if (fill <= 0) return;
+      const h = (r * 2 - 20) * fill;
+      level.roundRect(-4, r - 10 - h, 8, h, 3).fill(FLUID_COLORS[(f!.fluid as Fluid) ?? 'water']);
+    });
+  },
+  pump(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    const outlets = [0, 1, 2, 3].filter((d) => {
+      const n = neighbour(c, d);
+      return !!n && fluidJoins(c.s, n, d);
+    });
+    for (const d of outlets) {
+      const a = (d * Math.PI) / 2 - Math.PI / 2;
+      c.g
+        .roundRect(Math.cos(a) * 26 - 9, Math.sin(a) * 26 - 9, 18, 18, 3)
+        .fill(0xc27a45)
+        .stroke({ width: 2, color: OUTLINE });
+    }
+    casing(c.g, hw, hh, 0x3f6f9a, 6);
+    bolts(c.g, hw, hh);
+    c.g.circle(0, 0, 17).fill(0x2a3a4a).stroke({ width: 3, color: OUTLINE });
+    const vanes = new Graphics();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      vanes
+        .moveTo(Math.cos(a) * 3, Math.sin(a) * 3)
+        .quadraticCurveTo(Math.cos(a + 0.5) * 10, Math.sin(a + 0.5) * 10, Math.cos(a + 0.9) * 14, Math.sin(a + 0.9) * 14);
+    }
+    vanes.stroke({ width: 4, color: 0x9ad0f0 });
+    vanes.circle(0, 0, 4).fill(0xb0b5bd);
+    spinner(c, vanes, 0);
+  },
+  boiler(c) {
+    const { hw, hh } = half(c);
+    // Brick firebox with a riveted steel drum on top; steam leaves by the front (up in this frame).
+    c.g
+      .roundRect(-hw + 4, -hh + 10, hw * 2 - 8, hh * 2 - 14, 8)
+      .fill(0x8a4a35)
+      .stroke({ width: 5, color: OUTLINE });
+    for (let row = 0; row < 5; row++) {
+      const y = -hh + 18 + row * 20;
+      c.g
+        .moveTo(-hw + 8, y)
+        .lineTo(hw - 8, y)
+        .stroke({ width: 2, color: 0x6a3525 });
+    }
+    c.g
+      .roundRect(-hw + 16, -hh + 20, hw * 2 - 32, hh * 2 - 60, 26)
+      .fill(0x6f7c8f)
+      .stroke({ width: 4, color: OUTLINE });
+    c.g.roundRect(-hw + 22, -hh + 26, hw * 2 - 44, 8, 4).fill({ color: 0xffffff, alpha: 0.22 });
+    for (let i = 0; i < 6; i++) {
+      const x = -hw + 30 + i * ((hw * 2 - 60) / 5);
+      c.g.circle(x, -hh + 44, 2.5).fill(0x3a3c40);
+      c.g.circle(x, hh - 46, 2.5).fill(0x3a3c40);
+    }
+    // Steam outlet.
+    c.g
+      .roundRect(-12, -hh - 2, 24, 18, 3)
+      .fill(0xc27a45)
+      .stroke({ width: 3, color: OUTLINE });
+    c.g
+      .roundRect(-16, -hh - 4, 32, 6, 2)
+      .fill(0x9a5a30)
+      .stroke({ width: 2, color: OUTLINE });
+    // Pressure gauge.
+    c.g
+      .circle(hw - 28, -hh + 42, 11)
+      .fill(0xf3ecd9)
+      .stroke({ width: 3, color: OUTLINE });
+    const needle = new Graphics().moveTo(0, 0).lineTo(0, -8).stroke({ width: 2, color: 0xc0302a });
+    needle.position.set(hw - 28, -hh + 42);
+    c.inner.addChild(needle);
+    // Firebox door.
+    c.g
+      .roundRect(-20, hh - 30, 40, 22, 5)
+      .fill(0x2a1a14)
+      .stroke({ width: 3, color: OUTLINE });
+    const glow = new Graphics()
+      .roundRect(-16, hh - 26, 32, 14, 4)
+      .fill(0xf07a2a)
+      .roundRect(-11, hh - 22, 22, 6, 2)
+      .fill(0xffd35a);
+    glow.visible = !!c.s.st.on;
+    c.inner.addChild(glow);
+    outputMark(c.g, hh);
+    c.anims.push((_dt, t) => {
+      glow.alpha = 0.75 + Math.sin(t * 6 + c.s.id) * 0.2;
+      const target = c.s.st.on ? 1.1 + Math.sin(t * 3) * 0.08 : -1.2;
+      needle.rotation += (target - needle.rotation) * 0.05;
+    });
   },
   shaft(c) {
     const { hw } = half(c);

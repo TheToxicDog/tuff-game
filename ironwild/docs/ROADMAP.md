@@ -35,7 +35,7 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 | 8   | Multiplayer trading            | ✅     | Shop stands (paid while offline), buy orders with escrow on the Exchange, `/pay` (§33–34).                                                                   |
 | 9   | Agriculture and animals        | ✅     | Tilling, four crops, chickens/sheep/cows producing eggs/wool/milk, pens with gates.                                                                          |
 | 10  | Vehicles and logistics         | 🟡     | Hand carts (24 slots) and horses; shipping crates sell automatically at dawn (§35). Missing: wagons, trucks, rail, depots.                                   |
-| 11  | Steam technology               | 🟡     | Steam engines (coal + water, 32 RPM, 256 torque) and blast furnaces for steel. Missing: boilers, pumps and pipes.                                            |
+| 11  | Steam technology               | ✅     | Pumps lift river water into pipes, coal-fired boilers make steam, steam engines turn it into 32 RPM / 256 torque; tanks buffer; blast furnaces for steel.    |
 | 12  | Industrial technology          | 🟡     | Assemblers make bearings, gearbox units and industrial pumps. Missing: electricity, motors, machine tools, packaging.                                        |
 | 13  | Company systems                | 🟡     | Companies with a treasury; members share access to each other's land, carts and animals. Missing: company-owned property and shops, officer roles in the UI. |
 | 14  | Expanded world economy         | 🟡     | Port Meridian with imports and exports; town growth opens new stalls (§54); market events move a town's prices for a day. Missing: oil, more towns.          |
@@ -52,11 +52,14 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 - Market events (§14): iron and coal shortages, festivals, bad harvests, building booms, bandit
   scares, gluts — announced as market news and shown on the market report.
 - Shipwrecks on the beaches to salvage for hardwood, rope, scrap and the odd treasure (§11).
+- Steam (§19): mechanical pumps, pipes that join into networks holding one fluid, fluid tanks,
+  boilers (water in at the back and sides, steam out the front) and steam engines that run on piped
+  steam. One pump feeds one boiler; one boiler feeds two engines.
 - Port Meridian (§14): a harbour town with a pier and a moored ship; a fishmonger, an importer
   (spices, silk, tea, steel, glass) and an export agent who pays best for finished goods.
 
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Boilers, pumps and pipes; wagons, depots and rail (§19, §36).
+- Wagons, depots and rail (§36).
 - Tier 3–4 technology and prestige projects (§64).

@@ -26,6 +26,7 @@ import type { Entity } from './entities';
 import { Factory } from './factory';
 import { Farming } from './farming';
 import { Fishing } from './fishing';
+import { FluidSystem } from './fluids';
 import { newCharacter, Player } from './player';
 import { PlayerSystem } from './players';
 import { Progression } from './progression';
@@ -94,6 +95,7 @@ export class Game {
   readonly replication: Replication;
   readonly farming: Farming;
   readonly fishing: Fishing;
+  readonly fluids: FluidSystem;
   readonly raids: RaidSystem;
   readonly companies: CompanySystem;
   readonly commands: Commands;
@@ -124,6 +126,7 @@ export class Game {
     this.replication = new Replication(this);
     this.farming = new Farming(this);
     this.fishing = new Fishing(this);
+    this.fluids = new FluidSystem(this);
     this.raids = new RaidSystem(this);
     this.companies = new CompanySystem(this);
     this.commands = new Commands(this);
@@ -213,6 +216,7 @@ export class Game {
     this.combat.step(dt);
     this.creatures.step(dt);
     this.factory.step(dt);
+    this.fluids.step(dt);
     this.farming.step(dt);
     this.fishing.step();
     this.raids.step(dt);
@@ -321,6 +325,7 @@ export class Game {
     };
     session.send(welcome);
     session.send({ t: 'kin', s: [], nets: this.factory.netSummaries(), of: [] });
+    this.fluids.broadcast(true, session);
     this.playerSystem.joined(player);
     this.broadcastChat('', `${player.name} arrived in the valley.`, 'system');
     this.log(`${account.username} joined (${this.players.size} online)`);
@@ -502,6 +507,7 @@ export class Game {
   }
 
   serialize(): WorldSave {
+    this.fluids.spread();
     const nodes: [number, number, number][] = [];
     for (const n of this.world.nodes.values()) {
       if (n.gone) nodes.push([n.id, -1, 0]);

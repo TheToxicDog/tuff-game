@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { ITEM_BY_ID, SETTLEMENT_BY_ID, countItem, type ServerMessage } from '@ironwild/shared';
+import { ITEM_BY_ID, SETTLEMENT_BY_ID, TILES, Tile, countItem, type ServerMessage } from '@ironwild/shared';
 import type { AccountRecord } from './persistence/storage';
 import { MemoryStorage } from './persistence/memory-storage';
 import { Game } from './game/game';
@@ -452,5 +452,76 @@ describe('Port Meridian (§14)', () => {
     const exporter = game.economy.bestBuyer(port, gear)!;
     expect(exporter.id).toBe('exporter');
     expect(game.economy.bid(port, exporter, gear)).toBeGreaterThan(game.economy.bid(west, game.economy.bestBuyer(west, gear)!, gear));
+  });
+});
+
+describe('steam power (§19)', () => {
+  it('pumps river water to a coal-fired boiler whose steam drives an engine', () => {
+    const w = game.world;
+    // A river bank with a 7 × 4 patch of dry land to its east.
+    const land = (x: number, y: number) => TILES[w.tile(x, y)].land && !w.structAt(x, y) && !w.claimAt(x, y) && !w.settlementAt(x, y, 8);
+    let spot: { x: number; y: number } | null = null;
+    for (let y = 40; y < w.size - 40 && !spot; y++)
+      for (let x = 40; x < w.size - 40 && !spot; x++) {
+        if (w.tile(x - 1, y) !== Tile.Water) continue;
+        let ok = true;
+        for (let dy = -2; dy <= 1 && ok; dy++) for (let dx = 0; dx <= 6 && ok; dx++) if (!land(x + dx, y + dy)) ok = false;
+        if (ok) spot = { x, y };
+      }
+    expect(spot).not.toBeNull();
+    const { x, y } = spot!;
+    for (const n of w.nodesNear(x + 3, y, 9)) n.gone = true;
+    for (const e of [...game.entities.values()]) if (e.kind === 'creature' && Math.hypot(e.x - x, e.y - y) < 16) game.removeEntity(e.id);
+    const p = join('stoker', x + 3.5, y + 3.5);
+    // Windmill → gearbox → pump on the bank; pipe → boiler (steam out east) → pipe → engine.
+    place(p, 'windmill', x, y - 2);
+    place(p, 'gearbox', x, y - 1);
+    const pump = place(p, 'pump', x, y);
+    place(p, 'pipe', x + 1, y);
+    const boiler = place(p, 'boiler', x + 2, y, 1);
+    place(p, 'pipe', x + 4, y);
+    const engine = place(p, 'steam_engine', x + 5, y);
+    ticks(20 * 6);
+    expect(pump.machine!.status).toBe('Running');
+    // A windmill turns 10–16 RPM here, so the pump lifts 12.5–20 water a second.
+    expect(pump.machine!.rate!).toBeGreaterThan(12);
+    // No fuel yet: the boiler fills with water but makes no steam.
+    expect(boiler.machine!.status).toBe('No fuel');
+    expect(boiler.buf!.water).toBeGreaterThan(50);
+    expect(engine.machine!.active).toBe(false);
+    boiler.machine!.fuel![0] = { id: 'coal', n: 5 };
+    ticks(20 * 3);
+    expect(boiler.machine!.status).toBe('Running');
+    expect(engine.machine!.active).toBe(true);
+    expect(engine.spin?.[0]).toBe(32);
+    expect(game.factory.netSummary(engine.net)!.cap).toBeGreaterThanOrEqual(256);
+    const ui = game.factory.machineUi(p, boiler);
+    expect(ui.tanks?.map((t) => t.fluid)).toEqual(['Water', 'Steam']);
+    expect(ui.rate?.perSec).toBeGreaterThan(5);
+    // Starve the boiler of water: the engine runs down and stops.
+    game.building.remove(w.structAt(x + 1, y)!);
+    ticks(20 * 12);
+    expect(boiler.machine!.status).toBe('No water');
+    expect(engine.machine!.active).toBe(false);
+  });
+
+  it('keeps one fluid per network and saves pipe contents', () => {
+    const spot = clearSpot(4, 1, 60);
+    const p = join('plumber', spot.x + 0.5, spot.y + 2.5);
+    const a = place(p, 'pipe', spot.x, spot.y);
+    const tank = place(p, 'fluid_tank', spot.x + 1, spot.y);
+    place(p, 'pipe', spot.x + 2, spot.y);
+    // (As if loaded from a save: the tank holds water.)
+    tank.fluid = { kind: 'water', amount: 1000 };
+    ticks(1);
+    expect(game.fluids.netAt(a)).toMatchObject({ fluid: 'water', amount: 1000, capacity: 50 + 2000 + 50 });
+    // Regrouping (a new pipe) keeps what the network held.
+    place(p, 'pipe', spot.x + 3, spot.y);
+    ticks(1);
+    expect(game.fluids.netAt(a)!.amount).toBeCloseTo(1000, 3);
+    expect(game.fluids.netAt(a)!.capacity).toBe(2150);
+    const save = game.serialize();
+    const saved = save.structures.find((s) => s.id === tank.id)!;
+    expect((saved.data as { fluid?: { kind: string } }).fluid?.kind).toBe('water');
   });
 });

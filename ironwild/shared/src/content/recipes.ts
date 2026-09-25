@@ -49,6 +49,8 @@ export const STATION_NAMES: Record<string, string> = {
   saw: 'Mechanical Saw',
   assembler: 'Assembler',
   steam: 'Steam Engine',
+  boiler: 'Boiler',
+  pump: 'Mechanical Pump',
 };
 
 /** Fish that cook into grilled fish. */
@@ -131,6 +133,10 @@ craft('shop_stand', 'workbench', [s('shop_stand')], [s('plank', 20), s('rope', 4
 craft('oven', 'workbench', [s('oven')], [s('brick', 20), s('iron_plate', 2)], 'cooking');
 craft('blast_furnace', 'workbench', [s('blast_furnace')], [s('brick', 40), s('iron_plate', 10), s('stone_brick', 20)], 'steel');
 craft('assembler', 'workbench', [s('assembler')], [s('steel_plate', 8), s('steel_gear', 6), s('copper_wire', 20)], 'precision');
+craft('pipe', 'workbench', [s('pipe', 4)], [s('copper_plate', 1)], 'steam');
+craft('pump', 'workbench', [s('pump')], [s('iron_plate', 3), s('iron_gear', 2), s('copper_plate', 2)], 'steam');
+craft('fluid_tank', 'workbench', [s('fluid_tank')], [s('copper_plate', 6), s('iron_rod', 4)], 'steam');
+craft('boiler', 'workbench', [s('boiler')], [s('steel_plate', 6), s('brick', 16), s('copper_plate', 4)], 'steam');
 craft(
   'steam_engine',
   'workbench',
@@ -204,6 +210,7 @@ machine('press_iron_gear', 'press', [s('iron_plate')], [s('iron_gear', 1)], 2.5,
 machine('press_steel_gear', 'press', [s('steel_plate')], [s('steel_gear', 1)], 2.5, 'gear');
 machine('press_iron_rod', 'press', [s('iron_ingot')], [s('iron_rod', 2)], 2, 'rod');
 machine('press_copper_wire', 'press', [s('copper_ingot')], [s('copper_wire', 3)], 2, 'wire');
+machine('press_pipe', 'press', [s('copper_plate')], [s('pipe', 4)], 2, 'pipe');
 machine('mill_wheat', 'millstone', [s('wheat')], [s('flour', 1)], 2.5);
 machine('saw_wood', 'saw', [s('wood')], [s('plank', 4)], 1.2);
 machine('saw_hardwood', 'saw', [s('hardwood')], [s('hardwood_plank', 4)], 1.5);

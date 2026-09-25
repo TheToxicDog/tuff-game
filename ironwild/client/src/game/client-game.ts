@@ -357,6 +357,10 @@ export class ClientGame {
       case 'belt':
         this.world.beltKeyframes(msg.k);
         break;
+      case 'fluids':
+        this.world.fluidNets = new Map(msg.nets.map(([id, fluid, fill, flow]) => [id, { fluid, fill: fill / 1000, flow: flow / 10 }]));
+        if (msg.of) this.world.fluidOf = new Map(msg.of);
+        break;
       case 'tiles':
         this.world.applyTiles(msg.c);
         break;
@@ -788,7 +792,7 @@ export class ClientGame {
 
   private isDragPlaceable(): boolean {
     const t = this.placing;
-    return !!t && ['conveyor', 'shaft', 'wood_wall', 'stone_wall', 'fence', 'wood_floor', 'stone_floor'].includes(t);
+    return !!t && ['conveyor', 'shaft', 'pipe', 'wood_wall', 'stone_wall', 'fence', 'wood_floor', 'stone_floor', 'spike_trap'].includes(t);
   }
 
   private lastPlaced = '';
@@ -1021,6 +1025,18 @@ export class ClientGame {
         } else if (s.def.kinetic?.role === 'consumer')
           content.append(h('div', { class: 'bad' }, 'No power — connect it to a water wheel with shafts'));
       }
+      if (s.def.fluid?.role === 'pipe' || s.def.fluid?.role === 'tank') {
+        const f = this.world.fluidAt(s.id);
+        if (!f?.fluid) content.append(h('div', { class: 'muted' }, 'Empty'));
+        else
+          content.append(
+            h(
+              'div',
+              null,
+              `${f.fluid === 'water' ? 'Water' : 'Steam'} — ${Math.round(f.fill * 100)}% full${f.flow > 0.05 ? `, ${f.flow.toFixed(1)}/s flowing in` : ''}`,
+            ),
+          );
+      }
       if (s.def.machine && s.st.on !== undefined)
         content.append(h('div', { class: s.st.on ? 'good' : 'muted' }, s.st.on ? 'Working' : 'Idle'));
       if (s.st.fill !== undefined) content.append(h('div', { class: 'muted' }, `${Math.round(s.st.fill * 100)}% full`));
@@ -1076,8 +1092,9 @@ export class ClientGame {
     for (const s of this.world.structs.values()) {
       if (!s.st.on) continue;
       if (s.x < v.x0 || s.x > v.x1 || s.y < v.y0 || s.y > v.y1) continue;
-      if (s.type === 'furnace' || s.type === 'blast_furnace' || s.type === 'oven' || s.type === 'steam_engine') {
-        if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'steam_engine');
+      if (s.type === 'furnace' || s.type === 'blast_furnace' || s.type === 'oven' || s.type === 'boiler' || s.type === 'steam_engine') {
+        // Coal smoke from fires; white puffs of spent steam from engines.
+        if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'boiler');
       } else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);
       else if (s.type === 'saw' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'wood', 2, 70);
     }

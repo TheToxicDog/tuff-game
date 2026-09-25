@@ -93,6 +93,9 @@ export class ClientWorld implements CollisionWorld {
   private readonly gridW: number;
   listener: WorldListener | null = null;
   networks = new Map<number, NetSummary>();
+  /** Fluid networks (fluid, fill 0–1, flow per second) and which network each pipe or tank is in. */
+  fluidNets = new Map<number, { fluid: string; fill: number; flow: number }>();
+  fluidOf = new Map<number, number>();
 
   constructor(welcome: WelcomeMessage) {
     const w = welcome.world;
@@ -297,7 +300,7 @@ export class ClientWorld implements CollisionWorld {
     for (let y = s.y - 1; y <= s.y + s.h; y++) {
       for (let x = s.x - 1; x <= s.x + s.w; x++) {
         const n = this.structAt(x, y);
-        if (n && n !== s && (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic))
+        if (n && n !== s && (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic || n.def.fluid))
           this.listener?.structChanged(n);
       }
     }
@@ -313,6 +316,12 @@ export class ClientWorld implements CollisionWorld {
   setSpin(id: number, spin: number[]): void {
     const s = this.structs.get(id);
     if (s) s.spin = spin;
+  }
+
+  /** The fluid network a pipe or tank belongs to. */
+  fluidAt(id: number): { fluid: string; fill: number; flow: number } | undefined {
+    const net = this.fluidOf.get(id);
+    return net === undefined ? undefined : this.fluidNets.get(net);
   }
 
   setNet(id: number, net: number): void {

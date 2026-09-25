@@ -628,7 +628,27 @@ place('shop_stand', 'Shop Stand', 'building', 150, 5, 0xc0503f, 'Sell your goods
 place('oven', 'Oven', 'machine', 80, 10, 0xb5553a, 'Flour → bread. Needs fuel.');
 place('blast_furnace', 'Blast Furnace', 'machine', 900, 5, 0x6a4a3a, 'Iron ingot + coal → steel. Needs fuel.');
 place('assembler', 'Assembler', 'machine', 1600, 5, 0x4a6a8a, 'Builds components from parts. 60 torque.');
-place('steam_engine', 'Steam Engine', 'machine', 2400, 5, 0x8a3a2a, 'Burns coal near water: 32 RPM, 256 torque.');
+place('steam_engine', 'Steam Engine', 'machine', 2400, 5, 0x8a3a2a, 'Runs on steam from a boiler: 32 RPM, 256 torque, 10 steam/s.');
+place(
+  'boiler',
+  'Boiler',
+  'machine',
+  1500,
+  5,
+  0x6a4a3a,
+  'Burns fuel to turn water into steam, 20/s. Water in at the back and sides, steam out the front.',
+);
+place(
+  'pump',
+  'Mechanical Pump',
+  'machine',
+  280,
+  10,
+  0x3f6f9a,
+  'Place it touching water and give it rotation: 20 water/s at 16 RPM. 8 stress.',
+);
+place('pipe', 'Pipe', 'machine', 8, 100, 0xc27a45, 'Carries water or steam between pumps, tanks, boilers and engines.');
+place('fluid_tank', 'Fluid Tank', 'machine', 200, 10, 0x9a6b3f, 'Holds 2000 units of water or steam in a pipe network.');
 place('pen_gate', 'Pen Gate', 'building', 12, 20, 0x9a6b3f, 'A fence gate you can walk through.');
 place('spike_trap', 'Spike Trap', 'building', 14, 20, 0x8a8f96, 'Hurts bandits and wild animals that step on it. Wears out.');
 place(

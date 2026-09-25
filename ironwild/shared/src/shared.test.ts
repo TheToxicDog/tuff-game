@@ -4,7 +4,8 @@ import { NODES } from './content/nodes';
 import { RECIPES } from './content/recipes';
 import { RESEARCH, RESEARCH_BY_ID } from './content/research';
 import { SETTLEMENTS, PROFESSION_BY_ID } from './content/settlements';
-import { STRUCTURES, STRUCTURE_BY_ID, rotateOffset } from './content/structures';
+import { STRUCTURES, STRUCTURE_BY_ID, rotateOffset, structureDef } from './content/structures';
+import { fluidFace, fluidJoins } from './factory/fluids';
 import { CREATURES } from './content/creatures';
 import { CROPS } from './content/crops';
 import { addStack, countItem, emptySlots, moveBetween, removeItem, roomFor } from './inventory';
@@ -152,5 +153,26 @@ describe('movement', () => {
     expect(s.stamina).toBeLessThan(100);
     stepMovement(s, { mx: 1, my: 0, sprint: false, dodge: true, slow: false }, INPUT_DT, world);
     expect(s.dodgeT).toBeGreaterThan(0);
+  });
+});
+
+describe('fluids', () => {
+  it('connects boilers, pumps and engines through the right faces', () => {
+    const boiler = { def: structureDef('boiler'), rot: 1 };
+    const pump = { def: structureDef('pump'), rot: 0 };
+    const engine = { def: structureDef('steam_engine'), rot: 0 };
+    const pipe = { def: structureDef('pipe'), rot: 0 };
+    // A boiler facing east lets steam out of its east face and takes water everywhere else.
+    expect(fluidFace(boiler.def, 1, 1)).toEqual({ fluid: 'steam', io: 'out' });
+    expect(fluidFace(boiler.def, 1, 3)).toEqual({ fluid: 'water', io: 'in' });
+    // A pump west of the boiler feeds it directly; an engine east of it takes its steam.
+    expect(fluidJoins(pump, boiler, 1)).toBe(true);
+    expect(fluidJoins(boiler, engine, 1)).toBe(true);
+    // But a pump cannot push water into an engine, and an engine's drive shaft side has no inlet.
+    expect(fluidJoins(pump, engine, 3)).toBe(false);
+    expect(fluidFace(engine.def, 0, 0)).toBeNull();
+    // Pipes join anything with a fluid face.
+    expect(fluidJoins(pipe, engine, 1)).toBe(true);
+    expect(fluidJoins(pipe, pipe, 2)).toBe(true);
   });
 });

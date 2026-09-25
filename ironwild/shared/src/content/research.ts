@@ -95,7 +95,7 @@ export const RESEARCH: readonly ResearchNode[] = [
     cost: 160,
     requires: ['precision'],
     blueprint: 'steam_blueprint',
-    desc: 'Steam engines: 32 RPM and 256 torque from coal.',
+    desc: 'Pumps, pipes, boilers and steam engines: 32 RPM and 256 torque from coal.',
     col: 5,
     row: 2,
   },

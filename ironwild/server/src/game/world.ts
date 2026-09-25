@@ -12,6 +12,7 @@ import {
   rotatedSize,
   type Circle,
   type CollisionWorld,
+  type Fluid,
   type GeneratedWorld,
   type GenSettlement,
   type NodeDef,
@@ -56,6 +57,8 @@ export interface MachineState {
   util: number;
   /** Outputs in the last minute: [time ms, item, count]. */
   made: [number, string, number][];
+  /** Pumps and boilers: fluid moved per second (smoothed). */
+  rate?: number;
 }
 
 export interface BeltItem {
@@ -110,6 +113,10 @@ export interface Structure {
   rpm?: number;
   /** Health bucket last sent to clients (tenths). */
   hpSent?: number;
+  /** Pipes and tanks: their share of the network's fluid (kept for saving and regrouping). */
+  fluid?: { kind: Fluid | null; amount: number };
+  /** Boilers and engines: their own water and steam. */
+  buf?: Record<Fluid, number>;
 }
 
 export const chunkKey = (cx: number, cy: number): number => cy * 1024 + cx;
@@ -316,7 +323,7 @@ export class World implements CollisionWorld {
     return undefined;
   }
 
-  /** Whether a tile touches water (for washers and steam engines). */
+  /** Whether a footprint touches water (for washers and pumps). */
   touchesWater(x: number, y: number, w: number, h: number): boolean {
     for (let ty = y - 1; ty <= y + h; ty++) {
       for (let tx = x - 1; tx <= x + w; tx++) {

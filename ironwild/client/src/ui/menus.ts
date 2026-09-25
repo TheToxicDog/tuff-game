@@ -49,6 +49,8 @@ const BUILD_GROUPS: { name: string; test: (d: ItemDef) => boolean }[] = [
   },
   { name: 'Machines', test: (d) => ['crusher', 'washer', 'press', 'millstone', 'saw', 'assembler'].includes(d.id) },
   { name: 'Logistics', test: (d) => ['conveyor', 'hopper', 'splitter', 'filter'].includes(d.id) },
+  { name: 'Steam & fluids', test: (d) => ['pump', 'pipe', 'fluid_tank', 'boiler'].includes(d.id) },
+  { name: 'Defenses', test: (d) => ['spike_trap', 'arrow_tower'].includes(d.id) },
 ];
 
 export function buildWindow(ctx: UiContext): WindowDef {

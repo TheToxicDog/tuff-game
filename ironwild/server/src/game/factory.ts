@@ -41,7 +41,6 @@ import type { BeltItem, MachineState, Structure } from './world';
 
 const HOPPER_INTERVAL = 0.5;
 const MACHINE_PUSH_INTERVAL = 0.2;
-const STEAM_SECONDS_PER_FUEL = 5;
 const CRANK_STAMINA_PER_SECOND = 5;
 
 const BELT_TYPES = new Set(['conveyor', 'splitter', 'filter']);
@@ -91,6 +90,12 @@ export class Factory {
   structureChanged(s: Structure): void {
     if (s.def.kinetic || (s.def.logistics && BELT_TYPES.has(s.def.logistics))) this.powerDirty = true;
     if (s.def.logistics || s.def.machine || s.def.container) this.topologyDirty = true;
+    if (s.def.fluid) this.game.fluids.markDirty();
+  }
+
+  /** A power source switched on or off (steam engines, from the fluid system). */
+  markPowerDirty(): void {
+    this.powerDirty = true;
   }
 
   rebuildAll(): void {
@@ -155,7 +160,7 @@ export class Factory {
 
   private sourceActive(s: Structure): boolean {
     if (s.type === 'hand_crank') return !!s.crank;
-    if (s.type === 'steam_engine') return (s.machine?.burn ?? 0) > 0 && this.game.world.touchesWater(s.x, s.y, s.w, s.h);
+    if (s.type === 'steam_engine') return !!s.machine?.active;
     return true;
   }
 
@@ -529,10 +534,8 @@ export class Factory {
     this.pushOutput(s, dt);
     m.util += ((wasActive ? 1 : 0) - m.util) * Math.min(1, dt / 30);
 
-    if (s.type === 'steam_engine') {
-      this.stepSteam(s, dt);
-      return;
-    }
+    // Pumps, boilers and engines are run by the fluid system.
+    if (s.def.fluid) return;
 
     let rate = 1;
     if (def.powered) {
@@ -694,33 +697,6 @@ export class Factory {
     return out;
   }
 
-  private stepSteam(s: Structure, dt: number): void {
-    const m = s.machine!;
-    const wasActive = m.active;
-    const water = this.game.world.touchesWater(s.x, s.y, s.w, s.h);
-    if (m.burn <= 0 && water) {
-      const fuel = m.fuel?.[0];
-      const fdef = fuel ? ITEM_BY_ID.get(fuel.id) : undefined;
-      if (fuel && fdef?.fuel) {
-        fuel.n -= 1;
-        if (fuel.n <= 0) m.fuel![0] = null;
-        m.burn += fdef.fuel;
-      }
-    }
-    if (m.burn > 0 && water) {
-      m.burn = Math.max(0, m.burn - dt / STEAM_SECONDS_PER_FUEL);
-      m.active = true;
-      m.status = 'Running';
-    } else {
-      m.active = false;
-      m.status = water ? 'No fuel' : 'Needs water';
-    }
-    if (m.active !== wasActive) {
-      this.powerDirty = true;
-      this.game.structVisual(s);
-    }
-  }
-
   // ——— Hoppers ———
 
   private stepHopper(s: Structure, dt: number): void {
@@ -763,26 +739,28 @@ export class Factory {
     const m = s.machine;
     const recipes = s.def.machine ? this.recipesFor(s).map((r) => r.id) : [];
     const rpm = s.def.machine?.powered ? (s.speed ?? 0) : s.type === 'steam_engine' ? (s.spin?.[0] ?? 0) : 0;
+    const fluid = s.def.fluid ? this.game.fluids.machineInfo(s) : {};
     return {
       kind: 'machine',
       id: s.id,
       type: s.type,
       title: s.def.name,
-      in: m?.in ?? [],
+      in: s.def.fluid ? [] : (m?.in ?? []),
       fuel: m?.fuel ?? undefined,
-      out: m?.out ?? [],
+      out: s.def.fluid ? [] : (m?.out ?? []),
       progress: Math.round((m?.progress ?? 0) * 100) / 100,
       status: m?.status ?? (s.filter ? `Passing ${ITEM_BY_ID.get(s.filter)?.name ?? s.filter}` : 'Set a filter item'),
       rpm: Math.round(rpm * 10) / 10,
       mode: m?.mode,
-      oc: m && s.def.machine?.station !== 'steam' ? m.oc : undefined,
-      condition: m ? Math.round((1 - m.wear) * 100) / 100 : undefined,
-      perMin: m ? this.perMinute(m) : undefined,
+      oc: m && !s.def.fluid ? m.oc : undefined,
+      condition: m && !s.def.fluid ? Math.round((1 - m.wear) * 100) / 100 : undefined,
+      perMin: m && !s.def.fluid ? this.perMinute(m) : undefined,
       modes: s.def.machine?.modes,
       filter: s.def.logistics === 'filter' ? (s.filter ?? null) : undefined,
       fuelLeft: m?.fuel ? Math.round(m.burn * 10) / 10 : undefined,
       net: this.netSummary(s.net),
       recipes,
+      ...fluid,
     };
   }
 
@@ -887,6 +865,9 @@ export class Factory {
         hints.push(`${name}: starved for input — feed ${idle > 1 ? 'them' : 'it'} more, or you have more machines than supply.`);
       if (g.issues.get('No fuel')) hints.push(`${name}: out of fuel.`);
       if (g.issues.get('No power')) hints.push(`${name}: not connected to power.`);
+      if (g.issues.get('No steam') || g.issues.get('Pipe it to a boiler'))
+        hints.push(`${name}: short of steam — a fired boiler makes enough for two engines.`);
+      if (g.issues.get('No water')) hints.push(`${name}: no water — pump it in (a pump makes enough for one boiler).`);
     }
     const summaries = [...nets].map((id) => this.netSummary(id)).filter((n): n is NonNullable<typeof n> => !!n);
     for (const n of summaries) {
@@ -939,6 +920,8 @@ export class Factory {
     if (s.prices?.length) data.prices = s.prices;
     if (s.crop) data.crop = s.crop;
     if (s.rpm) data.rpm = s.rpm;
+    if (s.fluid?.kind && s.fluid.amount > 0) data.fluid = s.fluid;
+    if (s.buf && (s.buf.water > 0 || s.buf.steam > 0)) data.buf = s.buf;
     return {
       id: s.id,
       type: s.type,
@@ -995,6 +978,8 @@ export class Factory {
     if (d.prices) s.prices = d.prices;
     if (d.crop) s.crop = d.crop;
     if (d.rpm) s.rpm = d.rpm;
+    if (d.fluid) s.fluid = d.fluid;
+    if (d.buf) s.buf = d.buf;
     w.addStructure(s);
     if (s.crop) this.game.farming.track(s);
     this.game.nextStructId = Math.max(this.game.nextStructId, s.id + 1);

@@ -3,6 +3,7 @@
 // rot = 0 (facing north).
 
 import type { Dir } from '../constants';
+import type { FluidSpec } from '../factory/fluids';
 
 /** A face through which a kinetic block passes rotation. `group` separates gear stages. */
 export interface KineticPort {
@@ -76,6 +77,8 @@ export interface StructureDef {
   trap?: number;
   /** Defensive towers: range in tiles, damage per arrow and seconds between shots. */
   tower?: { range: number; damage: number; every: number };
+  /** Pipes, tanks and the machines that pump, boil or burn fluids. */
+  fluid?: FluidSpec;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -324,7 +327,57 @@ const S: StructureDef[] = [
       rpm: 32,
       torque: 256,
     },
-    machine: { station: 'steam', fuel: true, water: true, buffer: 50 },
+    machine: { station: 'steam', buffer: 0 },
+    fluid: { role: 'engine', capacity: 60 },
+  },
+  {
+    id: 'boiler',
+    name: 'Boiler',
+    item: 'boiler',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 900,
+    placement: 'land',
+    light: 4,
+    machine: { station: 'boiler', fuel: true, buffer: 0 },
+    fluid: { role: 'boiler', capacity: 100 },
+  },
+  {
+    id: 'pump',
+    name: 'Mechanical Pump',
+    item: 'pump',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 400,
+    placement: 'land',
+    kinetic: { role: 'consumer', stress: 8 },
+    machine: { station: 'pump', powered: true, water: true, buffer: 0 },
+    fluid: { role: 'pump', capacity: 0 },
+  },
+  {
+    id: 'pipe',
+    name: 'Pipe',
+    item: 'pipe',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 100,
+    placement: 'land',
+    low: true,
+    fluid: { role: 'pipe', capacity: 50 },
+  },
+  {
+    id: 'fluid_tank',
+    name: 'Fluid Tank',
+    item: 'fluid_tank',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 500,
+    placement: 'land',
+    fluid: { role: 'tank', capacity: 2000 },
   },
   {
     id: 'shaft',
@@ -405,7 +458,7 @@ const S: StructureDef[] = [
     hp: 500,
     placement: 'land',
     kinetic: { role: 'consumer', stress: 30 },
-    machine: { station: 'press', powered: true, buffer: 20, modes: ['plate', 'gear', 'rod', 'wire'] },
+    machine: { station: 'press', powered: true, buffer: 20, modes: ['plate', 'gear', 'rod', 'wire', 'pipe'] },
   },
   {
     id: 'millstone',

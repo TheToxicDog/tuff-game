@@ -371,7 +371,13 @@ export interface MachineUi {
   condition?: number;
   /** Items made in the last minute. */
   perMin?: number;
+  /** Fluid machines: what they hold, and how much they move per second. */
+  tanks?: { fluid: string; amount: number; capacity: number }[];
+  rate?: { fluid: string; perSec: number };
 }
+
+/** A fluid network: [id, fluid ('' when empty), fill ‰ (0–1000), flow per second × 10]. */
+export type FluidNetTuple = [number, string, number, number];
 
 export interface StationUi {
   kind: 'station';
@@ -482,4 +488,6 @@ export type ServerMessage =
   | { t: 'alive' }
   | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }
   | ({ t: 'stats' } & FactoryStats)
-  | { t: 'towns'; list: TownInfo[] };
+  | { t: 'towns'; list: TownInfo[] }
+  /** Fluid networks; `of` maps pipes and tanks to networks and comes when the pipes change. */
+  | { t: 'fluids'; nets: FluidNetTuple[]; of?: [number, number][] };

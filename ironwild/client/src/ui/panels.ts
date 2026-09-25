@@ -142,14 +142,33 @@ function container(body: HTMLElement, ui: ContainerUi, ctx: UiContext): void {
 
 // ——— Machines ———
 
-const STATUS_WARN = new Set(['No power', 'Overstressed', 'No fuel', 'Output full', 'Needs water', 'Gears jammed', 'Wrong input']);
+const STATUS_WARN = new Set([
+  'No power',
+  'Overstressed',
+  'No fuel',
+  'Output full',
+  'Needs water',
+  'Gears jammed',
+  'Wrong input',
+  'No water',
+  'No steam',
+  'No pipe',
+  'Pipes full',
+  'Steam backed up',
+  'Pipe it to a boiler',
+]);
+
+const FLUID_BAR: Record<string, string> = { Water: '#4f8fd0', Steam: '#dfe6ea' };
 
 function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
-  const inCol = h('div', { class: 'col' }, h('div', { class: 'label' }, 'Input'));
-  const inSlots = h('div', { class: 'row' });
-  ui.in.forEach((s, i) => inSlots.append(slotEl({ s: 'in', i }, s)));
-  inCol.append(inSlots);
-  const cols: HTMLElement[] = [inCol];
+  const cols: HTMLElement[] = [];
+  if (ui.in.length > 0) {
+    const inCol = h('div', { class: 'col' }, h('div', { class: 'label' }, 'Input'));
+    const inSlots = h('div', { class: 'row' });
+    ui.in.forEach((s, i) => inSlots.append(slotEl({ s: 'in', i }, s)));
+    inCol.append(inSlots);
+    cols.push(inCol);
+  }
   if (ui.fuel) {
     const fuelCol = h('div', { class: 'col' }, h('div', { class: 'label' }, 'Fuel'));
     ui.fuel.forEach((s, i) => fuelCol.append(slotEl({ s: 'fuel', i }, s)));
@@ -171,7 +190,22 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
     outCol.append(outSlots);
     cols.push(outCol);
   }
-  body.append(h('div', { class: 'machine-grid' }, ...cols));
+  if (cols.length) body.append(h('div', { class: 'machine-grid' }, ...cols));
+  for (const t of ui.tanks ?? []) {
+    const pct = t.capacity > 0 ? Math.min(100, (t.amount / t.capacity) * 100) : 0;
+    body.append(
+      h('div', { class: 'muted', style: 'font-size:12px;margin-top:6px' }, `${t.fluid}: ${Math.round(t.amount)} / ${t.capacity}`),
+      h('div', { class: 'stress' }, h('div', { style: `width:${pct}%;background:${FLUID_BAR[t.fluid] ?? '#8fd45a'}` })),
+    );
+  }
+  if (ui.rate)
+    body.append(
+      h(
+        'div',
+        { class: 'muted', style: 'font-size:12px;margin-top:6px' },
+        `${ui.type === 'pump' ? 'Pumping' : 'Making'} ${ui.rate.perSec} ${ui.rate.fluid.toLowerCase()} a second`,
+      ),
+    );
   const statusCls = ui.status === 'Working' || ui.status === 'Running' ? 'working' : STATUS_WARN.has(ui.status) ? 'warn' : '';
   const info = h('div', { class: 'row', style: 'margin-top:10px' }, h('span', { class: `status ${statusCls}` }, ui.status));
   if (ui.rpm > 0 || ui.net) info.append(h('span', { class: 'spacer' }), h('span', { class: 'muted' }, `${ui.rpm} RPM`));
