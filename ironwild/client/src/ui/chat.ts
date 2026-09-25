@@ -12,6 +12,15 @@ export class Chat {
     private readonly send: (text: string) => void,
   ) {
     ui.append(this.root);
+    // Open at once on the key press (not on the next frame), so nothing typed right after is lost.
+    window.addEventListener('keydown', (e) => {
+      if (this.typing || e.ctrlKey || e.altKey || e.metaKey) return;
+      if ((e.target as HTMLElement | null)?.closest?.('input, textarea, select, [contenteditable]')) return;
+      if (e.key === 'Enter' || e.key === '/') {
+        e.preventDefault();
+        this.open(e.key === '/' ? '/' : '');
+      }
+    });
     this.input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const text = this.input.value.trim();
