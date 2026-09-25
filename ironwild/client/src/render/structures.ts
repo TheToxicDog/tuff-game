@@ -135,6 +135,8 @@ export class StructureRenderer {
   /** Rotation per structure and gear group, kept across rebuilds. */
   private readonly angles = new Map<number, number[]>();
   time = 0;
+  /** Game minutes (the clock tower shows the time). */
+  minutes = 0;
   /** Nearest hostile creature within range of a point (arrow towers turn toward it). */
   targetNear: (x: number, y: number, range: number) => { x: number; y: number } | null = () => null;
 
@@ -203,7 +205,7 @@ export class StructureRenderer {
     root.addChild(inner);
     const g = new Graphics();
     inner.addChild(g);
-    const top = s.type === 'windmill' || s.type === 'arrow_tower' || s.type === 'power_pole' ? new Container() : null;
+    const top = ['windmill', 'arrow_tower', 'power_pole', 'lighthouse'].includes(s.type) ? new Container() : null;
     const anims: Anim[] = [];
     const ctx: DrawCtx = {
       s,
@@ -480,6 +482,161 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
     outputMark(c.g, hh);
     c.anims.push((_dt, t) => {
       flame.scale.set(0.8 + Math.sin(t * 9 + c.s.id) * 0.2);
+    });
+  },
+  warehouse(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    c.g.roundRect(-hw - 4, -hh - 4, hw * 2 + 8, hh * 2 + 8, 6).fill({ color: 0x000000, alpha: 0.18 });
+    c.g
+      .rect(-hw + 4, -hh + 4, hw * 2 - 8, hh * 2 - 8)
+      .fill(0x8a4a35)
+      .stroke({ width: 5, color: OUTLINE });
+    c.g.rect(-hw + 4, 0, hw * 2 - 8, hh - 4).fill(shade(0x8a4a35, 0.82));
+    c.g
+      .moveTo(-hw + 4, 0)
+      .lineTo(hw - 4, 0)
+      .stroke({ width: 5, color: shade(0x8a4a35, 0.6) });
+    for (let i = 1; i < 6; i++)
+      c.g
+        .moveTo(-hw + 4, -hh + i * 16)
+        .lineTo(hw - 4, -hh + i * 16)
+        .stroke({ width: 1.5, color: shade(0x8a4a35, 0.9), alpha: 0.6 });
+    // Big doors on the south side, crates beside them.
+    c.g
+      .rect(-24, hh - 30, 48, 26)
+      .fill(0x6b4a2a)
+      .stroke({ width: 3, color: OUTLINE });
+    c.g
+      .moveTo(0, hh - 30)
+      .lineTo(0, hh - 4)
+      .stroke({ width: 2, color: OUTLINE });
+    for (const [x, y] of [
+      [-hw + 14, hh - 24],
+      [-hw + 36, hh - 20],
+      [hw - 34, hh - 22],
+    ])
+      c.g.rect(x, y, 18, 16).fill(0xc99a5b).stroke({ width: 2, color: OUTLINE });
+  },
+  clock_tower(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    c.g
+      .rect(-hw + 6, -hh + 6, hw * 2 - 12, hh * 2 - 12)
+      .fill(0x9aa0a6)
+      .stroke({ width: 5, color: OUTLINE });
+    // Pyramid roof lines.
+    c.g
+      .moveTo(-hw + 6, -hh + 6)
+      .lineTo(hw - 6, hh - 6)
+      .moveTo(hw - 6, -hh + 6)
+      .lineTo(-hw + 6, hh - 6)
+      .stroke({ width: 2, color: 0x70757b });
+    c.g.circle(0, 0, 34).fill(0xf3ecd9).stroke({ width: 5, color: OUTLINE });
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      c.g
+        .moveTo(Math.cos(a) * 26, Math.sin(a) * 26)
+        .lineTo(Math.cos(a) * 31, Math.sin(a) * 31)
+        .stroke({ width: i % 3 === 0 ? 3.5 : 2, color: OUTLINE });
+    }
+    const hands = new Graphics();
+    c.inner.addChild(hands);
+    const renderer = c.renderer;
+    let last = -1;
+    c.anims.push(() => {
+      const m = Math.floor(renderer?.minutes ?? 0);
+      if (m === last) return;
+      last = m;
+      const hour = (m / 60) % 12;
+      const minute = m % 60;
+      const ha = (hour / 12) * Math.PI * 2 - Math.PI / 2;
+      const ma = (minute / 60) * Math.PI * 2 - Math.PI / 2;
+      hands.clear();
+      hands
+        .moveTo(0, 0)
+        .lineTo(Math.cos(ha) * 16, Math.sin(ha) * 16)
+        .stroke({ width: 5, color: OUTLINE });
+      hands
+        .moveTo(0, 0)
+        .lineTo(Math.cos(ma) * 25, Math.sin(ma) * 25)
+        .stroke({ width: 3, color: OUTLINE });
+      hands.circle(0, 0, 4).fill(0xd9b23d);
+    });
+  },
+  mine_lift(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    // Shaft collar, the headframe legs and the winding wheel on top.
+    c.g.rect(-24, -24, 48, 48).fill(0x2a241c).stroke({ width: 4, color: OUTLINE });
+    for (const [x0, y0, x1, y1] of [
+      [-hw + 8, hh - 8, -10, -10],
+      [hw - 8, hh - 8, 10, -10],
+      [-hw + 8, -hh + 8, -10, 10],
+      [hw - 8, -hh + 8, 10, 10],
+    ])
+      c.g
+        .moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 8, color: OUTLINE })
+        .moveTo(x0, y0)
+        .lineTo(x1, y1)
+        .stroke({ width: 5, color: 0x6f757d });
+    const wheel = new Graphics();
+    wheel.circle(0, 0, 30).stroke({ width: 7, color: OUTLINE }).circle(0, 0, 30).stroke({ width: 4, color: 0xb0b5bd });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      wheel
+        .moveTo(0, 0)
+        .lineTo(Math.cos(a) * 29, Math.sin(a) * 29)
+        .stroke({ width: 3, color: 0x8e99a8 });
+    }
+    wheel.circle(0, 0, 6).fill(0x3a3c40);
+    c.inner.addChild(wheel);
+    c.anims.push((dt) => {
+      wheel.rotation += dt * 0.9;
+    });
+  },
+  granary(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    c.g
+      .roundRect(-hw + 6, -6, hw * 2 - 12, hh - 2, 5)
+      .fill(0x9a6b3f)
+      .stroke({ width: 4, color: OUTLINE });
+    c.g.circle(-12, -12, 40).fill(0xc9a06a).stroke({ width: 5, color: OUTLINE });
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      c.g
+        .moveTo(-12, -12)
+        .lineTo(-12 + Math.cos(a) * 38, -12 + Math.sin(a) * 38)
+        .stroke({ width: 2, color: 0xa47a45 });
+    }
+    c.g.circle(-12, -12, 7).fill(0x8a5a33).stroke({ width: 2, color: OUTLINE });
+    c.g
+      .circle(hw - 22, hh - 22, 12)
+      .fill(0xe0b84c)
+      .stroke({ width: 2, color: OUTLINE });
+  },
+  lighthouse(c) {
+    c.inner.rotation = 0;
+    for (const [r, color] of [
+      [52, 0xf3ecd9],
+      [42, 0xc0302a],
+      [32, 0xf3ecd9],
+    ] as const)
+      c.g.circle(0, 0, r).fill(color).stroke({ width: 4, color: OUTLINE });
+    c.g.circle(0, 0, 18).fill(0x3a3c40).stroke({ width: 3, color: OUTLINE });
+    c.g.circle(0, 0, 10).fill(0xfff2b0);
+    if (!c.top) return;
+    // A beam sweeping round.
+    const beam = new Graphics();
+    beam.poly([0, 0, 420, -60, 420, 60], true).fill({ color: 0xfff6c8, alpha: 0.16 });
+    beam.poly([0, 0, 260, -26, 260, 26], true).fill({ color: 0xfff6c8, alpha: 0.18 });
+    beam.position.set(c.s.w * TS * 0.5, c.s.h * TS * 0.5);
+    c.top.addChild(beam);
+    c.anims.push((dt) => {
+      beam.rotation += dt * 0.6;
     });
   },
   generator(c) {

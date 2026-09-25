@@ -86,6 +86,8 @@ export interface StructureDef {
   rail?: 'track' | 'station';
   /** Generators, poles and everything that runs on electricity. */
   electric?: ElectricSpec;
+  /** Built by a town project: belongs to the settlement and cannot be taken down. */
+  town?: boolean;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -505,6 +507,64 @@ const S: StructureDef[] = [
   },
 
   // ——— Logistics ———
+  // ——— Town buildings (from town projects) ———
+  {
+    id: 'warehouse',
+    name: 'Warehouse',
+    item: 'stone_brick',
+    size: [3, 3],
+    solid: true,
+    layer: 'object',
+    hp: 5000,
+    placement: 'land',
+    town: true,
+  },
+  {
+    id: 'clock_tower',
+    name: 'Clock Tower',
+    item: 'stone_brick',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 5000,
+    placement: 'land',
+    town: true,
+    light: 4,
+  },
+  {
+    id: 'mine_lift',
+    name: 'Mine Lift',
+    item: 'stone_brick',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 5000,
+    placement: 'land',
+    town: true,
+  },
+  {
+    id: 'granary',
+    name: 'Granary',
+    item: 'stone_brick',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 5000,
+    placement: 'land',
+    town: true,
+  },
+  {
+    id: 'lighthouse',
+    name: 'Lighthouse',
+    item: 'stone_brick',
+    size: [2, 2],
+    solid: true,
+    layer: 'object',
+    hp: 5000,
+    placement: 'land',
+    town: true,
+    light: 16,
+  },
   {
     id: 'pumpjack',
     name: 'Pumpjack',

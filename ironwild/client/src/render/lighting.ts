@@ -55,7 +55,13 @@ export class Lighting {
     const sp = this.glows.get(s.id);
     if (!sp) return;
     // Torches always burn; stations only glow while working.
-    const lit = s.type === 'torch' || s.type === 'land_claim' || !!s.st.on || (s.type === 'campfire' && s.st.on !== false);
+    const lit =
+      s.type === 'torch' ||
+      s.type === 'land_claim' ||
+      s.type === 'lighthouse' ||
+      s.type === 'clock_tower' ||
+      !!s.st.on ||
+      (s.type === 'campfire' && s.st.on !== false);
     sp.visible = lit;
   }
 

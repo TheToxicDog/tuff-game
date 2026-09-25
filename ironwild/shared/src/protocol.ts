@@ -42,6 +42,8 @@ export type ClientMessage =
   | { t: 'crank'; id: number; on: boolean }
   | { t: 'research'; node: string }
   | { t: 'contract'; op: 'accept' | 'deliver' | 'abandon'; id: string }
+  /** Deliver all you carry of one good to the town project on this board. */
+  | { t: 'project'; npc: string; item: string }
   | { t: 'chat'; text: string }
   | { t: 'claim'; id: number; op: 'add' | 'remove'; name: string; role?: ClaimRole }
   | { t: 'shop'; id: number; op: 'price'; item: string; q?: number; price: number | null }
@@ -440,6 +442,21 @@ export interface BoardUi {
   npc: string;
   settlement: string;
   contracts: ContractInfo[];
+  /** The town project under way, if any. */
+  project?: ProjectInfo;
+}
+
+/** A town project (§53): what it still needs and who has helped. */
+export interface ProjectInfo {
+  id: string;
+  title: string;
+  desc: string;
+  needs: { item: string; n: number; done: number; price: number }[];
+  /** Biggest contributors: name and share (0–1). */
+  top: [string, number][];
+  /** Projects finished here so far, and how many there are in all. */
+  finished: number;
+  total: number;
 }
 
 export type UiState = TradeUi | ContainerUi | MachineUi | StationUi | ShopUi | ClaimUi | ExchangeUi | BoardUi;

@@ -31,6 +31,7 @@ import { FluidSystem } from './fluids';
 import { newCharacter, Player } from './player';
 import { PlayerSystem } from './players';
 import { Progression } from './progression';
+import { TownProjects } from './projects';
 import { RailSystem } from './rails';
 import { RaidSystem } from './raids';
 import { Replication } from './replication';
@@ -101,6 +102,7 @@ export class Game {
   readonly power: PowerSystem;
   readonly raids: RaidSystem;
   readonly rails: RailSystem;
+  readonly projects: TownProjects;
   readonly companies: CompanySystem;
   readonly commands: Commands;
 
@@ -134,6 +136,7 @@ export class Game {
     this.power = new PowerSystem(this);
     this.raids = new RaidSystem(this);
     this.rails = new RailSystem(this);
+    this.projects = new TownProjects(this);
     this.companies = new CompanySystem(this);
     this.commands = new Commands(this);
   }
@@ -423,6 +426,9 @@ export class Game {
       case 'contract':
         this.economy.contract(p, msg.op, msg.id);
         break;
+      case 'project':
+        if (typeof msg.npc === 'string' && typeof msg.item === 'string') this.projects.deliver(p, msg.npc, msg.item);
+        break;
       case 'claim':
         this.building.claimMember(p, msg.id, msg.op, msg.name, msg.role);
         break;
@@ -537,6 +543,7 @@ export class Game {
       ...this.economy.save(),
       entities: [...this.creatures.save(), ...this.combat.save()],
       companies: this.companies.save(),
+      projects: this.projects.save(),
     };
   }
 
@@ -556,6 +563,7 @@ export class Game {
     }
     for (const [x, y, t] of save.tiles) this.world.setTile(x, y, t);
     for (const s of save.structures) this.factory.loadStructure(s);
+    this.projects.load(save.projects);
     this.economy.load(save);
     this.creatures.load(save.entities);
     this.combat.load(save.entities);

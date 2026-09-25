@@ -1237,3 +1237,17 @@ select:focus {
   background: var(--panel-3);
   color: #f2d27a;
 }
+
+.project {
+  background: var(--panel-3);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(242, 197, 61, 0.35);
+}
+
+.project .name {
+  font-weight: 700;
+  font-size: 15px;
+  color: #f2d27a;
+}

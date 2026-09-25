@@ -46,6 +46,7 @@ export class BuildSystem {
   }
 
   canUse(p: Player, s: Structure): boolean {
+    if (s.town) return false;
     if (!s.owner || s.owner === p.accountId) return true;
     if (this.game.companies.sameCompany(p.accountId, s.owner)) return true;
     if (s.def.shop) return true;
@@ -61,6 +62,7 @@ export class BuildSystem {
   }
 
   canRemove(p: Player, s: Structure): boolean {
+    if (s.town) return false;
     if (!s.owner || s.owner === p.accountId) return true;
     // Company property: only officers may pick it up (members could otherwise walk off with it).
     if (isCompanyAccount(s.owner)) {
@@ -194,7 +196,7 @@ export class BuildSystem {
   /** Hammer hit: pick a structure back up, contents and all. */
   hammer(p: Player, s: Structure): void {
     if (!this.canRemove(p, s)) {
-      this.game.notice(p, `That belongs to ${s.ownerName}.`, 'bad');
+      this.game.notice(p, s.town ? `That belongs to the people of ${s.ownerName}.` : `That belongs to ${s.ownerName}.`, 'bad');
       return;
     }
     if (s.crop) {

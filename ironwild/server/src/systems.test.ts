@@ -811,3 +811,33 @@ describe('oil (§25–27)', () => {
     expect(notices(p).slice(-1)[0]).toMatch(/oil seep/);
   });
 });
+
+describe('town projects (§53)', () => {
+  it('pays for deliveries; finishing the mill builds a wheel on the river and grows the town', () => {
+    const board = game.world.settlements.find((s) => s.id === 'westhaven')!.npcs.find((n) => n.profession === 'board')!;
+    const p = join('mason', board.x + 1, board.y);
+    expect(game.projects.current('westhaven')?.id).toBe('westhaven_mill');
+    const before = game.economy.prosperity.get('westhaven') ?? 0;
+    game.playerSystem.give(p, { id: 'plank', n: 70 }, true);
+    const crests = p.crests;
+    game.projects.deliver(p, board.id, 'plank');
+    expect(p.crests).toBeGreaterThan(crests);
+    expect(countItem(p.slots, 'plank')).toBe(0);
+    const info = game.projects.info('westhaven')!;
+    expect(info.needs.find((n) => n.item === 'plank')!.done).toBe(70);
+    // A second helper finishes it.
+    const q = join('carpenter', board.x - 1, board.y);
+    game.playerSystem.give(q, { id: 'plank', n: 60 }, true);
+    game.playerSystem.give(q, { id: 'iron_gear', n: 12, q: 1 }, true);
+    game.playerSystem.give(q, { id: 'iron_plate', n: 6, q: 1 }, true);
+    for (const item of ['plank', 'iron_gear', 'iron_plate']) game.projects.deliver(q, board.id, item);
+    // Only 50 more planks were needed; 10 stay in the pack.
+    expect(countItem(q.slots, 'plank')).toBe(10);
+    expect(game.projects.current('westhaven')?.id).toBe('westhaven_warehouse');
+    expect((game.economy.prosperity.get('westhaven') ?? 0) - before).toBeGreaterThanOrEqual(6000);
+    const wheel = [...game.world.structures.values()].find((s) => s.type === 'water_wheel' && s.town);
+    expect(wheel).toBeDefined();
+    // Nobody can take it down.
+    expect(game.building.canRemove(q, wheel!)).toBe(false);
+  });
+});

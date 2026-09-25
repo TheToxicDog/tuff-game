@@ -120,6 +120,8 @@ export interface Structure {
   fluid?: { kind: Fluid | null; amount: number };
   /** Boilers and engines: their own water and steam. */
   buf?: Record<Fluid, number>;
+  /** Built by a town project: nobody may take it down. */
+  town?: boolean;
   /** Electric devices: share of the power they asked for this tick (0–1). */
   power?: number;
   /** Rail junctions: the way the switch sends carts; stations: what they do with them. */

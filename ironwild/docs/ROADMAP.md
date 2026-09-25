@@ -23,22 +23,22 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 
 ## Phases
 
-| #   | Phase                          | Status | Notes                                                                                                                                                                  |
-| --- | ------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Movement, gathering, inventory | ✅     | Predicted movement, sprint, dodge; 24 node types with tool tiers and regrowth; slot inventory with backpacks up to 40 slots, drag and drop, quality stacks.            |
-| 2   | Town and NPC economy           | ✅     | 17 professions, each buying and selling different goods; General Stores buy anything cheaply (§47).                                                                    |
-| 3   | Crafting and blacksmithing     | ✅     | Hand, workbench and campfire crafting; anvil smithing minigame with Crude → Masterwork quality (§16–17).                                                               |
-| 4   | Building                       | ✅     | Grid placement with ghost preview, walls, doors, floors, fences, beds, chests, land claims with five permission levels (§43–44).                                       |
-| 5   | Mechanical power               | ✅     | Kinetic networks with RPM, torque/stress, gear ratios, stalls and locked gears (§20–22). Everything visibly turns.                                                     |
-| 6   | Conveyors and automation       | ✅     | Individual items on conveyors (straight and curved), splitters, filters, hoppers, crates; machines push output forward (§23–24).                                       |
-| 7   | Dynamic supply and demand      | ✅     | Stock-based prices with recovery, regional factors, contracts, a market report on the map. Trading grows settlement prosperity, which deepens markets.                 |
-| 8   | Multiplayer trading            | ✅     | Shop stands (paid while offline), buy orders with escrow on the Exchange, `/pay` (§33–34).                                                                             |
-| 9   | Agriculture and animals        | ✅     | Tilling, four crops, chickens/sheep/cows producing eggs/wool/milk, pens with gates.                                                                                    |
-| 10  | Vehicles and logistics         | ✅     | Hand carts, horse wagons (48 slots), railways: minecarts that run on their own, stations that load and unload, junction switches; shipping crates (§35–36).            |
-| 11  | Steam technology               | ✅     | Pumps lift river water into pipes, coal-fired boilers make steam, steam engines turn it into 32 RPM / 256 torque; tanks buffer; blast furnaces for steel.              |
-| 12  | Industrial technology          | ✅     | Generators, power poles and wires, electric motors and lamps; lathes turn springs, valves and precision gears; packagers crate goods; assemblers.                      |
-| 13  | Company systems                | ✅     | Companies own land handed to them and everything on it; owner / officer / member roles; company shops and shipping pay the treasury, with a day's ledger (C).          |
-| 14  | Expanded world economy         | 🟡     | Port Meridian with imports and exports; oil (pumpjacks, refineries: fuel oil, lubricant, plastic, circuit boards); town growth; market events. Missing: town projects. |
+| #   | Phase                          | Status | Notes                                                                                                                                                         |
+| --- | ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Movement, gathering, inventory | ✅     | Predicted movement, sprint, dodge; 24 node types with tool tiers and regrowth; slot inventory with backpacks up to 40 slots, drag and drop, quality stacks.   |
+| 2   | Town and NPC economy           | ✅     | 17 professions, each buying and selling different goods; General Stores buy anything cheaply (§47).                                                           |
+| 3   | Crafting and blacksmithing     | ✅     | Hand, workbench and campfire crafting; anvil smithing minigame with Crude → Masterwork quality (§16–17).                                                      |
+| 4   | Building                       | ✅     | Grid placement with ghost preview, walls, doors, floors, fences, beds, chests, land claims with five permission levels (§43–44).                              |
+| 5   | Mechanical power               | ✅     | Kinetic networks with RPM, torque/stress, gear ratios, stalls and locked gears (§20–22). Everything visibly turns.                                            |
+| 6   | Conveyors and automation       | ✅     | Individual items on conveyors (straight and curved), splitters, filters, hoppers, crates; machines push output forward (§23–24).                              |
+| 7   | Dynamic supply and demand      | ✅     | Stock-based prices with recovery, regional factors, contracts, a market report on the map. Trading grows settlement prosperity, which deepens markets.        |
+| 8   | Multiplayer trading            | ✅     | Shop stands (paid while offline), buy orders with escrow on the Exchange, `/pay` (§33–34).                                                                    |
+| 9   | Agriculture and animals        | ✅     | Tilling, four crops, chickens/sheep/cows producing eggs/wool/milk, pens with gates.                                                                           |
+| 10  | Vehicles and logistics         | ✅     | Hand carts, horse wagons (48 slots), railways: minecarts that run on their own, stations that load and unload, junction switches; shipping crates (§35–36).   |
+| 11  | Steam technology               | ✅     | Pumps lift river water into pipes, coal-fired boilers make steam, steam engines turn it into 32 RPM / 256 torque; tanks buffer; blast furnaces for steel.     |
+| 12  | Industrial technology          | ✅     | Generators, power poles and wires, electric motors and lamps; lathes turn springs, valves and precision gears; packagers crate goods; assemblers.             |
+| 13  | Company systems                | ✅     | Companies own land handed to them and everything on it; owner / officer / member roles; company shops and shipping pay the treasury, with a day's ledger (C). |
+| 14  | Expanded world economy         | ✅     | Port Meridian with imports and exports; oil (pumpjacks, refineries: fuel oil, lubricant, plastic, circuit boards); town growth; market events; town projects. |
 
 ## Also done
 
@@ -70,6 +70,11 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   crates pay into the treasury; the Company window (C) shows members, property and a day's income.
 - Port Meridian (§14): a harbour town with a pier and a moored ship; a fishmonger, an importer
   (spices, silk, tea, steel, glass) and an export agent who pays best for finished goods.
+- Town projects (§53): every settlement works through a list — Westhaven's mill wheel, warehouse
+  and clock tower; Stonehaven's mine lift and food store; Greenfield's granary and windmill; Port
+  Meridian's lighthouse and bonded warehouse. Anyone delivers the goods at the contract board for a
+  little over market; when the last good is in, the building appears in town, the town prospers
+  (and may open new stalls), some markets deepen, and the helpers share a bonus.
 
 ## Next up
 

@@ -619,6 +619,7 @@ export class ClientGame {
 
     this.terrain.animate(dt);
     this.nodes.animate(dt, pos.x, pos.y);
+    this.structures.minutes = this.state.minutes;
     this.structures.animate(dt);
     this.town.animate(dt, pos.x, pos.y);
     this.entities.update(now);

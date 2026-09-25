@@ -511,6 +511,55 @@ function remaining(ctx: UiContext, minute: number): string {
 }
 
 function board(body: HTMLElement, ui: BoardUi, ctx: UiContext): void {
+  const pr = ui.project;
+  if (pr) {
+    const card = h(
+      'div',
+      { class: 'project' },
+      h('div', { class: 'section-title', style: 'margin-top:0' }, `Town project ${pr.finished + 1} of ${pr.total}`),
+      h('div', { class: 'name' }, pr.title),
+      h('div', { class: 'muted', style: 'margin-bottom:6px' }, pr.desc),
+    );
+    for (const n of pr.needs) {
+      const have = ctx.state.count(n.item);
+      const pct = Math.min(100, (n.done / n.n) * 100);
+      const left = n.n - n.done;
+      card.append(
+        h(
+          'div',
+          { class: 'row', style: 'margin-top:4px' },
+          iconImg(n.item, 22),
+          h(
+            'div',
+            { style: 'flex:1' },
+            h(
+              'div',
+              null,
+              `${itemName(n.item)} — ${n.done} / ${n.n}`,
+              h('span', { class: 'muted' }, ` · pays ${formatCrests(n.price)} each`),
+            ),
+            h('div', { class: 'stress' }, h('div', { style: `width:${pct}%;background:#8fd45a` })),
+          ),
+          left > 0
+            ? h(
+                'button',
+                { class: 'small gold', disabled: have === 0, onclick: () => ctx.send({ t: 'project', npc: ui.npc, item: n.item }) },
+                `Deliver ${Math.min(have, left)}`,
+              )
+            : h('span', { class: 'good' }, '✔'),
+        ),
+      );
+    }
+    if (pr.top.length)
+      card.append(
+        h(
+          'div',
+          { class: 'muted', style: 'margin-top:6px;font-size:12px' },
+          `Helping so far: ${pr.top.map(([n, share]) => `${n} (${Math.round(share * 100)}%)`).join(', ')}`,
+        ),
+      );
+    body.append(card);
+  }
   body.append(
     h(
       'div',

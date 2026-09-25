@@ -127,6 +127,13 @@ export interface MarketEventSave {
   ends: number;
 }
 
+export interface ProjectSave {
+  settlement: string;
+  index: number;
+  delivered: Record<string, number>;
+  helpers: Record<string, { name: string; value: number }>;
+}
+
 export interface WorldSave {
   version: 1;
   seed: number;
@@ -146,6 +153,8 @@ export interface WorldSave {
   events?: MarketEventSave[];
   entities: EntitySave[];
   companies: CompanySave[];
+  /** Town projects under way and finished. */
+  projects?: ProjectSave[];
 }
 
 export class DuplicateUsernameError extends Error {

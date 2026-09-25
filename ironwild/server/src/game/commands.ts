@@ -22,6 +22,7 @@ const ADMIN_HELP = [
   '/research all',
   '/raid — send raiders against the nearest claim (10 s warning)',
   '/event [title] — start a market event (e.g. /event Iron shortage)',
+  '/project — finish the town project of the nearest settlement',
   '/heal',
   '/save',
 ];
@@ -162,6 +163,15 @@ export class Commands {
         if (!best) this.reply(p, 'There are no claims.');
         else if (!this.game.raids.start(best, 10_000)) this.reply(p, 'The bandits found nowhere to gather.');
         else this.reply(p, `Raid on ${best.ownerName}'s claim (worth ₡${this.game.raids.wealth(best)}).`);
+        return;
+      }
+      case 'project': {
+        let best = this.game.world.settlements[0];
+        for (const s of this.game.world.settlements)
+          if (Math.hypot(s.x - p.x, s.y - p.y) < Math.hypot(best.x - p.x, best.y - p.y)) best = s;
+        const project = this.game.projects.current(best.id);
+        if (!project) this.reply(p, `${best.name} has no project left.`);
+        else this.game.projects.finishNow(best.id);
         return;
       }
       case 'event': {

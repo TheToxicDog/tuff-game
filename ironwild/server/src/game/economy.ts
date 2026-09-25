@@ -211,7 +211,7 @@ export class Economy {
   }
 
   private target(def: ItemDef, s: SettlementDef): number {
-    const growth = 1 + (this.prosperity.get(s.id) ?? 0) / 60000;
+    const growth = (1 + (this.prosperity.get(s.id) ?? 0) / 60000) * this.game.projects.scale(s.id);
     let demand = 1;
     for (const e of this.events) if (e.settlement === s.id && e.items.includes(def.id)) demand *= e.demand;
     return targetStock(def, s) * growth * demand;
@@ -478,6 +478,12 @@ export class Economy {
     this.game.playerSystem.refreshUi(p, true);
   }
 
+  /** A town project finished: prosperity all at once. */
+  grow(settlement: string, value: number): void {
+    this.addProsperity(settlement, value);
+    this.sendTowns();
+  }
+
   private addProsperity(settlement: string, value: number): void {
     const before = this.prosperity.get(settlement) ?? 0;
     const after = before + value;
@@ -562,6 +568,7 @@ export class Economy {
       npc: ref.npc.id,
       settlement: ref.settlement.name,
       contracts: this.contracts.filter((c) => c.settlement === ref.settlement.id).map((c) => this.contractInfo(c, p)),
+      project: this.game.projects.info(ref.settlement.id),
     };
   }
 
