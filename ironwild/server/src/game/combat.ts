@@ -6,6 +6,7 @@ import {
   ITEM_BY_ID,
   InputFlags,
   PLAYER_RADIUS,
+  TILES,
   addStack,
   angleDiff,
   roomFor,
@@ -44,6 +45,10 @@ export class CombatSystem {
     if (secondary && !wasSecondary && held?.food) this.game.playerSystem.eat(p, p.sel);
     if (held?.place) return;
 
+    if (tool.kind === 'rod') {
+      this.game.fishing.input(p);
+      return;
+    }
     if (tool.kind === 'bow') {
       if (primary) p.drawT += dt;
       else if (wasPrimary) {
@@ -244,20 +249,27 @@ export class CombatSystem {
       a.x += (a.vx * dt) / steps;
       a.y += (a.vy * dt) / steps;
       const w = this.game.world;
-      if (w.solidAt(Math.floor(a.x), Math.floor(a.y)) && !w.structAt(Math.floor(a.x), Math.floor(a.y))?.def.low) {
+      const tx = Math.floor(a.x);
+      const ty = Math.floor(a.y);
+      // Tower arrows fly over walls; only cliffs and houses stop them.
+      const blocked = a.high
+        ? !w.inside(tx, ty) || (!TILES[w.tile(tx, ty)].walk && !TILES[w.tile(tx, ty)].water)
+        : w.solidAt(tx, ty) && !w.structAt(tx, ty)?.def.low;
+      if (blocked) {
         this.game.removeEntity(a.id);
         return;
       }
       for (const e of this.game.entities.values()) {
         if (e.kind !== 'creature' || e.rider) continue;
+        if (a.high && (e.def.temperament === 'farm' || e.def.temperament === 'passive')) continue;
         if (Math.hypot(e.x - a.x, e.y - a.y) < e.def.radius + 0.15) {
-          const shooter = this.game.players.get(a.owner);
-          if (shooter) this.game.creatures.damage(e, a.damage, shooter, 0.3, false);
+          const shooter = a.owner ? (this.game.players.get(a.owner) ?? null) : null;
+          this.game.creatures.damage(e, a.damage, shooter, 0.3, false, a.x - a.vx, a.y - a.vy);
           this.game.removeEntity(a.id);
           return;
         }
       }
-      if (this.game.config.pvp) {
+      if (this.game.config.pvp && a.owner) {
         for (const p of this.game.players.values()) {
           if (p.id === a.owner || p.dead) continue;
           if (Math.hypot(p.x - a.x, p.y - a.y) < PLAYER_RADIUS + 0.1 && !w.settlementAt(p.x, p.y)) {

@@ -38,15 +38,21 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 | 11  | Steam technology               | 🟡     | Steam engines (coal + water, 32 RPM, 256 torque) and blast furnaces for steel. Missing: boilers, pumps and pipes.                                            |
 | 12  | Industrial technology          | 🟡     | Assemblers make bearings, gearbox units and industrial pumps. Missing: electricity, motors, machine tools, packaging.                                        |
 | 13  | Company systems                | 🟡     | Companies with a treasury; members share access to each other's land, carts and animals. Missing: company-owned property and shops, officer roles in the UI. |
-| 14  | Expanded world economy         | ⬜     | More settlements (Port Meridian), oil, market events, town growth unlocking new traders (§54).                                                               |
+| 14  | Expanded world economy         | 🟡     | Town growth: prosperity from trade opens new stalls in each settlement (§54). Missing: Port Meridian, oil, market events.                                    |
+
+## Also done
+
+- Factory overview (O): output, value per minute, utilization, problems and bottleneck hints (§59).
+- Overclocking to 125 % / 150 % for 1.6× / 2.3× the stress or fuel; gentle wear repaired with an
+  iron gear (§60–61).
+- Bandit raids on wealthy claims while their owner is around: announced, they bash through walls,
+  rob storage, sabotage machines and flee with loot; spike traps and arrow towers; damaged
+  structures mend afterwards (§42).
+- Fishing in rivers, the lake and the sea, with salvage and lost purses (§11).
 
 ## Next up
 
-- Factory statistics: production, revenue and profit per minute, utilization and bottleneck hints
-  for a whole network (§59).
-- Overclocking machines (faster, less efficient) and gentle maintenance (§60–61).
-- Occasional bandit raids on wealthy, undefended factories; walls and gates that can be damaged
-  (§42).
-- Town development: prosperity unlocking new traders and buildings in villages (§54).
-- Fishing, salvage quests and economic quests beyond contracts (§11, §53).
-- Tier 3–4 technology, wagons and rail, prestige projects (§19, §36, §64).
+- Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
+- Market events (shortages, festivals, a bad harvest) and a fourth settlement, Port Meridian (§14).
+- Boilers, pumps and pipes; wagons, depots and rail (§19, §36).
+- Tier 3–4 technology and prestige projects (§64).

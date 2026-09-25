@@ -1186,3 +1186,10 @@ select:focus {
   color: var(--muted);
   background: #1b2418;
 }
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}

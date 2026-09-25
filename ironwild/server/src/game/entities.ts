@@ -1,6 +1,7 @@
 // Non-player entities: creatures, dropped items, death bags, arrows and hand carts.
 
 import type { CreatureDef, ItemStack, Slots } from '@ironwild/shared';
+import type { RaiderState } from './raids';
 
 export type AiState = 'idle' | 'wander' | 'flee' | 'chase' | 'attack' | 'return';
 
@@ -39,6 +40,10 @@ export interface Creature {
   lastHitBy: number;
   /** Horse ridden by a player. */
   rider?: number;
+  /** Bandits on a raid (§42). */
+  raider?: RaiderState;
+  /** Next time a spike trap may hurt it. */
+  trapAt?: number;
 }
 
 export interface Drop {
@@ -70,8 +75,11 @@ export interface Arrow {
   vy: number;
   angle: number;
   damage: number;
+  /** Shooter's player id, or 0 for an arrow tower. */
   owner: number;
   life: number;
+  /** Tower arrows fly over walls and only hit hostile creatures. */
+  high?: boolean;
 }
 
 export interface Cart {

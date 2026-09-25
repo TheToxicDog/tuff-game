@@ -55,19 +55,21 @@ them and answers with state.
 shared design with Tuff), the `Game` and the HTTP/WebSocket server. `Game` owns the world and runs
 the systems in a fixed order each 50 ms tick:
 
-| System           | Responsibility                                                                                                         |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts and horses     |
-| `combat.ts`      | Swings (quick, heavy, bows), hits on creatures and players, gathering from nodes, drops and auto-pickup                |
-| `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals |
-| `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                              |
-| `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                    |
-| `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers                                        |
-| `farming.ts`     | Tilling, crops, harvests, animal products                                                                              |
-| `economy.ts`     | Markets, NPC trade, contracts, shipping crates, the Exchange, shop stands                                              |
-| `progression.ts` | Knowledge, research, discoveries and the guided first fifteen minutes                                                  |
-| `companies.ts`   | Companies and their treasuries                                                                                         |
-| `replication.ts` | What each client sees                                                                                                  |
+| System           | Responsibility                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts and horses      |
+| `combat.ts`      | Swings (quick, heavy, bows), hits on creatures and players, gathering from nodes, drops and auto-pickup                 |
+| `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals  |
+| `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                               |
+| `building.ts`    | Placement rules, hammer pick-up, doors, land claims and permissions                                                     |
+| `factory.ts`     | Power recomputation, machine processing, conveyors, splitters, filters, hoppers, overclocking, wear, factory stats      |
+| `farming.ts`     | Tilling, crops, harvests, animal products                                                                               |
+| `fishing.ts`     | Casting, bites and catches per kind of water                                                                            |
+| `raids.ts`       | Raids on wealthy claims (raider AI: bash, rob, sabotage, flee), structure damage and mending, spike traps, arrow towers |
+| `economy.ts`     | Markets, NPC trade, contracts, shipping crates, the Exchange, shop stands                                               |
+| `progression.ts` | Knowledge, research, discoveries and the guided first fifteen minutes                                                   |
+| `companies.ts`   | Companies and their treasuries                                                                                          |
+| `replication.ts` | What each client sees                                                                                                   |
 
 ### Factories
 

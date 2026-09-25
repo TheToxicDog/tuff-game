@@ -108,6 +108,8 @@ export interface Structure {
   net?: number;
   /** Source speed override (windmills depend on altitude). */
   rpm?: number;
+  /** Health bucket last sent to clients (tenths). */
+  hpSent?: number;
 }
 
 export const chunkKey = (cx: number, cy: number): number => cy * 1024 + cx;
@@ -133,6 +135,7 @@ export class World implements CollisionWorld {
   readonly settlements: GenSettlement[];
   /** Claim structures, for permission checks. */
   readonly claims = new Set<Structure>();
+  readonly towers = new Set<Structure>();
 
   constructor(seed: number) {
     this.gen = generateWorld(seed);
@@ -267,6 +270,7 @@ export class World implements CollisionWorld {
     if (!set) this.structsByChunk.set(s.chunk, (set = new Set()));
     set.add(s.id);
     if (s.def.claimRadius) this.claims.add(s);
+    if (s.def.tower) this.towers.add(s);
   }
 
   removeStructure(s: Structure): void {
@@ -276,6 +280,7 @@ export class World implements CollisionWorld {
       for (let x = s.x; x < s.x + s.w; x++) if (grid[y * this.size + x] === s.id) grid[y * this.size + x] = 0;
     this.structsByChunk.get(s.chunk)?.delete(s.id);
     this.claims.delete(s);
+    this.towers.delete(s);
   }
 
   makeStructure(id: number, type: string, x: number, y: number, rot: number, owner: string | null, ownerName: string): Structure {

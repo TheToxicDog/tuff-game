@@ -46,6 +46,21 @@ export class InventoryWindow {
       ),
     );
 
+    // Skill levels (0–20).
+    const skills = Object.entries(st.status.skills)
+      .filter(([, lvl]) => lvl > 0)
+      .sort((a, b) => b[1] - a[1]);
+    if (skills.length)
+      body.append(
+        h(
+          'div',
+          { class: 'skills' },
+          ...skills.map(([name, lvl]) =>
+            h('span', { class: 'pill', title: `${name} level ${lvl}` }, `${name[0].toUpperCase()}${name.slice(1)} ${lvl}`),
+          ),
+        ),
+      );
+
     // Crafting.
     const near = this.ctx.nearStations();
     if (this.forced && TABS.includes(this.forced as never)) {

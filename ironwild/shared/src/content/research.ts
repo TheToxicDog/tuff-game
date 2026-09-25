@@ -17,6 +17,15 @@ export interface ResearchNode {
 export const RESEARCH: readonly ResearchNode[] = [
   { id: 'smithing', name: 'Smithing', cost: 10, requires: [], desc: 'Anvil, iron tools, plates, rods and gears.', col: 0, row: 1 },
   { id: 'masonry', name: 'Masonry', cost: 8, requires: [], desc: 'Stone walls, floors and bricks.', col: 0, row: 0 },
+  {
+    id: 'fortification',
+    name: 'Fortification',
+    cost: 20,
+    requires: [],
+    desc: 'Spike traps and arrow towers against raids.',
+    col: 0,
+    row: 2,
+  },
   { id: 'agriculture', name: 'Agriculture', cost: 12, requires: [], desc: 'Hoes, tilling and planting crops.', col: 0, row: 3 },
   { id: 'cooking', name: 'Cooking', cost: 15, requires: ['agriculture'], desc: 'Ovens and hearty stews.', col: 1, row: 3 },
   {

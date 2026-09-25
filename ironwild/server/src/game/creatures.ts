@@ -1,7 +1,7 @@
 // Wildlife, bandits and farm animals (§41). Creatures only think when a player is nearby; the
 // spawner keeps each region's populations topped up away from players.
 
-import { CREATURE_BY_ID, PLAYER_RADIUS, Region, TILES, Tile, resolveCollisions, type Circle, type CollisionWorld } from '@ironwild/shared';
+import { CREATURE_BY_ID, PLAYER_RADIUS, Region, TILES, Tile, resolveCollisions, type CollisionWorld } from '@ironwild/shared';
 import type { EntitySave } from '../persistence/storage';
 import type { Creature } from './entities';
 import type { Game } from './game';
@@ -41,7 +41,6 @@ export class CreatureSystem {
   private readonly zones: ZoneSpec[] = [...ZONES];
   private readonly regionTiles = new Map<number, number[]>();
   private spawnTimer = 0;
-  private readonly scratch: Circle[] = [];
   /** Collision for creatures: like players, but gates, fences and town plazas also block. */
   readonly collision: CollisionWorld;
 
@@ -98,7 +97,7 @@ export class CreatureSystem {
           break;
         }
       }
-      if (!near && e.def.temperament !== 'farm') continue;
+      if (!near && e.def.temperament !== 'farm' && !e.raider) continue;
       this.think(e, dt, players);
     }
   }
@@ -176,6 +175,10 @@ export class CreatureSystem {
     if (c.cooldown > 0) c.cooldown -= dt;
     if (c.aggro > 0) c.aggro -= dt;
     c.timer -= dt;
+    if (c.raider) {
+      this.game.raids.think(c, dt, players);
+      return;
+    }
     const w = this.game.world;
 
     // Nearest player that matters.
@@ -224,21 +227,7 @@ export class CreatureSystem {
           c.target = t.id;
           tx = t.x;
           ty = t.y;
-          const reach = def.radius + PLAYER_RADIUS + 0.45;
-          const d = Math.hypot(t.x - c.x, t.y - c.y);
-          speed = d > reach * 0.8 ? def.speed * 0.95 : 0;
-          if (c.windup > 0) {
-            c.windup -= dt;
-            speed *= 0.25;
-            if (c.windup <= 0) {
-              c.cooldown = def.attackRate;
-              if (d <= reach + 0.35 && !t.dead)
-                this.game.playerSystem.damage(t, def.damage * (0.85 + Math.random() * 0.3), def.name.toLowerCase(), c.x, c.y);
-            }
-          } else if (d <= reach && c.cooldown <= 0) {
-            c.windup = def.id === 'bear' ? 0.5 : 0.35;
-            this.game.emit(['atk', c.id], c.x, c.y);
-          }
+          speed = this.attack(c, t, dt);
         } else {
           c.state = 'return';
         }
@@ -270,7 +259,13 @@ export class CreatureSystem {
       }
     }
 
-    // Steering.
+    this.steer(c, tx, ty, speed, dt);
+  }
+
+  /** Moves a creature toward (tx, ty) at `speed`, sliding along obstacles. Returns the distance moved. */
+  steer(c: Creature, tx: number, ty: number, speed: number, dt: number): number {
+    const def = c.def;
+    const w = this.game.world;
     const dx = tx - c.x;
     const dy = ty - c.y;
     const d = Math.hypot(dx, dy);
@@ -293,28 +288,56 @@ export class CreatureSystem {
     c.x += c.vx * dt;
     c.y += c.vy * dt;
     resolveCollisions(c, def.radius, this.collision);
+    const moved = Math.hypot(c.x - bx, c.y - by);
     // Stuck against something: pick a new direction.
-    if (speed > 0 && Math.hypot(c.x - bx, c.y - by) < speed * dt * 0.2 && c.state !== 'chase') {
+    if (!c.raider && speed > 0 && moved < speed * dt * 0.2 && c.state !== 'chase') {
       c.timer = 0;
       c.wx = c.x + (Math.random() - 0.5) * 10;
       c.wy = c.y + (Math.random() - 0.5) * 10;
     }
-    this.scratch.length = 0;
+    return moved;
   }
 
-  damage(c: Creature, amount: number, by: Player, knock: number, crit: boolean): void {
+  /**
+   * Chases and bites/strikes a player: returns the speed to move at (0 when in reach). Attacks are
+   * telegraphed with a wind-up before they land.
+   */
+  attack(c: Creature, t: Player, dt: number): number {
+    const def = c.def;
+    const reach = def.radius + PLAYER_RADIUS + 0.45;
+    const d = Math.hypot(t.x - c.x, t.y - c.y);
+    let speed = d > reach * 0.8 ? def.speed * 0.95 : 0;
+    if (c.windup > 0) {
+      c.windup -= dt;
+      speed *= 0.25;
+      if (c.windup <= 0) {
+        c.cooldown = def.attackRate;
+        if (d <= reach + 0.35 && !t.dead)
+          this.game.playerSystem.damage(t, def.damage * (0.85 + Math.random() * 0.3), def.name.toLowerCase(), c.x, c.y);
+      }
+    } else if (d <= reach && c.cooldown <= 0) {
+      c.windup = def.id === 'bear' ? 0.5 : 0.35;
+      this.game.emit(['atk', c.id], c.x, c.y);
+    }
+    return speed;
+  }
+
+  /** Damage from a player, or from a trap or tower (`by` null; `fromX/fromY` set the knockback). */
+  damage(c: Creature, amount: number, by: Player | null, knock: number, crit: boolean, fromX = by?.x ?? c.x, fromY = by?.y ?? c.y): void {
     c.hp -= amount;
     c.hurtT = 1.5;
-    c.lastHitBy = by.id;
-    const a = Math.atan2(c.y - by.y, c.x - by.x);
+    const a = Math.atan2(c.y - fromY, c.x - fromX);
     c.vx += Math.cos(a) * knock * 10;
     c.vy += Math.sin(a) * knock * 10;
-    if (c.def.temperament !== 'passive') {
-      c.aggro = 15;
-      c.target = by.id;
+    if (by) {
+      c.lastHitBy = by.id;
+      if (c.def.temperament !== 'passive') {
+        c.aggro = 15;
+        c.target = by.id;
+      }
     }
     this.game.emit(['dmg', c.id, Math.round(amount), crit ? 1 : 0], c.x, c.y);
-    if (c.hp <= 0) this.kill(c, by);
+    if (c.hp <= 0) this.kill(c, by ?? this.game.players.get(c.lastHitBy) ?? null);
   }
 
   kill(c: Creature, by: Player | null): void {
@@ -327,6 +350,7 @@ export class CreatureSystem {
       const n = d.min + Math.floor(Math.random() * (d.max - d.min + 1));
       if (n > 0) loot.push({ id: d.item, n });
     }
+    if (c.raider) loot.push(...this.game.raids.fell(c));
     this.game.combat.dropLoot(c.x, c.y, loot);
     if (by) {
       by.stats.kills++;

@@ -136,6 +136,28 @@ export class Sfx {
       case 'die':
         this.tone(200, 0.6, 'sawtooth', 0.15 * v, 0, 0.3);
         break;
+      case 'splash':
+        this.burst(0.25, 1400, 0.3 * v, 'bandpass');
+        this.tone(420, 0.12, 'sine', 0.08 * v, 0, 0.5);
+        break;
+      case 'bite':
+        this.burst(0.12, 2200, 0.35 * v, 'bandpass');
+        this.tone(1200, 0.06, 'sine', 0.14 * v);
+        this.tone(1500, 0.06, 'sine', 0.12 * v, 0.08);
+        break;
+      case 'reel':
+        for (let i = 0; i < 6; i++) this.tone(900 + i * 60, 0.03, 'square', 0.04 * v, i * 0.035);
+        this.burst(0.3, 1200, 0.25 * v, 'bandpass', 0.2);
+        break;
+      case 'horn':
+        this.tone(147, 1.1, 'sawtooth', 0.09 * Math.max(v, 0.5), 0, 1.02);
+        this.tone(220, 1.1, 'sawtooth', 0.06 * Math.max(v, 0.5), 0.05, 1.02);
+        this.tone(147, 1.4, 'sawtooth', 0.08 * Math.max(v, 0.5), 1.2, 0.97);
+        break;
+      case 'break':
+        this.burst(0.35, 700, 0.6 * v);
+        this.tone(90, 0.3, 'triangle', 0.3 * v, 0, 0.5);
+        break;
       case 'notice':
         this.tone(880, 0.08, 'sine', 0.06);
         break;

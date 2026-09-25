@@ -32,6 +32,7 @@ interface DrawCtx {
   w: number;
   h: number;
   preview: boolean;
+  renderer: StructureRenderer | null;
 }
 
 const RPM_TO_RAD = (Math.PI * 2) / 60;
@@ -100,6 +101,8 @@ export class StructureRenderer {
   /** Rotation per structure and gear group, kept across rebuilds. */
   private readonly angles = new Map<number, number[]>();
   time = 0;
+  /** Nearest hostile creature within range of a point (arrow towers turn toward it). */
+  targetNear: (x: number, y: number, range: number) => { x: number; y: number } | null = () => null;
 
   constructor(
     private readonly r: Renderer,
@@ -166,7 +169,7 @@ export class StructureRenderer {
     root.addChild(inner);
     const g = new Graphics();
     inner.addChild(g);
-    const top = s.type === 'windmill' ? new Container() : null;
+    const top = s.type === 'windmill' || s.type === 'arrow_tower' ? new Container() : null;
     const anims: Anim[] = [];
     const ctx: DrawCtx = {
       s,
@@ -180,14 +183,46 @@ export class StructureRenderer {
       w: s.rot & 1 ? h : w,
       h: s.rot & 1 ? w : h,
       preview,
+      renderer: preview ? null : this,
     };
     const fn = DRAW[s.type] ?? drawGeneric;
     fn(ctx);
+    if (!preview && s.st.hp !== undefined && s.st.hp < 100) damage(root, s, s.st.hp);
     return { s, root, top, anims };
+  }
+
+  /** Nearest hostile to a structure (see targetNear). */
+  target(s: ClientStruct, range: number): { x: number; y: number } | null {
+    return this.targetNear(s.x + s.w / 2, s.y + s.h / 2, range);
   }
 }
 
 // ——— Helpers ———
+
+/** Cracks and a health bar on a damaged structure. */
+function damage(root: Container, s: ClientStruct, hp: number): void {
+  const w = s.w * TS;
+  const h = s.h * TS;
+  const g = new Graphics();
+  const cracks = hp < 35 ? 4 : hp < 70 ? 2 : 1;
+  let seed = s.id * 9301 + 49297;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let i = 0; i < cracks; i++) {
+    let x = w * (0.2 + rnd() * 0.6);
+    let y = h * (0.2 + rnd() * 0.6);
+    g.moveTo(x, y);
+    for (let k = 0; k < 3; k++) {
+      x += (rnd() - 0.5) * 22;
+      y += (rnd() - 0.5) * 22;
+      g.lineTo(x, y);
+    }
+    g.stroke({ width: 2.5, color: 0x1a1612, alpha: 0.75 });
+  }
+  const bw = Math.min(w - 8, 52);
+  g.roundRect((w - bw) / 2 - 2, -12, bw + 4, 9, 4).fill({ color: 0x1a1612, alpha: 0.75 });
+  g.roundRect((w - bw) / 2, -10, (bw * hp) / 100, 5, 2.5).fill(hp < 35 ? 0xe0503a : hp < 70 ? 0xe0b84c : 0x7ac05a);
+  root.addChild(g);
+}
 
 /** Local half sizes in the rotated frame (the drawing always faces north). */
 const half = (c: DrawCtx) => ({ hw: c.w / 2, hh: c.h / 2 });
@@ -340,6 +375,80 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
     c.anims.push((_dt, t) => {
       const f = 0.85 + Math.sin(t * 13 + c.s.id) * 0.1 + Math.sin(t * 7.3) * 0.07;
       flame.scale.set(f, f * 1.08);
+    });
+  },
+  spike_trap(c) {
+    const { hw, hh } = half(c);
+    c.g
+      .roundRect(-hw + 6, -hh + 6, (hw - 6) * 2, (hh - 6) * 2, 6)
+      .fill(0x6b4a2a)
+      .stroke({ width: 3, color: OUTLINE });
+    for (let row = 0; row < 3; row++)
+      for (let col = 0; col < 3; col++) {
+        const x = -hw + 16 + col * 16;
+        const y = -hh + 16 + row * 16;
+        c.g
+          .poly([x - 5, y + 5, x, y - 7, x + 5, y + 5], true)
+          .fill(0xc4cad3)
+          .stroke({ width: 2, color: OUTLINE });
+      }
+  },
+  arrow_tower(c) {
+    const { hw, hh } = half(c);
+    c.inner.rotation = 0;
+    c.g
+      .rect(-hw + 2, -hh + 2, (hw - 2) * 2, (hh - 2) * 2)
+      .fill(0x9aa0a6)
+      .stroke({ width: 4, color: OUTLINE });
+    for (let row = 1; row < 4; row++)
+      c.g
+        .moveTo(-hw + 3, -hh + row * 15)
+        .lineTo(hw - 3, -hh + row * 15)
+        .stroke({ width: 2, color: 0x70757b });
+    if (!c.top) return;
+    // The platform and crossbow sit above everything and turn toward the nearest threat.
+    const deck = new Container();
+    deck.position.set(c.s.w * TS * 0.5, c.s.h * TS * 0.5 - 10);
+    const pg = new Graphics();
+    pg.roundRect(-30, -30, 60, 60, 8).fill(0x8a5a33).stroke({ width: 4, color: OUTLINE });
+    for (let i = -1; i <= 1; i++)
+      pg.moveTo(-28, i * 14)
+        .lineTo(28, i * 14)
+        .stroke({ width: 2, color: 0x6b4a2a });
+    for (const [x, y] of [
+      [-30, -30],
+      [30, -30],
+      [-30, 30],
+      [30, 30],
+    ])
+      pg.rect(x - 5, y - 5, 10, 10)
+        .fill(0x7a5230)
+        .stroke({ width: 2, color: OUTLINE });
+    deck.addChild(pg);
+    const bow = new Graphics();
+    bow.roundRect(-6, -4, 34, 8, 3).fill(0x6b4a2a).stroke({ width: 2.5, color: OUTLINE });
+    arcPath(bow, 8, 0, 20, -1.2, 1.2).stroke({ width: 6, color: OUTLINE });
+    arcPath(bow, 8, 0, 20, -1.2, 1.2).stroke({ width: 3.5, color: 0xa9afb8 });
+    bow
+      .moveTo(8 + Math.cos(-1.2) * 20, Math.sin(-1.2) * 20)
+      .lineTo(8 + Math.cos(1.2) * 20, Math.sin(1.2) * 20)
+      .stroke({ width: 1.5, color: 0xeeeeee });
+    deck.addChild(bow);
+    c.top.addChild(deck);
+    const renderer = c.renderer;
+    let timer = 0;
+    let want = -Math.PI / 2 + c.s.id;
+    bow.rotation = want;
+    c.anims.push((dt, t) => {
+      timer -= dt;
+      if (timer <= 0 && renderer) {
+        timer = 0.2;
+        const target = renderer.target(c.s, 9);
+        if (target) want = Math.atan2(target.y - (c.s.y + 0.5), target.x - (c.s.x + 0.5));
+        else want += Math.sin(t * 0.4 + c.s.id) * 0.05;
+      }
+      const d = Math.atan2(Math.sin(want - bow.rotation), Math.cos(want - bow.rotation));
+      bow.rotation += d * Math.min(1, dt * 8);
     });
   },
   land_claim(c) {

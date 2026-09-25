@@ -72,6 +72,10 @@ export interface StructureDef {
   gate?: boolean;
   /** Research needed to place it (in addition to owning the item). */
   hint?: string;
+  /** Spike traps: damage dealt to hostile creatures standing on it. */
+  trap?: number;
+  /** Defensive towers: range in tiles, damage per arrow and seconds between shots. */
+  tower?: { range: number; damage: number; every: number };
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -132,6 +136,30 @@ const S: StructureDef[] = [
     hp: 800,
     placement: 'land',
     claimRadius: 15,
+  },
+  {
+    id: 'spike_trap',
+    name: 'Spike Trap',
+    item: 'spike_trap',
+    size: [1, 1],
+    solid: false,
+    layer: 'object',
+    hp: 160,
+    placement: 'land',
+    low: true,
+    trap: 18,
+  },
+  {
+    id: 'arrow_tower',
+    name: 'Arrow Tower',
+    item: 'arrow_tower',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 900,
+    placement: 'land',
+    container: 4,
+    tower: { range: 9, damage: 20, every: 1.3 },
   },
   { id: 'bed', name: 'Bed', item: 'bed', size: [1, 1], solid: false, layer: 'object', hp: 150, placement: 'land', bed: true, low: true },
   {

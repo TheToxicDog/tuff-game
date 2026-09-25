@@ -25,9 +25,11 @@ import { Economy } from './economy';
 import type { Entity } from './entities';
 import { Factory } from './factory';
 import { Farming } from './farming';
+import { Fishing } from './fishing';
 import { newCharacter, Player } from './player';
 import { PlayerSystem } from './players';
 import { Progression } from './progression';
+import { RaidSystem } from './raids';
 import { Replication } from './replication';
 import type { ClientSession } from './session';
 import { World, type ResourceNode, type Structure } from './world';
@@ -91,6 +93,8 @@ export class Game {
   readonly progression: Progression;
   readonly replication: Replication;
   readonly farming: Farming;
+  readonly fishing: Fishing;
+  readonly raids: RaidSystem;
   readonly companies: CompanySystem;
   readonly commands: Commands;
 
@@ -119,6 +123,8 @@ export class Game {
     this.progression = new Progression(this);
     this.replication = new Replication(this);
     this.farming = new Farming(this);
+    this.fishing = new Fishing(this);
+    this.raids = new RaidSystem(this);
     this.companies = new CompanySystem(this);
     this.commands = new Commands(this);
   }
@@ -131,6 +137,7 @@ export class Game {
     else if (save) this.log(`saved world has seed ${save.seed}, config wants ${this.config.seed}: starting fresh`);
     this.economy.init();
     this.creatures.init();
+    this.raids.init();
     this.factory.rebuildAll();
   }
 
@@ -207,6 +214,8 @@ export class Game {
     this.creatures.step(dt);
     this.factory.step(dt);
     this.farming.step(dt);
+    this.fishing.step();
+    this.raids.step(dt);
     if (this.tick % TICK_RATE === 0) {
       this.economy.stepSecond();
       this.regrowNodes();

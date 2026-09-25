@@ -32,6 +32,7 @@ import type { Connection } from '../net/connection';
 import { BeltItems } from '../render/belt-items';
 import { TS } from '../render/draw';
 import { Effects } from '../render/effects';
+import { FishingFloats } from '../render/fishing';
 import { EntityViews } from '../render/entity-views';
 import { Lighting } from '../render/lighting';
 import { NodeRenderer } from '../render/nodes';
@@ -63,6 +64,9 @@ type Target =
   | { kind: 'struct'; id: number; x: number; y: number; label: string; crank?: boolean }
   | { kind: 'entity'; id: number; x: number; y: number; label: string; grab?: string };
 
+/** Creatures an arrow tower turns toward. */
+const HOSTILE = new Set(['wolf', 'bear', 'bandit']);
+
 export class ClientGame {
   private readonly r = new Renderer();
   private readonly world: ClientWorld;
@@ -79,6 +83,7 @@ export class ClientGame {
   private entities!: EntityViews;
   private belts!: BeltItems;
   private effects!: Effects;
+  private fishing!: FishingFloats;
   private lighting!: Lighting;
   private overlay!: Overlay;
   private hud!: Hud;
@@ -139,6 +144,20 @@ export class ClientGame {
     this.entities = new EntityViews(this.r, this.store);
     this.belts = new BeltItems(this.r, this.world);
     this.effects = new Effects(this.r);
+    this.fishing = new FishingFloats(this.r, (pid) => this.entities.rodTip(pid));
+    this.structures.targetNear = (x, y, range) => {
+      let best: { x: number; y: number } | null = null;
+      let bestD = range;
+      for (const e of this.store.map.values()) {
+        if (e.kind !== 'creature' || !HOSTILE.has(e.type ?? '')) continue;
+        const d = Math.hypot(e.x - x, e.y - y);
+        if (d < bestD) {
+          bestD = d;
+          best = e;
+        }
+      }
+      return best;
+    };
     this.lighting = new Lighting(this.r);
     this.overlay = new Overlay(this.r, this.world);
     this.renderStructureIcons();
@@ -494,6 +513,17 @@ export class ClientGame {
       case 'sfx':
         this.sfx.play(ev[1], ev[2] / 100, ev[3] / 100);
         break;
+      case 'fish': {
+        const x = ev[2] / 100;
+        const y = ev[3] / 100;
+        this.fishing.set(ev[1], x, y, ev[4]);
+        if (ev[4] === 2) {
+          this.sfx.play('bite', x, y);
+          this.effects.burst(x, y, 'water', 6, 80);
+          if (ev[1] === this.welcome.you.id) this.effects.text(x, y, '!', 0xffe066, 30);
+        }
+        break;
+      }
       case 'atk': {
         const e = this.store.map.get(ev[1]);
         if (e) e.attackAt = now;
@@ -565,6 +595,7 @@ export class ClientGame {
     this.entities.update(now);
     this.belts.update(renderTick);
     this.effects.update(dt);
+    this.fishing.update(now);
     this.lighting.update(dt, (this.state.minutes / 60) % 24);
     this.ambientEffects(now);
     this.updateOverlay(mouse, pos);
@@ -597,8 +628,11 @@ export class ClientGame {
     const overUi = inp.overUi || isDragging();
     const held = this.state.held();
     const def = held ? ITEM_BY_ID.get(held) : undefined;
-    if (inp.mouseLeft && !overUi && !this.placing && !def?.place && !dead) flags |= InputFlags.Primary;
-    if (inp.mouseRight && !overUi && !this.placing && !dead) flags |= InputFlags.Secondary;
+    const left = inp.mouseLeft || inp.leftLatch;
+    const right = inp.mouseRight || inp.rightLatch;
+    inp.leftLatch = inp.rightLatch = false;
+    if (left && !overUi && !this.placing && !def?.place && !dead) flags |= InputFlags.Primary;
+    if (right && !overUi && !this.placing && !dead) flags |= InputFlags.Secondary;
     if (this.dodgeQueued) {
       flags |= InputFlags.Dodge;
       this.dodgeQueued = false;
@@ -646,6 +680,7 @@ export class ClientGame {
     const inp = this.input;
     if (this.chat.typing) return;
     if (this.smithing.active && (inp.hit('Space') || (inp.leftPressed && !inp.overUi))) {
+      inp.leftLatch = false;
       this.smithing.strike();
       return;
     }
@@ -697,6 +732,7 @@ export class ClientGame {
     }
     // Placement.
     if (this.placing) {
+      inp.leftLatch = inp.rightLatch = false;
       if (inp.rightPressed && !inp.overUi) this.stopPlacement();
       else if (inp.leftPressed && !inp.overUi) this.placeAt(mouse);
       else if (inp.mouseLeft && !inp.overUi && this.isDragPlaceable()) this.placeAt(mouse, true);

@@ -31,6 +31,7 @@ const MATERIAL_COLORS: Record<string, number[]> = {
   flesh: [0xb03030, 0x8a2020, 0xd04040],
   dirt: [0x8a6440, 0x6b4a2a, 0xa07850],
   metal: [0xffd35a, 0xffffff, 0xf07a2a],
+  water: [0xbfe3f0, 0xffffff, 0x7ab8e0],
 };
 
 export class Effects {

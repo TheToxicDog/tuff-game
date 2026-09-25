@@ -149,6 +149,7 @@ export interface StructVisual {
   /** Crop stage for farmland (0–4) and crop id. */
   crop?: string;
   stage?: number;
+  /** Health in percent, when damaged. */
   hp?: number;
   /** Item shown on a machine (being processed). */
   item?: string;
@@ -195,7 +196,8 @@ export type GameEvent =
   | ['sfx', string, number, number] // sound at x×100, y×100
   | ['atk', number] // creature attack wind-up
   | ['die', number] // entity died
-  | ['shoot', number, number, number, number, number]; // arrow from x,y to angle, entity
+  | ['shoot', number, number, number, number, number] // arrow from x,y to angle, entity
+  | ['fish', number, number, number, number]; // fishing float: player, x×100, y×100, state (0 reeled in, 1 floating, 2 biting)
 
 export interface Snapshot {
   t: 's';

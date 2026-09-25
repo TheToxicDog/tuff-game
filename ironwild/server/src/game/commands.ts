@@ -20,6 +20,7 @@ const ADMIN_HELP = [
   '/kp <amount>',
   '/spawn <creature> [count]',
   '/research all',
+  '/raid — send raiders against the nearest claim (10 s warning)',
   '/heal',
   '/save',
 ];
@@ -140,6 +141,21 @@ export class Commands {
         if (!def) return;
         const n = Math.min(20, Number(args[1] ?? 1) || 1);
         for (let i = 0; i < n; i++) this.game.creatures.spawn(def.id, p.x + Math.cos(p.angle) * 4, p.y + Math.sin(p.angle) * 4, '');
+        return;
+      }
+      case 'raid': {
+        let best = null;
+        let bestD = Infinity;
+        for (const c of this.game.world.claims) {
+          const d = Math.hypot(c.x - p.x, c.y - p.y);
+          if (d < bestD) {
+            bestD = d;
+            best = c;
+          }
+        }
+        if (!best) this.reply(p, 'There are no claims.');
+        else if (!this.game.raids.start(best, 10_000)) this.reply(p, 'The bandits found nowhere to gather.');
+        else this.reply(p, `Raid on ${best.ownerName}'s claim (worth ₡${this.game.raids.wealth(best)}).`);
         return;
       }
       case 'research':

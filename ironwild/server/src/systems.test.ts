@@ -326,3 +326,95 @@ describe('town growth (§54)', () => {
     expect(game.economy.isOpen(lumber.id)).toBe(true);
   });
 });
+
+describe('raids and defenses (§42)', () => {
+  it('raiders smash through walls, rob storage, and drop the loot when killed', () => {
+    const owner = join('baron');
+    const spot = clearSpot(4, 4, 40);
+    owner.move.x = spot.x + 0.5;
+    owner.move.y = spot.y + 1.5;
+    const claim = place(owner, 'land_claim', spot.x, spot.y);
+    const cx = spot.x + 2;
+    const cy = spot.y + 2;
+    const chest = place(owner, 'chest', cx, cy);
+    const walls: Structure[] = [];
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) walls.push(place(owner, 'wood_wall', cx + dx, cy + dy));
+    chest.store![0] = { id: 'gold_ingot', n: 10 };
+    expect(game.raids.wealth(claim)).toBeGreaterThan(950);
+    expect(game.raids.start(claim, 0)).toBe(true);
+    // The owner steps away (raiders would fight them otherwise).
+    owner.move.x = game.world.gen.spawn.x;
+    owner.move.y = game.world.gen.spawn.y;
+    let robber = null;
+    for (let i = 0; i < 20 * 140 && !robber; i++) {
+      game.step();
+      for (const e of game.entities.values()) if (e.kind === 'creature' && e.raider?.loot.length) robber = e;
+    }
+    expect(robber).not.toBeNull();
+    expect(chest.store!.some((s) => s?.id === 'gold_ingot')).toBe(false);
+    // They had to break through: some wall is damaged or gone.
+    expect(walls.some((w) => w.hp < w.def.hp || !game.world.structures.has(w.id))).toBe(true);
+    game.creatures.damage(robber!, 10_000, owner, 0, false);
+    const dropped = [...game.entities.values()].filter((e) => e.kind === 'drop' && e.stack.id === 'gold_ingot');
+    expect(dropped.reduce((n, d) => n + (d.kind === 'drop' ? d.stack.n : 0), 0)).toBe(10);
+    // Leftover raiders run off; the raid ends and walls start to mend.
+    for (let i = 0; i < 20 * 240 && game.raids.active; i++) game.step();
+    expect(game.raids.active).toBe(false);
+  });
+
+  it('arrow towers shoot predators and spike traps hurt what steps on them', () => {
+    const owner = join('warden');
+    const spot = clearSpot(5, 3, 40);
+    owner.move.x = spot.x + 0.5;
+    owner.move.y = spot.y + 2.5;
+    const tower = place(owner, 'arrow_tower', spot.x, spot.y);
+    tower.store![0] = { id: 'arrow', n: 5 };
+    const wolf = game.creatures.spawn('wolf', spot.x + 5.5, spot.y + 0.5, '');
+    ticks(40);
+    expect(tower.store![0]?.n ?? 0).toBeLessThan(5);
+    expect(!game.entities.has(wolf.id) || wolf.hp < wolf.def.hp).toBe(true);
+    const trap = place(owner, 'spike_trap', spot.x + 4, spot.y + 2);
+    const bandit = game.creatures.spawn('bandit', spot.x + 4.5, spot.y + 2.5, '');
+    game.raids.damageStructure(tower, 10_000); // (no more arrows flying at it)
+    bandit.hp = bandit.def.hp;
+    ticks(10);
+    expect(bandit.hp).toBeLessThan(bandit.def.hp);
+    expect(trap.hp).toBeLessThan(trap.def.hp);
+    game.creatures.kill(bandit, null);
+  });
+});
+
+describe('fishing (§11)', () => {
+  it('casts into water, waits for a bite and lands a catch', () => {
+    const w = game.world;
+    const spawn = w.gen.spawn;
+    // A bank tile with water right to the east.
+    let bank: { x: number; y: number } | null = null;
+    for (let r = 0; r < 120 && !bank; r++)
+      for (let dy = -r; dy <= r && !bank; dy++)
+        for (let dx = -r; dx <= r && !bank; dx++) {
+          const x = Math.floor(spawn.x) + dx;
+          const y = Math.floor(spawn.y) + dy;
+          if (w.solidAt(x, y) || w.tile(x, y) === 1) continue;
+          if (w.tile(x + 2, y) === 1 && w.tile(x + 3, y) === 1 && !w.structAt(x + 2, y)) bank = { x, y };
+        }
+    expect(bank).not.toBeNull();
+    const p = join('angler', bank!.x + 0.5, bank!.y + 0.5);
+    p.slots = p.slots.map(() => null);
+    p.slots[0] = { id: 'fishing_rod', n: 1 };
+    p.sel = 0;
+    p.angle = 0;
+    p.flags = 2; // primary, pressed
+    p.prevFlags = 0;
+    game.fishing.input(p);
+    expect(p.fishing).not.toBeNull();
+    p.fishing!.biteAt = Date.now() - 1;
+    game.fishing.step();
+    expect(p.fishing!.biteUntil).toBeGreaterThan(0);
+    const before = p.crests;
+    game.fishing.input(p);
+    expect(p.fishing).toBeNull();
+    const caught = p.slots.slice(1).some((s) => s) || p.crests > before;
+    expect(caught).toBe(true);
+  });
+});

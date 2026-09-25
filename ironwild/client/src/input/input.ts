@@ -10,6 +10,9 @@ export class Input {
   mouseRight = false;
   leftPressed = false;
   rightPressed = false;
+  /** Presses not yet seen by an input step: a quick click between two samples still counts. */
+  leftLatch = false;
+  rightLatch = false;
   wheel = 0;
   /** True while the pointer is over a UI element (clicks do not reach the game). */
   overUi = false;
@@ -38,10 +41,12 @@ export class Input {
       if (e.button === 0) {
         this.mouseLeft = true;
         this.leftPressed = true;
+        this.leftLatch = true;
       }
       if (e.button === 2) {
         this.mouseRight = true;
         this.rightPressed = true;
+        this.rightLatch = true;
       }
     });
     window.addEventListener('pointerup', (e) => {

@@ -49,6 +49,7 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 | Inventory & crafting                   | Tab or I                      |
 | Build / rotate while building / cancel | B / R / right click           |
 | Research / contracts / map & prices    | K / J / M                     |
+| Factory overview                       | O                             |
 | Drop selected (Ctrl: whole stack)      | Q                             |
 | Chat (`/help` for commands) / help     | Enter / H                     |
 | Zoom                                   | Mouse wheel                   |
@@ -61,7 +62,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Trade** with 17 NPC professions in three settlements — Westhaven (the river town), Stonehaven
   (mining village) and Greenfield (farming village). Prices follow each town's stock: sell too much
   of one thing and the price falls, then recovers over a day or so. Ore is cheap in Stonehaven, food
-  is cheap in Greenfield, tools are dear there — trade routes emerge.
+  is cheap in Greenfield, tools are dear there — trade routes emerge. Trade makes a settlement
+  prosper, and prosperous villages open new stalls (a lumber merchant, butcher, engineer, …).
 - **Craft** by hand, at a workbench or by a campfire, and **forge** at an anvil with a timing
   minigame that decides quality (Crude → Masterwork, worth 0.6× to 3×).
 - **Build** walls, doors, floors, fences, beds, chests and land claims (with Manager / Builder /
@@ -73,12 +75,21 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   assemblers, furnaces, ovens and blast furnaces; conveyors (straight and curved), splitters,
   filters, hoppers, storage and shipping crates. Crushing and washing before smelting turns 10 ore
   into 10 ingots instead of 7.
+- **Run the factory**: the overview (O) shows output and value per minute, utilization, problems
+  and bottleneck hints. Overclock machines to 125 % or 150 % for disproportionately more stress or
+  fuel; machines wear slowly and an iron gear repairs them.
 - **Earn** from contracts (bulk orders with early-delivery bonuses), shipping crates that sell at
   dawn, shop stands for other players, and buy orders on the Exchange.
-- **Research** 17 topics with knowledge earned by discovering, crafting, trading, completing
+- **Research** 18 topics with knowledge earned by discovering, crafting, trading, completing
   contracts and running machines; some need blueprints found on bandits or sold by engineers.
 - **Survive** hunger, wolves, boars, bears and a bandit camp. Dying drops a quarter of your
   resources in a bag — go back for it.
+- **Defend** what you build: a wealthy claim occasionally draws a bandit raid (announced a little
+  in advance). Raiders smash through walls, doors and fences, rob chests and crates, wreck machines,
+  and run off with the loot — kill them to get it back. Spike traps and arrow towers (loaded with
+  arrows by hand or conveyor) help; damaged walls mend after the raid.
+- **Fish** rivers, Mirror Lake and the sea with a rod: cast, wait for the float to dip, click.
+  Each water has its own fish; now and then you pull up a boot, salvage or a lost purse.
 - **Farm** (till, plant wheat, carrots, potatoes, cotton), keep chickens, sheep and cows, pull a hand
   cart, ride a horse, and found a **company** with a shared treasury.
 
@@ -102,7 +113,7 @@ Environment variables:
 | `IRONWILD_SEED`           | World seed                                             |
 
 Everyone can use `/who`, `/pay`, `/c` (company chat), `/company …` and `/stuck`. Admins also get
-`/give`, `/tp`, `/time`, `/crests`, `/kp`, `/spawn`, `/research all`, `/heal` and `/save`.
+`/give`, `/tp`, `/time`, `/crests`, `/kp`, `/spawn`, `/raid`, `/research all`, `/heal` and `/save`.
 
 ## Development
 

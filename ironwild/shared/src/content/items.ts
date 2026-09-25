@@ -38,7 +38,7 @@ export type MarketTag =
   | 'animal'
   | 'blueprint';
 
-export type ToolKind = 'fist' | 'axe' | 'pickaxe' | 'sword' | 'spear' | 'club' | 'hammer' | 'hoe' | 'bow';
+export type ToolKind = 'fist' | 'axe' | 'pickaxe' | 'sword' | 'spear' | 'club' | 'hammer' | 'hoe' | 'bow' | 'rod';
 
 export interface ToolStats {
   kind: ToolKind;
@@ -109,6 +109,9 @@ export type IconShape =
   | 'hoe'
   | 'bow'
   | 'arrow'
+  | 'fishing_rod'
+  | 'fish'
+  | 'boot'
   | 'backpack'
   | 'scroll'
   | 'structure';
@@ -246,6 +249,62 @@ item(
   { shape: 'bowl', color: 0xd9822b },
   { food: { hunger: 40, heal: 10, buff: 'regen', buffSeconds: 120 } },
 );
+
+// ——— Fish (§11) ———
+item('perch', 'Perch', 'food', ['food', 'hunt'], 4, 50, { shape: 'fish', color: 0x8fa35a, accent: 0xd9822b }, { food: { hunger: 4 } });
+item(
+  'trout',
+  'River Trout',
+  'food',
+  ['food', 'hunt'],
+  8,
+  50,
+  { shape: 'fish', color: 0x9aa88f, accent: 0xd06080 },
+  { food: { hunger: 5 } },
+);
+item('carp', 'Carp', 'food', ['food', 'hunt'], 6, 50, { shape: 'fish', color: 0xb58a3e, accent: 0x7a5a2a }, { food: { hunger: 5 } });
+item('pike', 'Pike', 'food', ['food', 'hunt'], 13, 50, { shape: 'fish', color: 0x5f7a4a, accent: 0xc6d08a }, { food: { hunger: 6 } });
+item(
+  'salmon',
+  'Salmon',
+  'food',
+  ['food', 'hunt', 'luxury'],
+  16,
+  50,
+  { shape: 'fish', color: 0xa0a8b0, accent: 0xf08a6a },
+  { food: { hunger: 6 } },
+);
+item(
+  'mackerel',
+  'Mackerel',
+  'food',
+  ['food', 'hunt'],
+  6,
+  50,
+  { shape: 'fish', color: 0x3f6f9a, accent: 0xbfe3f0 },
+  { food: { hunger: 5 } },
+);
+item(
+  'sea_bass',
+  'Sea Bass',
+  'food',
+  ['food', 'hunt'],
+  12,
+  50,
+  { shape: 'fish', color: 0x6f7c8f, accent: 0xe4e8f0 },
+  { food: { hunger: 6 } },
+);
+item(
+  'cooked_fish',
+  'Grilled Fish',
+  'food',
+  ['food'],
+  11,
+  50,
+  { shape: 'fish', color: 0xc98a3e, accent: 0x7a4e2d },
+  { food: { hunger: 24, heal: 8, buff: 'regen', buffSeconds: 60 } },
+);
+item('soggy_boot', 'Soggy Boot', 'resource', ['hunt'], 0.5, 10, { shape: 'boot', color: 0x5c3a20 });
 
 // ——— Materials ———
 item('plank', 'Plank', 'material', ['wood', 'building'], 1.5, 100, { shape: 'plank', color: 0xc99a5b }, { fuel: 1 });
@@ -398,6 +457,16 @@ item(
   { tool: tool('bow', 0, 1, 24, 1.1, 1.2), desc: 'Hold left click to draw, release to shoot. Uses arrows.' },
 );
 item('arrow', 'Arrow', 'ammo', ['weapon', 'hunt'], 2, 100, { shape: 'arrow', color: 0x9a6b3f });
+item(
+  'fishing_rod',
+  'Fishing Rod',
+  'tool',
+  ['tool', 'hunt'],
+  14,
+  1,
+  { shape: 'fishing_rod', color: 0x9a6b3f },
+  { tool: tool('rod', 0, 1, 3, 1.5, 1.2), desc: 'Click to cast into water, and click again the moment the float dips.' },
+);
 
 // ——— Gear ———
 item(
@@ -518,6 +587,16 @@ place('blast_furnace', 'Blast Furnace', 'machine', 900, 5, 0x6a4a3a, 'Iron ingot
 place('assembler', 'Assembler', 'machine', 1600, 5, 0x4a6a8a, 'Builds components from parts. 60 torque.');
 place('steam_engine', 'Steam Engine', 'machine', 2400, 5, 0x8a3a2a, 'Burns coal near water: 32 RPM, 256 torque.');
 place('pen_gate', 'Pen Gate', 'building', 12, 20, 0x9a6b3f, 'A fence gate you can walk through.');
+place('spike_trap', 'Spike Trap', 'building', 14, 20, 0x8a8f96, 'Hurts bandits and wild animals that step on it. Wears out.');
+place(
+  'arrow_tower',
+  'Arrow Tower',
+  'building',
+  260,
+  5,
+  0x7a5230,
+  'Shoots bandits and predators within 9 tiles, over walls. Load it with arrows (E, or by conveyor).',
+);
 
 item(
   'hand_cart',

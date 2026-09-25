@@ -58,6 +58,15 @@ export class EntityViews {
     return this.views.get(id);
   }
 
+  /** A player's rod tip in world pixels (for fishing lines). */
+  rodTip(id: number): { x: number; y: number } | null {
+    const v = this.views.get(id);
+    if (!v?.parts) return null;
+    const R = 0.42 * TS;
+    const p = this.r.world.toLocal(v.parts.arm.toGlobal({ x: R * 0.55 + 70, y: R * 0.72 - 26 }));
+    return { x: p.x, y: p.y };
+  }
+
   private spawn(e: EntityView): void {
     let root: Container;
     let parts: CharacterParts | null = null;

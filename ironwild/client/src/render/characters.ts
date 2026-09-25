@@ -83,6 +83,16 @@ export function drawHeld(arm: Container, held: string | undefined, skin: number)
     g.moveTo(R * 0.7 + Math.cos(-1.2) * R * 0.9, Math.sin(-1.2) * R * 0.9)
       .lineTo(R * 0.7 + Math.cos(1.2) * R * 0.9, Math.sin(1.2) * R * 0.9)
       .stroke({ width: 1.5, color: 0xeeeeee });
+  } else if (kind === 'rod') {
+    g.moveTo(hx - 6, hy)
+      .quadraticCurveTo(hx + 34, hy - 6, hx + 70, hy - 26)
+      .stroke({ width: 6, color: OUTLINE });
+    g.moveTo(hx - 6, hy)
+      .quadraticCurveTo(hx + 34, hy - 6, hx + 70, hy - 26)
+      .stroke({ width: 3, color });
+    g.circle(hx + 6, hy + 5, 4)
+      .fill(0x9aa0a6)
+      .stroke({ width: 2, color: OUTLINE });
   } else if (def) {
     // Anything else is carried in front.
     const sp = new Sprite(itemTexture(def.id));

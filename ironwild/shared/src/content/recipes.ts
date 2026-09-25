@@ -51,6 +51,9 @@ export const STATION_NAMES: Record<string, string> = {
   steam: 'Steam Engine',
 };
 
+/** Fish that cook into grilled fish. */
+export const FISH = ['perch', 'trout', 'carp', 'pike', 'salmon', 'mackerel', 'sea_bass'] as const;
+
 const R: Recipe[] = [];
 const s = (item: string, n = 1): RecipeStack => ({ item, n });
 
@@ -72,6 +75,7 @@ craft('wood_wall', 'hand', [s('wood_wall')], [s('wood', 5)]);
 craft('wood_floor', 'hand', [s('wood_floor', 2)], [s('wood', 2)]);
 craft('fence', 'hand', [s('fence', 2)], [s('wood', 3)]);
 craft('hammer', 'hand', [s('hammer')], [s('wood', 4), s('stone', 4)]);
+craft('fishing_rod', 'hand', [s('fishing_rod')], [s('wood', 3), s('fiber', 5)]);
 
 // ——— Workbench ———
 craft('plank', 'workbench', [s('plank', 2)], [s('wood', 1)]);
@@ -96,6 +100,14 @@ craft('land_claim', 'workbench', [s('land_claim')], [s('plank', 20), s('iron_pla
 craft('hoe', 'workbench', [s('hoe')], [s('wood', 5), s('stone', 3), s('rope', 1)], 'agriculture');
 craft('pen_gate', 'workbench', [s('pen_gate')], [s('wood', 4), s('rope', 1)], 'husbandry');
 craft('hand_cart', 'workbench', [s('hand_cart')], [s('plank', 16), s('iron_rod', 2), s('rope', 2)], 'transport');
+craft('spike_trap', 'workbench', [s('spike_trap', 2)], [s('plank', 4), s('iron_rod', 1)], 'fortification');
+craft(
+  'arrow_tower',
+  'workbench',
+  [s('arrow_tower')],
+  [s('plank', 16), s('stone_brick', 12), s('iron_plate', 2), s('bow', 1)],
+  'fortification',
+);
 craft('large_backpack', 'workbench', [s('large_backpack')], [s('leather', 12), s('rope', 6), s('iron_rod', 2)], 'transport');
 // Mechanical parts
 craft('shaft', 'workbench', [s('shaft', 2)], [s('iron_rod', 1), s('plank', 2)], 'mechanics');
@@ -164,6 +176,11 @@ machine('furnace_meat', 'furnace', [s('raw_meat')], [s('cooked_meat', 1)], 3);
 
 // ——— Campfire (fuel) ———
 machine('cook_meat', 'campfire', [s('raw_meat')], [s('cooked_meat', 1)], 4);
+
+for (const fish of FISH) {
+  machine(`cook_${fish}`, 'campfire', [s(fish)], [s('cooked_fish', 1)], 3);
+  machine(`oven_${fish}`, 'oven', [s(fish)], [s('cooked_fish', 1)], 2);
+}
 
 // ——— Oven ———
 machine('bake_bread', 'oven', [s('flour')], [s('bread', 1)], 4);

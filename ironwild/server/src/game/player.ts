@@ -18,12 +18,13 @@ import {
   type UiState,
 } from '@ironwild/shared';
 import type { AccountRecord, CharacterData } from '../persistence/storage';
+import type { FishingLine } from './fishing';
 import type { ClientSession } from './session';
 
 export const START_CRESTS = 25;
 export const START_SLOTS = 16;
 
-export const SKILLS = ['mining', 'forestry', 'farming', 'smithing', 'engineering', 'trading', 'combat'] as const;
+export const SKILLS = ['mining', 'forestry', 'farming', 'smithing', 'engineering', 'trading', 'combat', 'fishing'] as const;
 export type Skill = (typeof SKILLS)[number];
 
 export function skillLevel(xp: number): number {
@@ -119,6 +120,7 @@ export class Player {
   company: string | null = null;
   invite: string | null = null;
   lastChatAt = 0;
+  fishing: FishingLine | null = null;
 
   constructor(
     readonly id: number,

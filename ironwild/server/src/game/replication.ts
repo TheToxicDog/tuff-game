@@ -114,6 +114,7 @@ export class Replication {
       }
     }
     if (s.crank) v.crank = true;
+    if (s.hp < s.def.hp) v.hp = Math.max(1, Math.round((s.hp / s.def.hp) * 100));
     if (s.def.door) v.open = !!s.open;
     if (s.filter) v.filter = s.filter;
     if (s.store && (s.def.shipping || s.def.container)) {

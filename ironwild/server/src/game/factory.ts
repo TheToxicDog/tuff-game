@@ -451,6 +451,7 @@ export class Factory {
   private canReceive(t: Structure, dir: number, item: string): boolean {
     if (t.items) return t.rot !== opposite(dir);
     if (t.machine) return this.machineFace(t, dir) && (this.accepts(t, 'in', item) || this.accepts(t, 'fuel', item));
+    if (t.def.tower) return item === 'arrow';
     return !!t.store && !t.def.shop;
   }
 
@@ -482,6 +483,7 @@ export class Factory {
       return false;
     }
     if (t.store) {
+      if (t.def.tower && stack.id !== 'arrow') return false;
       if (roomFor(t.store, stack) <= 0) return false;
       addStack(t.store, stack);
       if (t.def.shipping || t.def.shop) this.game.structVisual(t);
