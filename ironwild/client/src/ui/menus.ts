@@ -293,6 +293,95 @@ function renderMarkets(body: HTMLElement, ctx: UiContext): void {
   body.append(table);
 }
 
+// ——— Factory overview (§59) ———
+
+export function factoryWindow(ctx: UiContext): WindowDef {
+  return {
+    title: () => h('span', null, 'Your Factory ', h('span', { class: 'sub' }, 'updates every few seconds')),
+    order: 1,
+    width: 640,
+    render: (body) => {
+      const st = ctx.state.stats;
+      if (!st) {
+        body.append(h('div', { class: 'muted' }, 'Counting…'));
+        return;
+      }
+      if (st.machines.length === 0) {
+        body.append(
+          h(
+            'div',
+            { class: 'muted' },
+            'You do not own any machines yet. Build a furnace, or research Mechanical Power and put a water wheel on the river.',
+          ),
+        );
+        return;
+      }
+      body.append(
+        h(
+          'div',
+          { class: 'row', style: 'margin-bottom:8px' },
+          h('span', { class: 'muted' }, 'Output value'),
+          h('span', { class: 'crests', style: 'font-size:20px' }, `${formatCrests(st.valuePerMin)} / min`),
+          h('span', { class: 'muted' }, '(at base prices)'),
+        ),
+      );
+      const table = h('table', { class: 'table' });
+      table.append(
+        h(
+          'tr',
+          null,
+          h('td', { class: 'muted' }, 'Machine'),
+          h('td', { class: 'muted' }, 'Busy'),
+          h('td', { class: 'muted' }, 'Making / min'),
+          h('td', { class: 'muted' }, 'Value / min'),
+          h('td', { class: 'muted' }, 'Problems'),
+        ),
+      );
+      for (const m of st.machines) {
+        const def = STRUCTURE_BY_ID.get(m.type);
+        const made = h('div', { class: 'row', style: 'flex-wrap:wrap;gap:4px' });
+        for (const [item, n] of m.perMin) made.append(h('span', { class: 'row', style: 'gap:2px' }, iconImg(item, 18), `${n}`));
+        if (m.perMin.length === 0) made.append(h('span', { class: 'muted' }, '—'));
+        const util = Math.round(m.util * 100);
+        table.append(
+          h(
+            'tr',
+            null,
+            h('td', null, h('span', { class: 'row' }, iconImg(def?.item ?? m.type, 24), `${m.count}× ${def?.name ?? m.type}`)),
+            h('td', { class: util > 80 ? 'good' : util < 30 ? 'bad' : '' }, `${util}%`),
+            h('td', null, made),
+            h('td', { class: 'crests' }, formatCrests(m.value)),
+            h('td', { class: 'muted', style: 'font-size:12px' }, m.issues.map(([k, n]) => `${n} ${k.toLowerCase()}`).join(', ') || '—'),
+          ),
+        );
+      }
+      body.append(table);
+      if (st.networks.length) {
+        body.append(h('div', { class: 'section-title' }, 'Power networks'));
+        for (const n of st.networks) {
+          const pct = n.cap > 0 ? Math.min(100, (n.load / n.cap) * 100) : 100;
+          body.append(
+            h(
+              'div',
+              { class: 'row', style: 'font-size:13px' },
+              h('span', { style: 'width:170px' }, `${n.rpm.toFixed(0)} RPM · ${n.load.toFixed(1)} / ${n.cap.toFixed(0)}`),
+              h(
+                'div',
+                { class: 'stress', style: 'flex:1' },
+                h('div', { style: `width:${pct}%;background:${n.stalled ? '#e8645a' : pct > 85 ? '#f0a13c' : '#8fd45a'}` }),
+              ),
+            ),
+          );
+        }
+      }
+      if (st.hints.length) {
+        body.append(h('div', { class: 'section-title' }, 'Bottlenecks'));
+        body.append(h('ul', { class: 'tips' }, ...st.hints.map((t) => h('li', null, t))));
+      }
+    },
+  };
+}
+
 // ——— Help ———
 
 export function helpWindow(): WindowDef {
@@ -313,6 +402,7 @@ export function helpWindow(): WindowDef {
     ['Q', 'Drop the selected item'],
     ['K', 'Research'],
     ['J', 'Contracts'],
+    ['O', 'Factory overview: output, bottlenecks, power'],
     ['M', 'Map & market prices'],
     ['Enter', 'Chat (/help for commands)'],
     ['Wheel', 'Zoom'],

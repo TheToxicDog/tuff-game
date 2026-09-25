@@ -259,6 +259,8 @@ export interface SettlementDef {
   /** Local price factors by market tag (below 1: produced here, cheap; above 1: in demand). */
   factors: Partial<Record<MarketTag, number>>;
   contracts: ContractTemplate[];
+  /** Traders that open stalls as the settlement prospers from trade (§54). */
+  growth: { at: number; trader: string }[];
   desc: string;
 }
 
@@ -295,6 +297,11 @@ export const SETTLEMENTS: readonly SettlementDef[] = [
       { item: 'steel_ingot', min: 20, max: 100 },
       { item: 'leather', min: 10, max: 40 },
     ],
+    growth: [
+      { at: 8000, trader: 'miner' },
+      { at: 20000, trader: 'farmer' },
+      { at: 45000, trader: 'stable' },
+    ],
     desc: 'The river town at the heart of the valley. Everything is for sale here, for a price.',
   },
   {
@@ -312,6 +319,12 @@ export const SETTLEMENTS: readonly SettlementDef[] = [
       { item: 'iron_pickaxe', min: 2, max: 6 },
       { item: 'wood', min: 80, max: 300 },
       { item: 'torch', min: 20, max: 60 },
+    ],
+    growth: [
+      { at: 4000, trader: 'lumber' },
+      { at: 10000, trader: 'butcher' },
+      { at: 25000, trader: 'engineer' },
+      { at: 40000, trader: 'builder' },
     ],
     desc: 'A mining village in the highlands. Ore and coal are cheap; food and timber are not.',
   },
@@ -341,6 +354,12 @@ export const SETTLEMENTS: readonly SettlementDef[] = [
       { item: 'iron_plate', min: 10, max: 60 },
       { item: 'shaft', min: 4, max: 16 },
       { item: 'plank', min: 50, max: 150 },
+    ],
+    growth: [
+      { at: 4000, trader: 'blacksmith' },
+      { at: 10000, trader: 'tool_dealer' },
+      { at: 25000, trader: 'engineer' },
+      { at: 40000, trader: 'builder' },
     ],
     desc: 'Farming country. Food is cheap and plentiful; tools and machines are dear.',
   },

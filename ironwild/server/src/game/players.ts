@@ -40,6 +40,7 @@ export class PlayerSystem {
     p.invDirty = p.statusDirty = p.researchDirty = p.tutorialDirty = true;
     if (p.dead) p.session.send({ t: 'dead', by: 'your wounds', crests: 0, items: 0 });
     this.game.economy.sendContracts(p);
+    this.game.economy.sendTowns(p);
   }
 
   left(p: Player): void {
@@ -559,6 +560,10 @@ export class PlayerSystem {
     if (kind === 'npc' && typeof id === 'string') {
       const npc = this.game.economy.npc(id);
       if (!npc || Math.hypot(npc.x - p.x, npc.y - p.y) > INTERACT_RANGE + 1) return;
+      if (!this.game.economy.isOpen(id)) {
+        this.game.notice(p, 'This stall opens when the settlement grows — trade here to help it prosper.', 'info');
+        return;
+      }
       this.openUi(p, { kind: 'npc', id });
       return;
     }

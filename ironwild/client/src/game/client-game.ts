@@ -46,7 +46,7 @@ import { Hud } from '../ui/hud';
 import { setStructureIcon } from '../ui/icons';
 import { InventoryWindow } from '../ui/inventory';
 import { showDeath, showMessage } from '../ui/login';
-import { Smithing, buildWindow, helpWindow, mapWindow, researchWindow } from '../ui/menus';
+import { Smithing, buildWindow, factoryWindow, helpWindow, mapWindow, researchWindow } from '../ui/menus';
 import { contractsWindow, panelFor } from '../ui/panels';
 import { initSlots, isDragging } from '../ui/slots';
 import { Windows } from '../ui/windows';
@@ -112,6 +112,7 @@ export class ClientGame {
   private uiClosedAt = 0;
   /** The inventory was opened automatically alongside a server panel. */
   private autoInventory = false;
+  private lastStats = 0;
   private running = true;
 
   constructor(
@@ -200,6 +201,7 @@ export class ClientGame {
       { label: 'Research', key: 'K', action: () => this.toggle('research') },
       { label: 'Map', key: 'M', action: () => this.toggle('map') },
       { label: 'Contracts', key: 'J', action: () => this.toggle('contracts') },
+      { label: 'Factory', key: 'O', action: () => this.toggle('factory') },
       { label: 'Help', key: 'H', action: () => this.toggle('help') },
     ]);
     this.chat = new Chat(this.ui, (text) => this.send({ t: 'chat', text }));
@@ -246,6 +248,10 @@ export class ClientGame {
         break;
       case 'help':
         this.windows.show('help', helpWindow());
+        break;
+      case 'factory':
+        this.send({ t: 'stats' });
+        this.windows.show('factory', factoryWindow(this.ctx));
         break;
     }
   }
@@ -393,6 +399,15 @@ export class ClientGame {
       case 'markets':
         this.state.markets = msg.list;
         if (this.windows.isOpen('map')) this.windows.refresh('map');
+        break;
+      case 'towns':
+        this.state.towns = new Map(msg.list.map((t) => [t.id, { prosperity: t.prosperity, next: t.next }]));
+        this.town.setProsperity(new Map(msg.list.map((t) => [t.id, t.prosperity])));
+        if (this.windows.isOpen('map')) this.windows.refresh('map');
+        break;
+      case 'stats':
+        this.state.stats = msg;
+        if (this.windows.isOpen('factory')) this.windows.refresh('factory');
         break;
     }
   }
@@ -556,6 +571,10 @@ export class ClientGame {
     this.hud.renderStamina(this.prediction.state.stamina);
     this.hud.update(now, pos.x, pos.y, this.angle, this.state.minutes);
     this.checkSettlement(pos.x, pos.y);
+    if (this.windows.isOpen('factory') && now - this.lastStats > 2000) {
+      this.lastStats = now;
+      this.send({ t: 'stats' });
+    }
     this.input.endFrame();
   }
 
@@ -647,6 +666,7 @@ export class ClientGame {
     if (inp.hit('KeyK')) this.toggle('research');
     if (inp.hit('KeyM')) this.toggle('map');
     if (inp.hit('KeyJ')) this.toggle('contracts');
+    if (inp.hit('KeyO')) this.toggle('factory');
     if (inp.hit('KeyH') || inp.hit('F1')) this.toggle('help');
     for (let i = 0; i < 8; i++) {
       if (inp.hit(`Digit${i + 1}`)) {
@@ -804,6 +824,7 @@ export class ClientGame {
     for (const s of this.world.settlements) {
       if (Math.hypot(s.x - px, s.y - py) > s.radius + 4) continue;
       for (const n of s.npcs) {
+        if ((n.unlock ?? 0) > (this.state.towns.get(s.id)?.prosperity ?? 0)) continue;
         const title = PROFESSION_BY_ID.get(n.profession)?.title ?? n.title;
         const verb =
           n.profession === 'board'

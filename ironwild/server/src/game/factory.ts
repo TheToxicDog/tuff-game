@@ -8,7 +8,10 @@ import {
   DY,
   ITEM_BY_ID,
   KNOWLEDGE,
+  OVERCLOCK,
   STRUCTURE_BY_ID,
+  WEAR_PER_OP,
+  WEAR_SLOWDOWN,
   TICK_DT,
   addStack,
   beltSpeed,
@@ -22,6 +25,7 @@ import {
   type BeltGroup,
   type BeltKeyframe,
   type ClientMessage,
+  type FactoryStats,
   type ItemStack,
   type KineticBlock,
   type KineticSolution,
@@ -76,6 +80,10 @@ export class Factory {
         status: 'Idle',
         active: false,
         outputs: 0,
+        oc: 0,
+        wear: 0,
+        util: 0,
+        made: [],
       };
     }
   }
@@ -157,7 +165,16 @@ export class Factory {
     const belts: Structure[] = [];
     for (const s of this.game.world.structures.values()) {
       if (s.def.kinetic) {
-        blocks.push({ id: s.id, def: s.def, x: s.x, y: s.y, rot: s.rot, active: this.sourceActive(s), rpm: s.rpm });
+        blocks.push({
+          id: s.id,
+          def: s.def,
+          x: s.x,
+          y: s.y,
+          rot: s.rot,
+          active: this.sourceActive(s),
+          rpm: s.rpm,
+          stressMul: OVERCLOCK[s.machine?.oc ?? 0]?.cost ?? 1,
+        });
       } else if (s.items) belts.push(s);
     }
     const groups = this.beltGroups(belts);
@@ -508,6 +525,7 @@ export class Factory {
     const wasActive = m.active;
     const prevStatus = m.status;
     this.pushOutput(s, dt);
+    m.util += ((wasActive ? 1 : 0) - m.util) * Math.min(1, dt / 30);
 
     if (s.type === 'steam_engine') {
       this.stepSteam(s, dt);
@@ -548,9 +566,11 @@ export class Factory {
       if (fuel.n <= 0) m.fuel![0] = null;
       m.burn += fdef.fuel;
     }
-    const step = (dt * rate) / recipe.time;
+    const oc = OVERCLOCK[m.oc] ?? OVERCLOCK[0];
+    const step = (dt * rate * oc.speed * (1 - m.wear * WEAR_SLOWDOWN)) / recipe.time;
     m.progress += step;
-    if (def.fuel) m.burn = Math.max(0, m.burn - step);
+    // Overclocked fuel machines burn disproportionately more fuel.
+    if (def.fuel) m.burn = Math.max(0, m.burn - (step * oc.cost) / oc.speed);
     m.active = true;
     m.status = 'Working';
     if (m.progress >= 1) {
@@ -617,17 +637,21 @@ export class Factory {
       }
     }
     let made = 0;
+    const now = Date.now();
     for (const o of recipe.outputs) {
       const acc = (m.acc[o.item] ?? 0) + o.n;
       const whole = Math.floor(acc + 1e-9);
       m.acc[o.item] = acc - whole;
       if (whole <= 0) continue;
+      m.made.push([now, o.item, whole]);
       const def = ITEM_BY_ID.get(o.item);
       // Machines produce consistent Standard quality (§16), or keep the input's quality.
       addStack(m.out, { id: o.item, n: whole, ...(def?.quality ? { q: Math.min(quality ?? 1, 2) } : {}) });
       made += whole;
     }
     m.outputs += made;
+    m.wear = Math.min(1, m.wear + WEAR_PER_OP * (OVERCLOCK[m.oc]?.cost ?? 1));
+    while (m.made.length > 0 && m.made[0][0] < now - 60_000) m.made.shift();
     if (s.owner && made > 0) {
       const owner = this.game.byAccount.get(s.owner);
       if (owner) this.game.progression.addKnowledge(owner, KNOWLEDGE.machineOutput * made, true);
@@ -749,6 +773,9 @@ export class Factory {
       status: m?.status ?? (s.filter ? `Passing ${ITEM_BY_ID.get(s.filter)?.name ?? s.filter}` : 'Set a filter item'),
       rpm: Math.round(rpm * 10) / 10,
       mode: m?.mode,
+      oc: m && s.def.machine?.station !== 'steam' ? m.oc : undefined,
+      condition: m ? Math.round((1 - m.wear) * 100) / 100 : undefined,
+      perMin: m ? this.perMinute(m) : undefined,
       modes: s.def.machine?.modes,
       filter: s.def.logistics === 'filter' ? (s.filter ?? null) : undefined,
       fuelLeft: m?.fuel ? Math.round(m.burn * 10) / 10 : undefined,
@@ -766,6 +793,22 @@ export class Factory {
       s.machine.recipe = null;
       s.machine.progress = 0;
       this.game.structVisual(s);
+    } else if (msg.op === 'oc' && s.machine && Number.isInteger(msg.level) && OVERCLOCK[msg.level]) {
+      s.machine.oc = msg.level;
+      this.powerDirty = true;
+    } else if (msg.op === 'repair' && s.machine) {
+      if (s.machine.wear < 0.01) return;
+      const gear = p.slots.findIndex((x) => x?.id === 'iron_gear');
+      if (gear < 0) {
+        this.game.notice(p, 'Repairs need an Iron Gear.', 'bad');
+        return;
+      }
+      const g = p.slots[gear]!;
+      g.n -= 1;
+      if (g.n <= 0) p.slots[gear] = null;
+      p.invDirty = true;
+      s.machine.wear = 0;
+      this.game.notice(p, `${s.def.name} repaired.`, 'good');
     } else if (msg.op === 'filter' && s.def.logistics === 'filter') {
       s.filter = msg.item && ITEM_BY_ID.has(msg.item) ? msg.item : null;
       this.game.structVisual(s);
@@ -796,6 +839,77 @@ export class Factory {
     }
   }
 
+  // ——— Statistics (§59) ———
+
+  private perMinute(m: MachineState): number {
+    const cutoff = Date.now() - 60_000;
+    let n = 0;
+    for (const [t, , k] of m.made) if (t >= cutoff) n += k;
+    return n;
+  }
+
+  /** Overview of everything a player (or their company) owns that produces. */
+  stats(p: Player): FactoryStats {
+    const cutoff = Date.now() - 60_000;
+    const mine = (s: Structure) => !!s.owner && (s.owner === p.accountId || this.game.companies.sameCompany(p.accountId, s.owner));
+    const groups = new Map<string, { count: number; util: number; made: Map<string, number>; issues: Map<string, number> }>();
+    const nets = new Set<number>();
+    const hints: string[] = [];
+    let valuePerMin = 0;
+    for (const s of this.game.world.structures.values()) {
+      if (!mine(s)) continue;
+      if (s.net !== undefined) nets.add(s.net);
+      const m = s.machine;
+      if (!m) continue;
+      let g = groups.get(s.type);
+      if (!g) groups.set(s.type, (g = { count: 0, util: 0, made: new Map(), issues: new Map() }));
+      g.count++;
+      g.util += m.util;
+      for (const [t, item, n] of m.made) {
+        if (t < cutoff) continue;
+        g.made.set(item, (g.made.get(item) ?? 0) + n);
+        valuePerMin += (ITEM_BY_ID.get(item)?.value ?? 0) * n;
+      }
+      if (m.status !== 'Working' && m.status !== 'Running') g.issues.set(m.status, (g.issues.get(m.status) ?? 0) + 1);
+      if (m.wear > 0.5) g.issues.set('Worn (repair it)', (g.issues.get('Worn (repair it)') ?? 0) + 1);
+    }
+    for (const [type, g] of groups) {
+      const name = STRUCTURE_BY_ID.get(type)?.name ?? type;
+      const full = g.issues.get('Output full') ?? 0;
+      const idle = (g.issues.get('Idle') ?? 0) + (g.issues.get('Wrong input') ?? 0);
+      if (full > 0)
+        hints.push(
+          `${full} ${name}${full > 1 ? 's are' : ' is'} backed up — take the output away faster (a conveyor, hopper or crate in front).`,
+        );
+      if (idle > 0 && g.util / g.count < 0.5)
+        hints.push(`${name}: starved for input — feed ${idle > 1 ? 'them' : 'it'} more, or you have more machines than supply.`);
+      if (g.issues.get('No fuel')) hints.push(`${name}: out of fuel.`);
+      if (g.issues.get('No power')) hints.push(`${name}: not connected to power.`);
+    }
+    const summaries = [...nets].map((id) => this.netSummary(id)).filter((n): n is NonNullable<typeof n> => !!n);
+    for (const n of summaries) {
+      if (n.stalled)
+        hints.push(
+          `A power network is overloaded (${n.load.toFixed(0)} / ${n.cap.toFixed(0)} stress): add a source, gear machines down, or remove one.`,
+        );
+      else if (n.cap > 0 && n.load / n.cap < 0.35)
+        hints.push(`A power network is only ${Math.round((n.load / n.cap) * 100)}% loaded — room for more machines.`);
+    }
+    return {
+      machines: [...groups].map(([type, g]) => ({
+        type,
+        count: g.count,
+        util: Math.round((g.util / g.count) * 100) / 100,
+        perMin: [...g.made],
+        value: Math.round([...g.made].reduce((v, [item, n]) => v + (ITEM_BY_ID.get(item)?.value ?? 0) * n, 0) * 10) / 10,
+        issues: [...g.issues],
+      })),
+      networks: summaries,
+      valuePerMin: Math.round(valuePerMin * 10) / 10,
+      hints,
+    };
+  }
+
   // ——— Persistence ———
 
   saveStructure(s: Structure): StructureSave {
@@ -812,6 +926,8 @@ export class Factory {
         acc: m.acc,
         mode: m.mode,
         outputs: m.outputs,
+        oc: m.oc,
+        wear: m.wear,
       };
     }
     if (s.items?.length) data.items = s.items.map((it) => ({ item: it.item, q: it.q, p: it.p, entry: it.entry, exit: it.exit }));
@@ -852,6 +968,8 @@ export class Factory {
       s.machine.acc = m.acc ?? {};
       s.machine.mode = m.mode ?? s.machine.mode;
       s.machine.outputs = m.outputs ?? 0;
+      s.machine.oc = m.oc ?? 0;
+      s.machine.wear = m.wear ?? 0;
     }
     if (d.items && s.items) {
       for (const it of d.items as { item: string; q?: number; p: number; entry: number; exit: number }[]) {

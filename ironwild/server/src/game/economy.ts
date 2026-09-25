@@ -65,7 +65,7 @@ export class Economy {
       const def = SETTLEMENT_BY_ID.get(s.id)!;
       for (const n of s.npcs) this.npcs.set(n.id, { npc: n, prof: PROFESSION_BY_ID.get(n.profession)!, settlement: def });
       const traded = new Set<string>();
-      for (const t of def.traders) {
+      for (const t of [...def.traders, ...def.growth.map((g) => g.trader)]) {
         const prof = PROFESSION_BY_ID.get(t)!;
         for (const id of prof.sells) traded.add(id);
         for (const it of ITEMS) if (it.tags.some((tag) => prof.buys.includes(tag))) traded.add(it.id);
@@ -124,9 +124,21 @@ export class Economy {
   }
 
   /** Best trader in a settlement for selling an item, or null if nobody buys it. */
+  /** Traders with an open stall in a settlement (grows with prosperity, §54). */
+  openTraders(s: SettlementDef): string[] {
+    const p = this.prosperity.get(s.id) ?? 0;
+    return [...s.traders, ...s.growth.filter((g) => p >= g.at).map((g) => g.trader)];
+  }
+
+  isOpen(npcId: string): boolean {
+    const ref = this.npcs.get(npcId);
+    if (!ref) return false;
+    return (ref.npc.unlock ?? 0) <= (this.prosperity.get(ref.settlement.id) ?? 0);
+  }
+
   bestBuyer(s: SettlementDef, def: ItemDef): Profession | null {
     let best: Profession | null = null;
-    for (const t of s.traders) {
+    for (const t of this.openTraders(s)) {
       const prof = PROFESSION_BY_ID.get(t)!;
       if (!this.buysItem(prof, def)) continue;
       if (!best || prof.bidRate > best.bidRate) best = prof;
@@ -183,7 +195,7 @@ export class Economy {
 
   npcUi(p: Player, id: string): UiState | null {
     const ref = this.npcs.get(id);
-    if (!ref) return null;
+    if (!ref || !this.isOpen(id)) return null;
     if (Math.hypot(ref.npc.x - p.x, ref.npc.y - p.y) > 5) return null;
     if (ref.prof.id === 'board') return this.boardUi(p, ref);
     if (ref.prof.id === 'exchange') return this.exchangeUi(p, ref);
@@ -229,7 +241,7 @@ export class Economy {
   trade(p: Player, npcId: string, op: 'buy' | 'sell', item: string, n: number, q?: number): void {
     const ref = this.npcs.get(npcId);
     const def = ITEM_BY_ID.get(item);
-    if (!ref || !def || !Number.isFinite(n) || n < 1) return;
+    if (!ref || !def || !Number.isFinite(n) || n < 1 || !this.isOpen(npcId)) return;
     if (Math.hypot(ref.npc.x - p.x, ref.npc.y - p.y) > 5) return;
     const { prof, settlement: s } = ref;
     const m = this.stock.get(s.id)!;
@@ -287,7 +299,35 @@ export class Economy {
   }
 
   private addProsperity(settlement: string, value: number): void {
-    this.prosperity.set(settlement, (this.prosperity.get(settlement) ?? 0) + value);
+    const before = this.prosperity.get(settlement) ?? 0;
+    const after = before + value;
+    this.prosperity.set(settlement, after);
+    const def = SETTLEMENT_BY_ID.get(settlement);
+    if (!def) return;
+    for (const g of def.growth) {
+      if (before < g.at && after >= g.at) {
+        const title = PROFESSION_BY_ID.get(g.trader)?.title ?? g.trader;
+        this.game.broadcastChat('', `${def.name} is growing! A ${title} has opened a stall in the square.`, 'system');
+        this.sendTowns();
+      }
+    }
+  }
+
+  /** Settlement prosperity and the next stall each will open (to everyone, or one player). */
+  sendTowns(p?: Player): void {
+    const list = this.game.world.settlements.map((g) => {
+      const def = SETTLEMENT_BY_ID.get(g.id)!;
+      const prosperity = Math.round(this.prosperity.get(g.id) ?? 0);
+      const next = def.growth.find((x) => x.at > prosperity);
+      return {
+        id: g.id,
+        prosperity,
+        ...(next ? { next: { at: next.at, title: PROFESSION_BY_ID.get(next.trader)?.title ?? next.trader } } : {}),
+      };
+    });
+    const msg = { t: 'towns' as const, list };
+    if (p) p.session.send(msg);
+    else for (const pl of this.game.players.values()) pl.session.send(msg);
   }
 
   // ——— Contracts (§15) ———
@@ -663,7 +703,7 @@ export class Economy {
         const def = ITEM_BY_ID.get(id)!;
         const buyer = this.bestBuyer(s, def);
         const bid = buyer ? roundCrests(this.bid(s, buyer, def)) : 0;
-        const sells = s.traders.some((t) => PROFESSION_BY_ID.get(t)!.sells.includes(id));
+        const sells = this.openTraders(s).some((t) => PROFESSION_BY_ID.get(t)!.sells.includes(id));
         const ask = sells ? roundCrests(this.ask(s, def)) : 0;
         items.push([id, bid, ask]);
       }

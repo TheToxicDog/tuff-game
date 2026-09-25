@@ -26,6 +26,8 @@ export interface GenNpc {
   x: number;
   y: number;
   angle: number;
+  /** Prosperity needed before this stall opens. */
+  unlock?: number;
 }
 
 export interface GenHouse {
@@ -409,8 +411,12 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
     // Market stalls in a ring inside the plaza.
     const npcs: GenNpc[] = [];
     const ring = Math.max(4, plazaR * 0.62);
-    def.traders.forEach((prof, k) => {
-      const ang = (k / def.traders.length) * Math.PI * 2 - Math.PI / 2 + 0.3;
+    const stalls: { prof: string; unlock?: number }[] = [
+      ...def.traders.map((prof) => ({ prof })),
+      ...def.growth.map((g) => ({ prof: g.trader, unlock: g.at })),
+    ];
+    stalls.forEach(({ prof, unlock }, k) => {
+      const ang = (k / stalls.length) * Math.PI * 2 - Math.PI / 2 + 0.3;
       const x = cx + 0.5 + Math.cos(ang) * ring;
       const y = cy + 0.5 + Math.sin(ang) * ring;
       npcs.push({
@@ -421,6 +427,7 @@ export function generateWorld(seed: number, size = WORLD_SIZE): GeneratedWorld {
         x,
         y,
         angle: Math.atan2(cy + 0.5 - y, cx + 0.5 - x),
+        ...(unlock !== undefined ? { unlock } : {}),
       });
     });
     settlements.push({ id: def.id, name: def.name, x: cx + 0.5, y: cy + 0.5, radius: R, npcs });

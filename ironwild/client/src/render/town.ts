@@ -11,6 +11,7 @@ import type { Renderer } from './renderer';
 interface NpcView {
   npc: NpcInfo;
   parts: CharacterParts;
+  stall: Container;
   angle: number;
 }
 
@@ -32,8 +33,8 @@ export class TownRenderer {
       for (const n of s.npcs) {
         const prof = PROFESSION_BY_ID.get(n.profession);
         const color = prof?.color ?? 0x888888;
-        if (n.profession === 'board') ground.addChild(board(n));
-        else ground.addChild(stall(n, color));
+        const stallView = n.profession === 'board' ? board(n) : stall(n, color);
+        ground.addChild(stallView);
         const parts = makeCharacter({ look: Math.floor(rand(n.x * 10, n.y * 10) * 8), shirt: color, hat: shade(color, 0.7) });
         parts.root.position.set(n.x * TS, n.y * TS);
         const label = new Text({ text: n.name, style: NAME_STYLE, resolution: 2 });
@@ -44,7 +45,7 @@ export class TownRenderer {
         title.position.set(0, -28);
         parts.root.addChild(label, title);
         this.r.layers.entities.addChild(parts.root);
-        this.npcs.push({ npc: n, parts, angle: n.angle });
+        this.npcs.push({ npc: n, parts, stall: stallView, angle: n.angle });
       }
     }
     for (const lm of this.world.landmarks) {
@@ -52,6 +53,7 @@ export class TownRenderer {
       if (lm.kind === 'mine') ground.addChild(mineEntrance(lm.x, lm.y));
     }
     this.r.layers.floors.addChild(ground);
+    this.setProsperity(new Map());
   }
 
   /** Traders turn to face a nearby player. */
@@ -65,6 +67,19 @@ export class TownRenderer {
       v.angle += diff * Math.min(1, dt * 5);
       v.parts.body.rotation = v.angle;
     }
+  }
+
+  /** Shows the stalls whose settlement has become prosperous enough (§54). */
+  setProsperity(prosperity: Map<string, number>): void {
+    for (const v of this.npcs) {
+      const open = (v.npc.unlock ?? 0) <= (prosperity.get(this.settlementOf(v.npc)) ?? 0);
+      v.parts.root.visible = open;
+      v.stall.visible = open;
+    }
+  }
+
+  private settlementOf(n: NpcInfo): string {
+    return n.id.split(':')[0];
   }
 
   npcAt(x: number, y: number, range: number): NpcInfo | null {

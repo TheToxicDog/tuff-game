@@ -3,6 +3,7 @@
 import type {
   ClientMessage,
   ContractInfo,
+  FactoryStats,
   PlayerStatus,
   ResearchState,
   Slots,
@@ -28,6 +29,8 @@ export class ClientState {
   contracts: ContractInfo[] = [];
   ui: UiState | null = null;
   markets: MarketReport[] | null = null;
+  towns = new Map<string, { prosperity: number; next?: { at: number; title: string } }>();
+  stats: FactoryStats | null = null;
   minutes = 360;
   stamina = 100;
   dead: { by: string; crests: number; items: number } | null = null;

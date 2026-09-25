@@ -41,6 +41,17 @@ export const DEFAULT_DAY_SECONDS = 1200;
 /** Machines are balanced around this speed: at 16 RPM they run at 100 %. */
 export const BASE_RPM = 16;
 
+/** Overclocking (§60): more speed for disproportionately more stress (or fuel). */
+export const OVERCLOCK = [
+  { speed: 1, cost: 1, label: '100%' },
+  { speed: 1.25, cost: 1.6, label: '125%' },
+  { speed: 1.5, cost: 2.3, label: '150%' },
+] as const;
+
+/** Machine wear per operation and the speed lost at full wear (§61). */
+export const WEAR_PER_OP = 0.0005;
+export const WEAR_SLOWDOWN = 0.4;
+
 /** Item quality tiers (§16). */
 export const QUALITY_NAMES = ['Crude', 'Standard', 'Fine', 'Excellent', 'Masterwork'] as const;
 export const QUALITY_PRICE = [0.6, 1, 1.4, 2, 3] as const;

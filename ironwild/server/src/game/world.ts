@@ -49,6 +49,13 @@ export interface MachineState {
   active: boolean;
   /** Owner earns knowledge for machine output. */
   outputs: number;
+  /** Overclock level (index into OVERCLOCK) and wear 0–1 (§60–61). */
+  oc: number;
+  wear: number;
+  /** Share of recent time spent working (moving average). */
+  util: number;
+  /** Outputs in the last minute: [time ms, item, count]. */
+  made: [number, string, number][];
 }
 
 export interface BeltItem {

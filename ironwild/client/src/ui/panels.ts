@@ -4,6 +4,7 @@
 import {
   ITEMS,
   ITEM_BY_ID,
+  OVERCLOCK,
   QUALITY_NAMES,
   RECIPE_BY_ID,
   formatCrests,
@@ -186,6 +187,48 @@ function machine(body: HTMLElement, ui: MachineUi, ctx: UiContext): void {
       ),
       h('div', { class: 'stress' }, h('div', { style: `width:${pct}%;background:${color}` })),
     );
+  }
+  if (ui.condition !== undefined || ui.oc !== undefined) {
+    const row = h('div', { class: 'row', style: 'margin-top:10px;flex-wrap:wrap' });
+    if (ui.perMin !== undefined) row.append(h('span', { class: 'muted' }, `${ui.perMin} made in the last minute`));
+    if (ui.condition !== undefined) {
+      const pct = Math.round(ui.condition * 100);
+      row.append(h('span', { class: 'spacer' }), h('span', { class: pct < 60 ? 'bad' : 'muted' }, `Condition ${pct}%`));
+      if (pct < 100)
+        row.append(
+          h(
+            'button',
+            { class: 'small', title: 'Costs 1 Iron Gear', onclick: () => ctx.send({ t: 'machine', id: ui.id, op: 'repair' }) },
+            'Repair',
+          ),
+        );
+    }
+    body.append(row);
+    if (ui.oc !== undefined) {
+      const oc = h('div', { class: 'mode-buttons' });
+      OVERCLOCK.forEach((o, i) =>
+        oc.append(
+          h(
+            'button',
+            {
+              class: `small${i === ui.oc ? ' active' : ''}`,
+              title: `${o.speed}× speed, ${o.cost}× ${ui.fuel ? 'fuel' : 'stress'}`,
+              onclick: () => ctx.send({ t: 'machine', id: ui.id, op: 'oc', level: i }),
+            },
+            o.label,
+          ),
+        ),
+      );
+      body.append(
+        h('div', { class: 'section-title' }, 'Speed (overclock)'),
+        oc,
+        h(
+          'div',
+          { class: 'muted', style: 'font-size:12px;margin-top:3px' },
+          `Faster machines need disproportionately more ${ui.fuel ? 'fuel' : 'torque'}: 125% costs 1.6×, 150% costs 2.3×.`,
+        ),
+      );
+    }
   }
   if (ui.modes?.length) {
     const modes = h('div', { class: 'mode-buttons', style: 'margin-top:10px' });

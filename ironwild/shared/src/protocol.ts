@@ -36,6 +36,9 @@ export type ClientMessage =
   | { t: 'trade'; npc: string; op: 'buy' | 'sell'; item: string; q?: number; n: number }
   | { t: 'machine'; id: number; op: 'mode'; mode: string }
   | { t: 'machine'; id: number; op: 'filter'; item: string | null }
+  | { t: 'machine'; id: number; op: 'oc'; level: number }
+  | { t: 'machine'; id: number; op: 'repair' }
+  | { t: 'stats' }
   | { t: 'crank'; id: number; on: boolean }
   | { t: 'research'; node: string }
   | { t: 'contract'; op: 'accept' | 'deliver' | 'abandon'; id: string }
@@ -225,6 +228,27 @@ export interface NpcInfo {
   x: number;
   y: number;
   angle: number;
+  /** Prosperity the settlement needs before this trader opens a stall (§54). */
+  unlock?: number;
+}
+
+/** Factory overview (§59). */
+export interface FactoryStats {
+  machines: {
+    type: string;
+    count: number;
+    /** Share of time working (0–1). */
+    util: number;
+    /** Items made per minute, by item. */
+    perMin: [string, number][];
+    /** Their base value per minute. */
+    value: number;
+    /** Machines by status right now. */
+    issues: [string, number][];
+  }[];
+  networks: NetSummary[];
+  valuePerMin: number;
+  hints: string[];
 }
 
 export interface HouseInfo {
@@ -330,6 +354,11 @@ export interface MachineUi {
   fuelLeft?: number;
   net?: NetSummary;
   recipes: string[];
+  /** Overclock level index into OVERCLOCK; condition 0–1 (1 = like new). */
+  oc?: number;
+  condition?: number;
+  /** Items made in the last minute. */
+  perMin?: number;
 }
 
 export interface StationUi {
@@ -439,4 +468,6 @@ export type ServerMessage =
   | { t: 'contracts'; list: ContractInfo[] }
   | { t: 'dead'; by: string; crests: number; items: number }
   | { t: 'alive' }
-  | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] };
+  | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }
+  | ({ t: 'stats' } & FactoryStats)
+  | { t: 'towns'; list: { id: string; prosperity: number; next?: { at: number; title: string } }[] };

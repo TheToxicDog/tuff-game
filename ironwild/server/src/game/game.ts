@@ -302,6 +302,7 @@ export class Game {
             x: n.x,
             y: n.y,
             angle: n.angle,
+            ...(n.unlock !== undefined ? { unlock: n.unlock } : {}),
           })),
         })),
         landmarks: this.world.gen.landmarks,
@@ -414,6 +415,9 @@ export class Game {
         break;
       case 'markets':
         this.economy.sendMarkets(p);
+        break;
+      case 'stats':
+        session.send({ t: 'stats', ...this.factory.stats(p) });
         break;
     }
   }

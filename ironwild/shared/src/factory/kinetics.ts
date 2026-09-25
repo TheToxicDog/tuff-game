@@ -21,6 +21,8 @@ export interface KineticBlock {
   active: boolean;
   /** Sources only: speed override (windmills vary with altitude). */
   rpm?: number;
+  /** Consumers only: stress multiplier (overclocked machines). */
+  stressMul?: number;
 }
 
 export interface BeltGroup {
@@ -188,7 +190,7 @@ export function solveKinetics(blocks: readonly KineticBlock[], belts: readonly B
     if (netId === undefined) continue;
     const net = networks.get(netId)!;
     net.consumers++;
-    net.load += (c.def.kinetic?.stress ?? 0) * ((net.rpm * consumerRatio.get(c.id)!) / BASE_RPM);
+    net.load += (c.def.kinetic?.stress ?? 0) * (c.stressMul ?? 1) * ((net.rpm * consumerRatio.get(c.id)!) / BASE_RPM);
   }
   for (const g of belts) {
     const netId = beltNet.get(g.id);
