@@ -1,0 +1,10 @@
+{
+  "name": "@ironwild/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IRONWILD content, world generation, movement, factory rules and protocol shared by client and server.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

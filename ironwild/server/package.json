@@ -1,0 +1,19 @@
+{
+  "name": "@ironwild/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IRONWILD authoritative game server: simulation, economy, factories, networking and persistence.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@ironwild/shared": "0.1.0",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.2"
+  }
+}

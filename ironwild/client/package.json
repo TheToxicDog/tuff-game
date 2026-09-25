@@ -1,0 +1,19 @@
+{
+  "name": "@ironwild/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "IRONWILD browser client: PixiJS rendering, prediction, input and UI.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ironwild/shared": "0.1.0",
+    "pixi.js": "^8.21.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.0"
+  }
+}

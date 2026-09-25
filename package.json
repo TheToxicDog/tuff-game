@@ -7,7 +7,10 @@
   "workspaces": [
     "shared",
     "server",
-    "client"
+    "client",
+    "ironwild/shared",
+    "ironwild/server",
+    "ironwild/client"
   ],
   "engines": {
     "node": ">=22.12"
@@ -18,14 +21,19 @@
     "dev:client": "npm run dev -w @tuff/client",
     "build": "npm run build -w @tuff/client && npm run build -w @tuff/server",
     "start": "node server/dist/main.js",
-    "typecheck": "tsc -p shared --noEmit && tsc -p server --noEmit && tsc -p client --noEmit",
+    "typecheck": "tsc -p shared --noEmit && tsc -p server --noEmit && tsc -p client --noEmit && npm run ironwild:typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:data": "tsx server/src/tools/validate-data.ts",
     "generate:map": "tsx server/src/tools/generate-map.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "load-test": "tsx server/src/tools/load-test.ts"
+    "load-test": "tsx server/src/tools/load-test.ts",
+    "ironwild:dev": "node ironwild/scripts/dev.mjs",
+    "ironwild:build": "npm run build -w @ironwild/client && npm run build -w @ironwild/server",
+    "ironwild:start": "node ironwild/server/dist/main.js",
+    "ironwild:typecheck": "tsc -p ironwild/shared --noEmit && tsc -p ironwild/server --noEmit && tsc -p ironwild/client --noEmit",
+    "ironwild:load-test": "tsx ironwild/server/src/tools/load-test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.4",
