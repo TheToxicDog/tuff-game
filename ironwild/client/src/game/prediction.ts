@@ -56,7 +56,7 @@ export class Prediction {
   reconcile(me: MeState, world: CollisionWorld): void {
     const beforeX = this.state.x;
     const beforeY = this.state.y;
-    this.mods = { speed: me.sm, staminaRegen: me.sr };
+    this.mods = { speed: me.sm, staminaRegen: me.sr, ...(me.pv !== undefined ? { paved: me.pv } : {}) };
     const s: MoveState = {
       x: me.x,
       y: me.y,

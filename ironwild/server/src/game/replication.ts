@@ -220,7 +220,8 @@ export class Replication {
     }
     for (const ent of this.game.entities.values()) {
       if (!view(ent.x, ent.y)) continue;
-      if (ent.kind === 'creature' && ent.rider) continue;
+      // A ridden horse or a driven truck is drawn under its rider instead (EntitySpawn.mount).
+      if ((ent.kind === 'creature' && ent.rider) || (ent.kind === 'cart' && ent.driver)) continue;
       seen.add(ent.id);
       if (this.track(session, sigs, sp, this.entitySpawn(ent))) last.delete(ent.id);
       push(this.entityTuple(ent));
@@ -260,6 +261,7 @@ export class Replication {
         sm: p.mods.speed,
         sr: p.mods.staminaRegen,
       };
+      if (p.mods.paved !== undefined) snap.me.pv = p.mods.paved;
     }
     if (sp.length) snap.sp = sp;
     if (d.length) snap.d = d;
@@ -269,7 +271,7 @@ export class Replication {
 
   /** Sends the spawn record for new entities and changed appearances; true if sent. */
   private track(session: ClientSession, sigs: Map<number, string>, out: EntitySpawn[], spawn: EntitySpawn): boolean {
-    const sig = `${spawn.held ?? ''}|${spawn.name ?? ''}|${spawn.n ?? ''}|${spawn.tag ?? ''}|${spawn.owner ?? ''}|${spawn.title ?? ''}`;
+    const sig = `${spawn.held ?? ''}|${spawn.name ?? ''}|${spawn.n ?? ''}|${spawn.tag ?? ''}|${spawn.owner ?? ''}|${spawn.title ?? ''}|${spawn.mount ?? ''}`;
     if (session.known.has(spawn.id) && sigs.get(spawn.id) === sig) return false;
     const isNew = !session.known.has(spawn.id);
     session.known.add(spawn.id);
@@ -285,6 +287,12 @@ export class Replication {
     if (p.company) spawn.tag = this.game.companies.name(p.company);
     const title = this.game.ambitions.title(p.accountId);
     if (title) spawn.title = title;
+    if (p.mounted) spawn.mount = 'horse';
+    const truck = p.driving ? this.game.entities.get(p.driving) : undefined;
+    if (truck?.kind === 'cart') {
+      spawn.mount = 'truck';
+      spawn.n = truck.slots.filter((x) => x).length;
+    }
     return spawn;
   }
 
@@ -297,6 +305,7 @@ export class Replication {
     if (p.move.dodgeT > 0) f |= EntityFlags.Dodging;
     if (p.hurtT > 0) f |= EntityFlags.Hurt;
     if (p.mounted) f |= EntityFlags.Mounted;
+    if (p.driving) f |= EntityFlags.Driving;
     if (p.pulling) f |= EntityFlags.Pulling;
     if (p.crankId) f |= EntityFlags.Busy;
     if (p.dead) f |= EntityFlags.Sleeping;

@@ -7,6 +7,7 @@ import {
   InputFlags,
   PLAYER_RADIUS,
   TILES,
+  TRUCK_TILES_PER_FUEL,
   addStack,
   angleDiff,
   roomFor,
@@ -14,7 +15,7 @@ import {
   type ToolStats,
 } from '@ironwild/shared';
 import type { EntitySave } from '../persistence/storage';
-import type { Arrow, Bag, Cart, Creature, Drop } from './entities';
+import { CART_ITEM, type Arrow, type Bag, type Cart, type Creature, type Drop } from './entities';
 import type { Game } from './game';
 import type { Player } from './player';
 import type { ResourceNode } from './world';
@@ -40,7 +41,7 @@ export class CombatSystem {
     const wasPrimary = (p.prevFlags & InputFlags.Primary) !== 0;
     const secondary = (p.flags & InputFlags.Secondary) !== 0;
     const wasSecondary = (p.prevFlags & InputFlags.Secondary) !== 0;
-    if (p.mounted) return;
+    if (p.mounted || p.driving) return;
 
     if (secondary && !wasSecondary && held?.food) this.game.playerSystem.eat(p, p.sel);
     if (held?.place) return;
@@ -134,7 +135,7 @@ export class CombatSystem {
     // Hammer on a cart: pack it back up (once it's empty).
     if (tool.kind === 'hammer') {
       for (const e of this.game.entities.values()) {
-        if (e.kind !== 'cart' || !inArc(e.x, e.y, 0.6)) continue;
+        if (e.kind !== 'cart' || e.driver || !inArc(e.x, e.y, 0.6)) continue;
         if (e.owner && e.owner !== p.accountId && !this.game.companies.sameCompany(p.accountId, e.owner)) continue;
         if (e.slots.some((x) => x)) {
           this.game.notice(p, 'Empty it first.', 'bad');
@@ -145,7 +146,10 @@ export class CombatSystem {
           if (puller) this.game.playerSystem.releaseCart(puller);
         }
         this.game.removeEntity(e.id);
-        this.game.playerSystem.give(p, { id: e.type === 'hand' ? 'hand_cart' : e.type, n: 1 }, true);
+        this.game.playerSystem.give(p, { id: CART_ITEM[e.type], n: 1 }, true);
+        // Whole fuel oils left in a truck's tank come back too.
+        const fuel = Math.floor((e.fuel ?? 0) / TRUCK_TILES_PER_FUEL);
+        if (fuel > 0) this.game.playerSystem.give(p, { id: 'fuel_oil', n: fuel }, true);
         this.game.emit(['sfx', 'pickup', Math.round(e.x * 100), Math.round(e.y * 100)], e.x, e.y, { r: 16 });
         return;
       }
@@ -367,6 +371,7 @@ export class CombatSystem {
           slots: e.slots,
           type: e.type,
           ...(e.rail ? { data: { rail: e.rail } } : {}),
+          ...(e.type === 'truck' ? { data: { fuel: e.fuel ?? 0 } } : {}),
         });
     }
     return out;
@@ -397,7 +402,7 @@ export class CombatSystem {
         };
         this.game.addEntity(drop);
       } else if (s.kind === 'cart') {
-        const type = s.type === 'wagon' || s.type === 'minecart' ? s.type : 'hand';
+        const type = s.type === 'wagon' || s.type === 'minecart' || s.type === 'truck' ? s.type : 'hand';
         const cart: Cart = {
           kind: 'cart',
           type,
@@ -410,8 +415,9 @@ export class CombatSystem {
           ownerName: s.ownerName ?? 'someone',
           puller: 0,
         };
-        const rail = (s.data as { rail?: Cart['rail'] } | undefined)?.rail;
-        if (rail) cart.rail = { ...rail, atStation: false };
+        const data = s.data as { rail?: Cart['rail']; fuel?: number } | undefined;
+        if (data?.rail) cart.rail = { ...data.rail, atStation: false };
+        if (type === 'truck') cart.fuel = typeof data?.fuel === 'number' && data.fuel > 0 ? data.fuel : 0;
         this.game.addEntity(cart);
       }
     }

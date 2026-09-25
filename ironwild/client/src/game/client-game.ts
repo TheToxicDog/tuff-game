@@ -818,20 +818,25 @@ export class ClientGame {
     }
     if (inp.hit('KeyG')) {
       const t = this.target;
-      // In the saddle G gets you down, unless you are hitching a wagon.
+      // In the saddle or behind the wheel G gets you out, unless you are hitching a wagon to your horse.
       if (this.riding() && !this.hitching(t)) this.send({ t: 'dismount' });
       else if (t?.kind === 'entity' && t.grab) this.send({ t: 'interact', kind: 'entity', id: t.id, op: 'grab' });
     }
   }
 
-  /** Whether you are on a horse (your own entity carries the flag; the horse itself is not sent while ridden). */
+  /** Whether you are on a horse or driving (your own entity carries the flag; the mount itself is not sent). */
   private riding(): boolean {
     const me = this.store.map.get(this.welcome.you.id);
-    return !!me && (me.flags & EntityFlags.Mounted) !== 0;
+    return !!me && (me.flags & (EntityFlags.Mounted | EntityFlags.Driving)) !== 0;
+  }
+
+  private driving(): boolean {
+    const me = this.store.map.get(this.welcome.you.id);
+    return !!me && (me.flags & EntityFlags.Driving) !== 0;
   }
 
   private hitching(t: Target | null): boolean {
-    return t?.kind === 'entity' && !!t.grab?.startsWith('Hitch');
+    return !this.driving() && t?.kind === 'entity' && !!t.grab?.startsWith('Hitch');
   }
 
   private useHeld(mouse: { x: number; y: number }): void {
@@ -973,15 +978,16 @@ export class ClientGame {
           Math.hypot(e.x - px, e.y - py),
         );
       if (e.kind === 'cart') {
-        const what = e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'cart';
+        const what = e.type === 'truck' ? 'truck' : e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'cart';
+        const fill = e.type === 'truck' && this.state.held() === 'fuel_oil';
         add(
           {
             kind: 'entity',
             id: e.id,
             x: e.x,
             y: e.y,
-            label: `Open ${e.owner ?? ''}'s ${what}`,
-            grab: e.type === 'minecart' ? 'Reverse' : e.type === 'wagon' ? 'Hitch (on a horse)' : 'Pull',
+            label: fill ? `Fill ${e.owner ?? ''}'s truck with fuel oil` : `Open ${e.owner ?? ''}'s ${what}`,
+            grab: e.type === 'truck' ? 'Drive' : e.type === 'minecart' ? 'Reverse' : e.type === 'wagon' ? 'Hitch (on a horse)' : 'Pull',
           },
           Math.hypot(e.x - px, e.y - py),
         );
@@ -1056,9 +1062,10 @@ export class ClientGame {
       return;
     }
     this.target = this.state.dead ? null : this.findTarget(mouse, pos.x, pos.y);
-    // In the saddle G dismounts, unless it hitches the wagon you ride up to.
+    // In the saddle G dismounts (behind the wheel it gets you out), unless it hitches the wagon you ride up to.
     const riding = !this.state.dead && this.riding();
-    const g = (t: Target | null) => (riding && !this.hitching(t) ? 'Dismount' : t?.kind === 'entity' && t.grab ? t.grab : null);
+    const off = this.driving() ? 'Get out' : 'Dismount';
+    const g = (t: Target | null) => (riding && !this.hitching(t) ? off : t?.kind === 'entity' && t.grab ? t.grab : null);
     if (this.target) {
       prompt.style.display = 'block';
       const t = this.target;
@@ -1070,7 +1077,7 @@ export class ClientGame {
       } else this.overlay.outlineCircle(t.x, t.y, 0.7);
     } else if (riding) {
       prompt.style.display = 'block';
-      prompt.replaceChildren(h('kbd', null, 'G'), 'Dismount');
+      prompt.replaceChildren(h('kbd', null, 'G'), off);
     } else prompt.style.display = 'none';
     this.hoverInfo(mouse);
   }
@@ -1230,6 +1237,8 @@ export class ClientGame {
       else if (s.type === 'saw' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'wood', 2, 70);
       else if (s.type === 'lathe' && Math.random() < 0.35) this.effects.sparks(s.x + 0.4, s.y + 0.5, 3);
     }
+    // Fuel-oil smoke from the stack of every truck being driven.
+    for (const p of this.entities.exhausts()) if (Math.random() < 0.7) this.effects.smoke(p.x, p.y, true);
   }
 
   private checkSettlement(x: number, y: number): void {

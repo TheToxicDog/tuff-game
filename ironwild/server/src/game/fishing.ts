@@ -71,7 +71,7 @@ export class Fishing {
   input(p: Player): void {
     const primary = (p.flags & InputFlags.Primary) !== 0;
     const wasPrimary = (p.prevFlags & InputFlags.Primary) !== 0;
-    if (!primary || wasPrimary || p.mounted) return;
+    if (!primary || wasPrimary || p.mounted || p.driving) return;
     const line = p.fishing;
     if (!line) this.cast(p);
     else if (line.biteUntil > 0) this.land(p, line);
@@ -83,7 +83,7 @@ export class Fishing {
     for (const p of this.game.players.values()) {
       const line = p.fishing;
       if (!line) continue;
-      if (p.dead || p.mounted || p.tool().kind !== 'rod' || Math.hypot(p.x - line.ox, p.y - line.oy) > 1.6) {
+      if (p.dead || p.mounted || p.driving || p.tool().kind !== 'rod' || Math.hypot(p.x - line.ox, p.y - line.oy) > 1.6) {
         this.reel(p);
         continue;
       }

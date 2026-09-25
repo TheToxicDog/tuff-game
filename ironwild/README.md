@@ -44,7 +44,7 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 | Heavy blow                             | Hold left click with a weapon |
 | Eat, block, till, plant                | Right click                   |
 | Interact (hold on a hand crank)        | E                             |
-| Pick up / pull a cart, ride a horse    | F / G                         |
+| Pick up / pull a cart, ride, drive     | F / G                         |
 | Hotbar                                 | 1 – 8                         |
 | Inventory & crafting                   | Tab or I                      |
 | Build / rotate while building / cancel | B / R / right click           |
@@ -97,7 +97,7 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   fuel; machines wear slowly and an iron gear repairs them.
 - **Earn** from contracts (bulk orders with early-delivery bonuses), shipping crates that sell at
   dawn, shop stands for other players, and buy orders on the Exchange.
-- **Research** 18 topics with knowledge earned by discovering, crafting, trading, completing
+- **Research** 26 topics with knowledge earned by discovering, crafting, trading, completing
   contracts and running machines; some need blueprints found on bandits or sold by engineers.
 - **Survive** hunger, wolves, boars, bears and a bandit camp. Dying drops a quarter of your
   resources in a bag — go back for it.
@@ -109,7 +109,8 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
   Each water has its own fish; now and then you pull up a boot, salvage or a lost purse. Salvage
   the ruins, the old mine and shipwrecks on the beaches for scrap, parts and the odd treasure.
 - **Farm** (till, plant wheat, carrots, potatoes, cotton), keep chickens, sheep and cows, pull a hand
-  cart, ride a horse and hitch a wagon to it.
+  cart, ride a horse and hitch a wagon to it. Late on, drive a motor truck: 64 slots, fastest on
+  roads, running on fuel oil (hold some and press E on it to fill the tank).
 - **Lay rails**: minecarts run along them on their own, stop at stations to load from a chest (or
   a machine's output) and unload into a crate, a machine or a conveyor, and turn back at the end
   of the line; E flips a junction's switch or a station's mode, G reverses a cart.

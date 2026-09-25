@@ -25,6 +25,8 @@ export interface EntityView {
   tag?: string;
   /** Rank title under a player's name. */
   title?: string;
+  /** What a player rides or drives ('horse', 'truck'). */
+  mount?: string;
   samples: Sample[];
   x: number;
   y: number;
@@ -105,6 +107,7 @@ export class EntityStore {
       existing.n = sp.n;
       existing.tag = sp.tag;
       existing.title = sp.title;
+      existing.mount = sp.mount;
       existing.owner = sp.owner;
       existing.dirty = true;
       return;
@@ -120,6 +123,7 @@ export class EntityStore {
       owner: sp.owner,
       tag: sp.tag,
       title: sp.title,
+      mount: sp.mount,
       samples: [{ k, x: sp.x, y: sp.y, a: sp.a ?? 0, hp: 100, flags: 0 }],
       x: sp.x,
       y: sp.y,

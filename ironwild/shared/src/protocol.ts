@@ -85,6 +85,8 @@ export interface MeState {
   sm: number;
   /** Stamina regeneration multiplier. */
   sr: number;
+  /** Paved-tile multiplier while driving a motor vehicle (see MoveMods.paved). */
+  pv?: number;
 }
 
 /** [id, x × 100, y × 100, angle × 100, health %, flags]. */
@@ -103,6 +105,8 @@ export const EntityFlags = {
   Product: 256,
   /** Hand crank being turned / creature winding up an attack. */
   Busy: 512,
+  /** Player driving a motor truck. */
+  Driving: 1024,
 } as const;
 
 export type EntityKind = 'player' | 'creature' | 'drop' | 'bag' | 'arrow' | 'cart';
@@ -128,6 +132,8 @@ export interface EntitySpawn {
   tag?: string;
   /** Rank title shown under a player's name (§63). */
   title?: string;
+  /** What a player rides or drives ('horse', 'truck'); drawn under them. With a truck, `n` is its filled slots. */
+  mount?: string;
 }
 
 /** [id, type, x × 100, y × 100, remaining 0–100 (0 = depleted)]. */

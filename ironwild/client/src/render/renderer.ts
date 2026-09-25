@@ -55,6 +55,8 @@ export class Renderer {
       this.layers[name] = c;
       this.world.addChild(c);
     }
+    // Parked carts and trucks (zIndex −1) stay under the people and animals around them.
+    this.layers.entities.sortableChildren = true;
     this.app.stage.eventMode = 'none';
     this.lights.blendMode = 'add';
     this.top.addChild(this.lights, this.overlay);

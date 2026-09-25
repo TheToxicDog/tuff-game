@@ -1,8 +1,9 @@
 // Views for replicated entities: builds a drawing when an entity appears, positions and animates
-// it every frame (swings, hurt flashes, health bars, farm animals with produce).
+// it every frame (swings, hurt flashes, health bars, farm animals with produce, the horse or truck
+// under a rider).
 
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { CREATURE_BY_ID, EntityFlags } from '@ironwild/shared';
+import { CREATURE_BY_ID, EntityFlags, angleDiff } from '@ironwild/shared';
 import type { EntityStore, EntityView } from '../game/entities';
 import {
   drawHealth,
@@ -14,6 +15,7 @@ import {
   makeCreature,
   makeDrop,
   setTitle,
+  TRUCK_SCALE,
   swingAngle,
   type CharacterParts,
 } from './characters';
@@ -29,7 +31,16 @@ interface View {
   hp: Graphics | null;
   bubble: Container | null;
   held: string | undefined;
+  /** The horse or truck drawn under a rider, facing where they travel. */
+  mount: Container | null;
+  mountKind: string | undefined;
+  heading: number;
+  lastX: number;
+  lastY: number;
 }
+
+/** A truck's exhaust stack in its own frame (pixels, facing +x; the drawing is scaled by TRUCK_SCALE). */
+const EXHAUST = { x: -30 * TRUCK_SCALE, y: -22 * TRUCK_SCALE };
 
 export interface LocalOverride {
   id: number;
@@ -46,6 +57,7 @@ export interface LocalOverride {
 export class EntityViews {
   private readonly views = new Map<number, View>();
   local: LocalOverride | null = null;
+  private lastNow = 0;
 
   constructor(
     private readonly r: Renderer,
@@ -108,11 +120,51 @@ export class EntityViews {
         root = new Container();
         body = makeCart(e.type, e.n);
         root.addChild(body);
+        root.zIndex = -1;
         break;
     }
     root.position.set(e.x * TS, e.y * TS);
     this.r.layers[layer].addChild(root);
-    this.views.set(e.id, { e, root, parts, body, hp, bubble: null, held: e.held });
+    this.views.set(e.id, {
+      e,
+      root,
+      parts,
+      body,
+      hp,
+      bubble: null,
+      held: e.held,
+      mount: null,
+      mountKind: undefined,
+      heading: e.a,
+      lastX: e.x,
+      lastY: e.y,
+    });
+  }
+
+  /** Puts a horse or truck under a rider (or takes it away), keeping its heading. */
+  private setMount(v: View, kind: string | undefined): void {
+    v.mount?.destroy({ children: true });
+    v.mount = null;
+    v.mountKind = kind;
+    if (!kind || !v.parts) return;
+    v.mount = kind === 'truck' ? makeCart('truck', v.e.n ?? 0) : makeCreature(kind);
+    v.mount.rotation = v.heading;
+    v.parts.root.addChildAt(v.mount, 0);
+  }
+
+  /** Where the exhaust of each truck being driven is, in tiles. */
+  exhausts(): { x: number; y: number }[] {
+    const out: { x: number; y: number }[] = [];
+    for (const v of this.views.values()) {
+      if (v.mountKind !== 'truck' || !v.mount) continue;
+      const c = Math.cos(v.heading);
+      const s = Math.sin(v.heading);
+      out.push({
+        x: (v.root.x + EXHAUST.x * c - EXHAUST.y * s) / TS,
+        y: (v.root.y + EXHAUST.x * s + EXHAUST.y * c) / TS,
+      });
+    }
+    return out;
   }
 
   private despawn(id: number): void {
@@ -124,6 +176,8 @@ export class EntityViews {
 
   update(now: number): void {
     const t = now / 1000;
+    const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
+    this.lastNow = now;
     for (const v of this.views.values()) {
       const e = v.e;
       let x = e.x;
@@ -142,6 +196,17 @@ export class EntityViews {
       }
       v.root.position.set(x * TS, y * TS);
       if (v.body) v.body.rotation = a;
+      if (v.parts) {
+        const kind = e.flags & (EntityFlags.Mounted | EntityFlags.Driving) ? e.mount : undefined;
+        if (kind !== v.mountKind) this.setMount(v, kind);
+        // The mount turns toward the way it moves; the rider still faces where they aim.
+        const mx = x - v.lastX;
+        const my = y - v.lastY;
+        if (mx * mx + my * my > 1e-6) v.heading += angleDiff(Math.atan2(my, mx), v.heading) * Math.min(1, dt * 10);
+        if (v.mount) v.mount.rotation = v.heading;
+        v.lastX = x;
+        v.lastY = y;
+      }
       if (e.dirty || held !== v.held) {
         e.dirty = false;
         v.held = held;
@@ -149,6 +214,8 @@ export class EntityViews {
           drawHeld(v.parts.arm, held, v.parts.skin);
           if (v.parts.label && e.name) v.parts.label.text = e.tag ? `[${e.tag}] ${e.name}` : e.name;
           setTitle(v.parts, e.title);
+          // A truck's load changed: redraw it.
+          if (v.mountKind === 'truck') this.setMount(v, 'truck');
         } else if (e.kind === 'cart' && v.body) {
           // Cargo changed: redraw.
           const next = makeCart(e.type, e.n);

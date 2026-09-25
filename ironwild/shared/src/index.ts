@@ -12,6 +12,7 @@ export * from './content/settlements';
 export * from './content/crops';
 export * from './content/projects';
 export * from './content/ambitions';
+export * from './content/vehicles';
 export * from './economy/pricing';
 export * from './world/terrain';
 export * from './world/gen';

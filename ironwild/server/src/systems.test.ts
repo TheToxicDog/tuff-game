@@ -1,5 +1,19 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { ITEM_BY_ID, SETTLEMENT_BY_ID, TILES, Tile, countItem, type ServerMessage } from '@ironwild/shared';
+import {
+  EntityFlags,
+  ITEM_BY_ID,
+  SETTLEMENT_BY_ID,
+  TILES,
+  TRUCK_PAVED,
+  TRUCK_SLOTS,
+  TRUCK_SPEED,
+  TRUCK_TANK,
+  TRUCK_TILES_PER_FUEL,
+  Tile,
+  countItem,
+  type ServerMessage,
+  type Snapshot,
+} from '@ironwild/shared';
 import type { AccountRecord } from './persistence/storage';
 import { MemoryStorage } from './persistence/memory-storage';
 import { Game } from './game/game';
@@ -721,6 +735,92 @@ describe('wagons (§36)', () => {
     // Dismounting unhitches.
     game.playerSystem.dismount(p);
     expect(wagon.puller).toBe(0);
+  });
+});
+
+describe('motor trucks (§36)', () => {
+  it('fill up with fuel oil, drive fast, burn fuel by the tile, top up from the bed and stop when dry', () => {
+    const spot = openGround(6, 3, 120);
+    const p = join('trucker', spot.x + 1.5, spot.y + 1.5);
+    game.playerSystem.give(p, { id: 'motor_truck', n: 1 }, true);
+    game.playerSystem.useItem(
+      p,
+      p.slots.findIndex((s) => s?.id === 'motor_truck'),
+      spot.x + 3.5,
+      spot.y + 1.5,
+    );
+    const truck = [...game.entities.values()].find((e) => e.kind === 'cart' && e.type === 'truck') as Cart;
+    expect(truck.slots).toHaveLength(TRUCK_SLOTS);
+    // It comes with an empty tank and won't start.
+    game.playerSystem.interact(p, 'entity', truck.id, 'grab');
+    expect(p.driving).toBe(0);
+    expect(notices(p).slice(-1)[0]).toMatch(/tank is empty/);
+    // E with fuel oil in hand fills the tank (six fit); with a full tank E opens the bed instead.
+    game.playerSystem.give(p, { id: 'fuel_oil', n: 10 }, true);
+    p.sel = p.slots.findIndex((s) => s?.id === 'fuel_oil');
+    game.playerSystem.interact(p, 'entity', truck.id);
+    expect(truck.fuel).toBe(TRUCK_TANK * TRUCK_TILES_PER_FUEL);
+    expect(countItem(p.slots, 'fuel_oil')).toBe(4);
+    expect(p.uiTarget).toBeNull();
+    game.playerSystem.interact(p, 'entity', truck.id);
+    expect(countItem(p.slots, 'fuel_oil')).toBe(4);
+    expect(p.ui).toMatchObject({ kind: 'container', title: "trucker's motor truck — tank 100 %" });
+    game.playerSystem.closeUi(p);
+
+    // Behind the wheel: faster than a horse, quicker still on roads, and the truck is drawn under the driver.
+    game.playerSystem.interact(p, 'entity', truck.id, 'grab');
+    expect(p.driving).toBe(truck.id);
+    expect(truck.driver).toBe(p.id);
+    ticks(1);
+    expect(p.mods).toMatchObject({ speed: TRUCK_SPEED, paved: TRUCK_PAVED });
+    const watcher = join('watcher', spot.x + 2, spot.y + 2.5);
+    const snap = (game.replication as unknown as { snapshot(s: unknown, p: Player): Snapshot }).snapshot(watcher.session, watcher);
+    expect(snap.e.some((t) => t[0] === truck.id)).toBe(false);
+    expect(snap.sp?.find((sp) => sp.id === p.id)).toMatchObject({ mount: 'truck', n: 0 });
+    expect(snap.e.find((t) => t[0] === p.id)![5] & EntityFlags.Driving).toBeTruthy();
+    // Four tiles west burn four tiles of fuel, and the truck keeps up.
+    const before = truck.fuel!;
+    p.move.x -= 4;
+    p.inputs.push([p.lastSeq + 1, 0, 0, 0, 0]);
+    ticks(1);
+    expect(truck.x).toBeCloseTo(p.x, 6);
+    expect(before - truck.fuel!).toBeCloseTo(4, 6);
+
+    // Nearly dry: a fuel oil carried in the bed tops the tank up.
+    truck.fuel = 1;
+    truck.slots[0] = { id: 'fuel_oil', n: 1 };
+    p.move.x += 3;
+    p.inputs.push([p.lastSeq + 1, 0, 0, 0, 0]);
+    ticks(1);
+    expect(truck.slots[0]).toBeNull();
+    expect(truck.fuel).toBeCloseTo(1 + TRUCK_TILES_PER_FUEL - 3, 6);
+    // Nothing left: the truck stops and the driver climbs out.
+    truck.fuel = 0.5;
+    p.move.x += 2;
+    p.inputs.push([p.lastSeq + 1, 0, 0, 0, 0]);
+    ticks(1);
+    expect(p.driving).toBe(0);
+    expect(truck.driver).toBe(0);
+    expect(truck.fuel).toBe(0);
+    expect(notices(p).slice(-1)[0]).toMatch(/ran out of fuel oil/);
+
+    // G gets you out; the tank and load are saved.
+    truck.fuel = 200;
+    game.playerSystem.interact(p, 'entity', truck.id, 'grab');
+    expect(p.driving).toBe(truck.id);
+    game.playerSystem.dismount(p);
+    expect(p.driving).toBe(0);
+    expect(truck.driver).toBe(0);
+    // The driver steps down beside the cab.
+    expect(Math.hypot(p.x - truck.x, p.y - truck.y)).toBeCloseTo(0.95, 3);
+    const saved = game.combat.save().find((e) => e.kind === 'cart' && e.type === 'truck');
+    expect(saved).toMatchObject({ data: { fuel: 200 } });
+    game.removeEntity(truck.id);
+    game.combat.load([saved!]);
+    const loaded = [...game.entities.values()].find((e) => e.kind === 'cart' && e.type === 'truck') as Cart;
+    expect(loaded.fuel).toBe(200);
+    expect(loaded.slots).toHaveLength(TRUCK_SLOTS);
+    game.removeEntity(loaded.id);
   });
 });
 

@@ -366,11 +366,50 @@ export function makeArrow(): Container {
   return c;
 }
 
-/** Hand cart, horse wagon or minecart (drawn facing +x); `n` filled slots show as cargo. */
+/** A truck is drawn a size up from the carts so it reads as a vehicle under its driver. */
+export const TRUCK_SCALE = 1.2;
+
+/** Hand cart, horse wagon, minecart or motor truck (drawn facing +x); `n` filled slots show as cargo. */
 export function makeCart(type = 'hand', n = 0): Container {
   const g = new Graphics();
   const c = new Container();
   c.addChild(g);
+  if (type === 'truck') {
+    // The driver sits at the origin, over the cab; the flatbed trails behind.
+    g.scale.set(TRUCK_SCALE);
+    for (const x of [-4, -62, -84])
+      for (const y of [-33, 25])
+        g.roundRect(x - 9, y, 18, 8, 3)
+          .fill(0x222226)
+          .stroke({ width: 2, color: OUTLINE });
+    g.roundRect(-100, -28, 78, 56, 5).fill(0x6b4a2a).stroke({ width: 4, color: OUTLINE });
+    for (let i = 1; i < 5; i++)
+      g.moveTo(-100 + i * 15.6, -24)
+        .lineTo(-100 + i * 15.6, 24)
+        .stroke({ width: 2, color: 0x553a20 });
+    g.rect(-98, -26, 74, 5).fill(0x55595f);
+    g.rect(-98, 21, 74, 5).fill(0x55595f);
+    // One crate for every eight filled slots.
+    for (let i = 0; i < Math.min(8, Math.ceil(n / 8)); i++) {
+      const cx = -94 + (i % 4) * 17;
+      const cy = -18 + Math.floor(i / 4) * 19;
+      g.roundRect(cx, cy, 15, 16, 2).fill(0xc9a06a).stroke({ width: 2, color: OUTLINE });
+      g.moveTo(cx + 2, cy + 8)
+        .lineTo(cx + 13, cy + 8)
+        .stroke({ width: 1.5, color: 0x8a6a45 });
+    }
+    // Bonnet and bumper ahead of the cab, then the cab with its windscreen.
+    g.roundRect(20, -22, 26, 44, 8).fill(0x2a5d78).stroke({ width: 4, color: OUTLINE });
+    g.roundRect(42, -19, 7, 38, 2).fill(0x9aa0a6).stroke({ width: 2, color: OUTLINE });
+    g.roundRect(-26, -28, 52, 56, 10).fill(0x2f6f8f).stroke({ width: 4, color: OUTLINE });
+    g.roundRect(-20, -22, 30, 44, 6).fill(0x3a82a6);
+    g.roundRect(12, -22, 10, 44, 4).fill(0xbfe3f0).stroke({ width: 2, color: OUTLINE });
+    for (const y of [-15, 15]) g.circle(47, y, 4).fill(0xffe9a8).stroke({ width: 2, color: OUTLINE });
+    for (const y of [-34, 28]) g.roundRect(8, y, 8, 6, 2).fill(0x2a2a2e);
+    // Exhaust stack behind the cab.
+    g.circle(-30, -22, 5).fill(0x55595f).stroke({ width: 2, color: OUTLINE });
+    return c;
+  }
   if (type === 'minecart') {
     for (const [x, y] of [
       [-18, -19],

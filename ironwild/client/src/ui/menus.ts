@@ -144,9 +144,11 @@ export function researchWindow(ctx: UiContext): WindowDef {
         for (const req of n.requires) {
           const r = RESEARCH_BY_ID.get(req)!;
           const line = document.createElementNS(svgNS, 'line');
-          line.setAttribute('x1', String(r.col * W + 150));
+          // Across to the next column, or straight up or down between two nodes in the same one.
+          const same = r.col === n.col;
+          line.setAttribute('x1', String(r.col * W + (same ? 75 : 150)));
           line.setAttribute('y1', String(r.row * H + 40));
-          line.setAttribute('x2', String(n.col * W));
+          line.setAttribute('x2', String(n.col * W + (same ? 75 : 0)));
           line.setAttribute('y2', String(n.row * H + 40));
           line.setAttribute('stroke', st.unlocked.includes(req) ? '#8fd45a' : 'rgba(255,255,255,0.2)');
           line.setAttribute('stroke-width', '2');
@@ -426,7 +428,7 @@ export function helpWindow(): WindowDef {
     ['Space', 'Dodge'],
     ['E', 'Interact: trade, open, operate (hold on a hand crank)'],
     ['F', 'Pick up (dropped items and bags)'],
-    ['G', 'Pull a hand cart / mount a horse'],
+    ['G', 'Pull a hand cart / ride a horse / drive a truck (again to get off)'],
     ['1 – 8', 'Hotbar'],
     ['Tab / I', 'Inventory & crafting'],
     ['B', 'Build'],

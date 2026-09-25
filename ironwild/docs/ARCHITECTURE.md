@@ -24,7 +24,8 @@ them and answers with state.
 - **Content** (`content/*.ts`) — items with base values and market tags, resource nodes, structures
   (footprints, placement rules, kinetic ports, machine specs), recipes (instant crafts, anvil
   recipes, timed machine recipes with fractional yields), research, creatures, settlements and
-  professions, crops. Content is plain TypeScript data, type-checked and validated by tests.
+  professions, crops, ambitions and vehicle tuning. Content is plain TypeScript data, type-checked
+  and validated by tests.
 - **World generation** (`world/gen.ts`) — the island from a seed: warped Voronoi regions, coast,
   a river and a creek, a marsh lake, settlements with plazas, houses and market stalls, roads with
   bridges, landmarks (bandit camp, ruins, mine) and ~6,500 resource nodes, with starter iron, copper
@@ -57,7 +58,7 @@ the systems in a fixed order each 50 ms tick:
 
 | System           | Responsibility                                                                                                             |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts and horses         |
+| `players.ts`     | Input budget and movement, hunger and healing, death and bags, inventory moves, interaction, UIs, carts, horses and trucks |
 | `combat.ts`      | Swings (quick, heavy, bows), hits on creatures and players, gathering from nodes, drops and auto-pickup                    |
 | `creatures.ts`   | Region populations and spawning away from players; wander/flee/chase/attack AI with telegraphed wind-ups; farm animals     |
 | `crafting.ts`    | Crafting at stations; anvil smithing with quality from the minigame score                                                  |

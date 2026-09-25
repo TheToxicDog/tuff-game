@@ -151,7 +151,7 @@ export interface ItemDef {
   /** Animal spawned when used inside a pen. */
   animal?: string;
   /** Vehicle spawned when used. */
-  vehicle?: 'cart' | 'wagon' | 'minecart';
+  vehicle?: 'cart' | 'wagon' | 'minecart' | 'truck';
 }
 
 type Extra = Partial<Omit<ItemDef, 'id' | 'name' | 'category' | 'value' | 'stack' | 'icon' | 'tags'>>;
@@ -751,6 +751,19 @@ item(
   {
     vehicle: 'minecart',
     desc: 'Set it on a rail: it runs by itself, stops at stations to load or unload, and turns back at the end of the line.',
+  },
+);
+item(
+  'motor_truck',
+  'Motor Truck',
+  'gear',
+  ['gear', 'machine'],
+  3200,
+  1,
+  { shape: 'box', color: 0x2f6f8f, accent: 0xe0b84c },
+  {
+    vehicle: 'truck',
+    desc: 'Set it down, then press G beside it to drive: 64 slots, fastest on roads. Burns fuel oil — hold some and press E to fill the tank, or carry spare in the bed.',
   },
 );
 place(

@@ -50,6 +50,9 @@ export interface MoveMods {
   speed: number;
   /** Stamina regeneration multiplier. */
   staminaRegen: number;
+  /** Set while driving a motor vehicle: its extra multiplier on paved tiles (roads, plazas, bridges,
+   *  floors). Vehicles neither sprint nor dodge. */
+  paved?: number;
 }
 
 export const DEFAULT_MODS: MoveMods = { speed: 1, staminaRegen: 1 };
@@ -73,9 +76,10 @@ export function stepMovement(s: MoveState, input: MoveInput, dt: number, world: 
   const dy = diag ? my * SQRT1_2 : my;
   const moving = mx !== 0 || my !== 0;
   const tileSpeed = world.speedAt(Math.floor(s.x), Math.floor(s.y));
+  const vehicle = mods.paved !== undefined;
 
   if (s.dodgeCd > 0) s.dodgeCd = Math.max(0, s.dodgeCd - dt);
-  if (input.dodge && moving && s.dodgeCd <= 0 && s.dodgeT <= 0 && s.stamina >= DODGE_STAMINA) {
+  if (!vehicle && input.dodge && moving && s.dodgeCd <= 0 && s.dodgeT <= 0 && s.stamina >= DODGE_STAMINA) {
     s.dodgeT = DODGE_TIME;
     s.dodgeCd = DODGE_COOLDOWN;
     s.dodgeX = dx;
@@ -84,8 +88,9 @@ export function stepMovement(s: MoveState, input: MoveInput, dt: number, world: 
     s.staminaDelay = 1;
   }
 
-  const sprinting = input.sprint && moving && !input.slow && s.stamina > 0 && s.dodgeT <= 0;
+  const sprinting = !vehicle && input.sprint && moving && !input.slow && s.stamina > 0 && s.dodgeT <= 0;
   let speed = WALK_SPEED * tileSpeed * mods.speed;
+  if (mods.paved !== undefined && tileSpeed > 1) speed *= mods.paved;
   if (sprinting) speed *= SPRINT_MULT;
   if (input.slow) speed *= 0.55;
 

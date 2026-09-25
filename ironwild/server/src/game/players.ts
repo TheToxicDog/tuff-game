@@ -15,6 +15,11 @@ import {
   MAX_HEALTH,
   MAX_HUNGER,
   PLAYER_RADIUS,
+  TRUCK_PAVED,
+  TRUCK_SLOTS,
+  TRUCK_SPEED,
+  TRUCK_TANK,
+  TRUCK_TILES_PER_FUEL,
   addStack,
   keptOnDeath,
   moveBetween,
@@ -32,6 +37,11 @@ import type { Game } from './game';
 import type { Player } from './player';
 
 const MAX_QUEUED_INPUTS = 40;
+
+/** How full a truck's tank is, in whole percent. */
+function tankPct(truck: Cart): number {
+  return Math.round(((truck.fuel ?? 0) / (TRUCK_TANK * TRUCK_TILES_PER_FUEL)) * 100);
+}
 const HUNGER_PER_DAY = 65;
 
 export class PlayerSystem {
@@ -89,9 +99,12 @@ export class PlayerSystem {
   private updateMods(p: Player): void {
     let speed = 1;
     if (p.mounted) speed *= HORSE_SPEED;
+    if (p.driving) speed *= TRUCK_SPEED;
     if (p.pulling) speed *= 0.85;
     p.mods.speed = speed;
     p.mods.staminaRegen = p.buffs.has('stamina') ? 1.6 : 1;
+    if (p.driving) p.mods.paved = TRUCK_PAVED;
+    else delete p.mods.paved;
   }
 
   private applyInput(p: Player, input: InputTuple, now: number): void {
@@ -113,11 +126,13 @@ export class PlayerSystem {
     if (p.mounted) {
       const horse = this.game.entities.get(p.mounted);
       if (horse && horse.kind === 'creature') {
+        // The horse faces where it goes; the rider looks where they aim.
+        if (Math.hypot(p.x - horse.x, p.y - horse.y) > 0.01) horse.angle = Math.atan2(p.y - horse.y, p.x - horse.x);
         horse.x = p.x;
         horse.y = p.y;
-        horse.angle = p.angle;
       }
     }
+    if (p.driving) this.driveTruck(p);
   }
 
   private survival(p: Player, dt: number, now: number): void {
@@ -533,10 +548,18 @@ export class PlayerSystem {
         x,
         y,
         angle: p.angle,
-        slots: Array.from({ length: type === 'wagon' ? WAGON_SLOTS : type === 'minecart' ? MINECART_SLOTS : HAND_CART_SLOTS }, () => null),
+        slots: Array.from(
+          {
+            length:
+              type === 'truck' ? TRUCK_SLOTS : type === 'wagon' ? WAGON_SLOTS : type === 'minecart' ? MINECART_SLOTS : HAND_CART_SLOTS,
+          },
+          () => null,
+        ),
         owner: p.accountId,
         ownerName: p.name,
         puller: 0,
+        // A new truck comes with an empty tank.
+        ...(type === 'truck' ? { fuel: 0 } : {}),
       };
       if (type === 'minecart') {
         if (!this.game.rails.place(p, cart, x, y)) {
@@ -636,6 +659,11 @@ export class PlayerSystem {
             this.game.rails.reverse(e);
             return;
           }
+          if (e.type === 'truck') {
+            this.drive(p, e);
+            return;
+          }
+          if (p.driving) return;
           if (p.pulling === e.id) this.releaseCart(p);
           else if (e.type === 'wagon' && !p.mounted)
             this.game.notice(p, 'Wagons are pulled by a horse: ride up to it and press G.', 'info');
@@ -651,6 +679,7 @@ export class PlayerSystem {
           }
           return;
         }
+        if (e.type === 'truck' && p.slots[p.sel]?.id === 'fuel_oil' && this.fillTank(p, e)) return;
         this.openUi(p, { kind: 'entity', id });
         return;
       }
@@ -700,8 +729,9 @@ export class PlayerSystem {
     if (!e || Math.hypot(e.x - p.x, e.y - p.y) > INTERACT_RANGE + 2) return null;
     if (e.kind === 'bag') return { kind: 'container', id: e.id, title: `${e.ownerName}'s bag`, store: e.slots, entity: true };
     if (e.kind === 'cart') {
-      const what = e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'hand cart';
-      return { kind: 'container', id: e.id, title: `${e.ownerName}'s ${what}`, store: e.slots, entity: true };
+      const what = e.type === 'truck' ? 'motor truck' : e.type === 'wagon' ? 'wagon' : e.type === 'minecart' ? 'minecart' : 'hand cart';
+      const tank = e.type === 'truck' ? ` — tank ${tankPct(e)} %` : '';
+      return { kind: 'container', id: e.id, title: `${e.ownerName}'s ${what}${tank}`, store: e.slots, entity: true };
     }
     return null;
   }
@@ -767,6 +797,7 @@ export class PlayerSystem {
   }
 
   dismount(p: Player): void {
+    if (p.driving) this.leaveTruck(p);
     if (!p.mounted) return;
     const hitched = p.pulling ? this.game.entities.get(p.pulling) : undefined;
     if (hitched?.kind === 'cart' && hitched.type === 'wagon') this.releaseCart(p);
@@ -779,6 +810,95 @@ export class PlayerSystem {
       horse.timer = 20;
     }
     p.mounted = 0;
+  }
+
+  // ——— Motor trucks (§36) ———
+
+  private drive(p: Player, truck: Cart): void {
+    if (p.driving === truck.id) {
+      this.leaveTruck(p);
+      return;
+    }
+    if (truck.driver) {
+      this.game.notice(p, 'Someone is already driving it.', 'bad');
+      return;
+    }
+    if (p.dead || p.driving) return;
+    if ((truck.fuel ?? 0) <= 0 && !this.refuelFromBed(truck)) {
+      this.game.notice(p, 'The tank is empty. Hold fuel oil and press E on the truck to fill it.', 'bad');
+      return;
+    }
+    this.releaseCart(p);
+    this.dismount(p);
+    truck.driver = p.id;
+    p.driving = truck.id;
+    p.move.x = truck.x;
+    p.move.y = truck.y;
+    p.move.vx = p.move.vy = 0;
+    this.game.notice(p, 'Driving: fastest on roads. Press G to get out.', 'info');
+  }
+
+  leaveTruck(p: Player, why?: string): void {
+    const truck = this.game.entities.get(p.driving);
+    p.driving = 0;
+    if (truck?.kind === 'cart') {
+      truck.driver = 0;
+      // Step down beside the cab, on whichever side is clear.
+      for (const side of [-1, 1]) {
+        const x = truck.x + Math.cos(truck.angle + (side * Math.PI) / 2) * 0.95;
+        const y = truck.y + Math.sin(truck.angle + (side * Math.PI) / 2) * 0.95;
+        if (this.game.world.solidAt(Math.floor(x), Math.floor(y))) continue;
+        p.move.x = x;
+        p.move.y = y;
+        break;
+      }
+    }
+    if (why) this.game.notice(p, why, 'bad');
+  }
+
+  /** Moves the truck with its driver and burns fuel for the distance covered. */
+  private driveTruck(p: Player): void {
+    const truck = this.game.entities.get(p.driving);
+    if (!truck || truck.kind !== 'cart' || truck.type !== 'truck') {
+      p.driving = 0;
+      return;
+    }
+    const d = Math.hypot(p.x - truck.x, p.y - truck.y);
+    if (d > 0.01) truck.angle = Math.atan2(p.y - truck.y, p.x - truck.x);
+    truck.x = p.x;
+    truck.y = p.y;
+    truck.fuel = (truck.fuel ?? 0) - d;
+    if (truck.fuel <= 0 && !this.refuelFromBed(truck)) {
+      truck.fuel = 0;
+      this.leaveTruck(p, 'The truck ran out of fuel oil. Hold fuel oil and press E on it to fill the tank.');
+    }
+  }
+
+  /** Tops up an empty tank with one fuel oil carried in the truck's bed. */
+  private refuelFromBed(truck: Cart): boolean {
+    const i = truck.slots.findIndex((x) => x?.id === 'fuel_oil');
+    if (i < 0) return false;
+    const stack = truck.slots[i]!;
+    stack.n -= 1;
+    if (stack.n <= 0) truck.slots[i] = null;
+    truck.fuel = (truck.fuel ?? 0) + TRUCK_TILES_PER_FUEL;
+    return true;
+  }
+
+  /** Pours held fuel oil into the tank; false (so E opens the bed instead) when it is already full. */
+  private fillTank(p: Player, truck: Cart): boolean {
+    const held = p.slots[p.sel];
+    if (!held || held.id !== 'fuel_oil') return false;
+    const room = Math.floor((TRUCK_TANK * TRUCK_TILES_PER_FUEL - (truck.fuel ?? 0)) / TRUCK_TILES_PER_FUEL);
+    if (room <= 0) return false;
+    const n = Math.min(room, held.n);
+    held.n -= n;
+    if (held.n <= 0) p.slots[p.sel] = null;
+    truck.fuel = (truck.fuel ?? 0) + n * TRUCK_TILES_PER_FUEL;
+    p.invDirty = true;
+    this.game.notice(p, `Poured ${n} fuel oil into the tank (${tankPct(truck)} %).`, 'good');
+    this.game.emit(['sfx', 'pickup', Math.round(truck.x * 100), Math.round(truck.y * 100)], truck.x, truck.y, { r: 12 });
+    return true;
   }
 
   /** Radius used for hits against players. */

@@ -114,6 +114,8 @@ export class Player {
   mods: MoveMods = { ...DEFAULT_MODS };
   pulling = 0;
   mounted = 0;
+  /** The truck being driven. */
+  driving = 0;
   crankId = 0;
   hurtT = 0;
   /** Company id. */

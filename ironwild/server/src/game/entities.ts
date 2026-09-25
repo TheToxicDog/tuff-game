@@ -85,8 +85,8 @@ export interface Arrow {
 
 export interface Cart {
   kind: 'cart';
-  /** Hand carts are pulled on foot, wagons behind a horse; minecarts run on rails. */
-  type: 'hand' | 'wagon' | 'minecart';
+  /** Hand carts are pulled on foot, wagons behind a horse; minecarts run on rails; trucks are driven. */
+  type: 'hand' | 'wagon' | 'minecart' | 'truck';
   id: number;
   x: number;
   y: number;
@@ -96,6 +96,12 @@ export interface Cart {
   ownerName: string;
   puller: number;
   rail?: RailState;
+  /** A truck's driver (player id), and the tiles its tank has left. */
+  driver?: number;
+  fuel?: number;
 }
+
+/** The item each kind of cart is made from (and returns to when picked up). */
+export const CART_ITEM: Record<Cart['type'], string> = { hand: 'hand_cart', wagon: 'wagon', minecart: 'minecart', truck: 'motor_truck' };
 
 export type Entity = Creature | Drop | Bag | Arrow | Cart;

@@ -12,8 +12,9 @@ import { addStack, countItem, emptySlots, moveBetween, removeItem, roomFor } fro
 import { midPrice, recoverStock, saleValue, targetStock } from './economy/pricing';
 import { generateWorld } from './world/gen';
 import { decodeTiles, encodeTiles, TILES } from './world/terrain';
-import { newMoveState, stepMovement, type CollisionWorld } from './sim/movement';
+import { newMoveState, stepMovement, type CollisionWorld, type MoveMods } from './sim/movement';
 import { INPUT_DT } from './constants';
+import { TRUCK_PAVED, TRUCK_SPEED } from './content/vehicles';
 
 describe('content', () => {
   it('references only existing ids', () => {
@@ -153,6 +154,27 @@ describe('movement', () => {
     expect(s.stamina).toBeLessThan(100);
     stepMovement(s, { mx: 1, my: 0, sprint: false, dodge: true, slow: false }, INPUT_DT, world);
     expect(s.dodgeT).toBeGreaterThan(0);
+  });
+  it('drives a truck quickest on roads, and a truck neither sprints nor dodges (§36)', () => {
+    const road: CollisionWorld = { size: 1000, solidAt: () => false, circles: () => undefined, speedAt: (x) => (x >= 100 ? 1.2 : 1) };
+    const truck = { speed: TRUCK_SPEED, staminaRegen: 1, paved: TRUCK_PAVED };
+    const run = (x: number, input: { sprint: boolean; dodge: boolean }, mods: MoveMods = truck) => {
+      const s = newMoveState(x, 30);
+      for (let i = 0; i < 40; i++) stepMovement(s, { mx: 1, my: 0, slow: false, ...input }, INPUT_DT, road, mods);
+      return s;
+    };
+    const grass = run(20, { sprint: false, dodge: false });
+    const paved = run(120, { sprint: false, dodge: false });
+    expect((paved.x - 120) / (grass.x - 20)).toBeCloseTo(1.2 * TRUCK_PAVED, 1);
+    // A horse gets the road's own bonus and no more.
+    const horse = { speed: 1.75, staminaRegen: 1 };
+    expect(
+      (run(120, { sprint: false, dodge: false }, horse).x - 120) / (run(20, { sprint: false, dodge: false }, horse).x - 20),
+    ).toBeCloseTo(1.2, 1);
+    const pushed = run(20, { sprint: true, dodge: true });
+    expect(pushed.x).toBeCloseTo(grass.x, 6);
+    expect(pushed.stamina).toBe(100);
+    expect(pushed.dodgeT).toBe(0);
   });
 });
 

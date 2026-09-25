@@ -94,6 +94,12 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   Statue of Industry (₡19,650 of steel, precision gears and gold) and a Beacon of Progress
   (₡26,200; with 40 power it lights up the valley at night). They stand for good once raised,
   appear on every map, and give prestige instead of counting as wealth.
+- Motor trucks (§36, "late game: truck"): research Motor Vehicles after Petroleum; a truck (steel,
+  gearbox units, bearings, springs, glass, a circuit board) carries 64 slots, drives at 1.9× walking
+  pace and 1.35× more on roads, plazas, bridges and floors, but neither sprints nor dodges. It burns
+  a fuel oil every 90 tiles from a six-can tank — hold fuel oil and press E on it to fill up — and
+  refills itself from fuel oil in its bed; dry, it stops and you climb out. Riders and drivers now
+  show their horse or truck under them, facing the way they travel.
 - Town projects (§53): every settlement works through a list — Westhaven's mill wheel, warehouse
   and clock tower; Stonehaven's mine lift and food store; Greenfield's granary and windmill; Port
   Meridian's lighthouse and bonded warehouse. Anyone delivers the goods at the contract board for a
@@ -103,4 +109,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Hired guards and motor trucks (§36, §42).
+- Hired guards (§42).

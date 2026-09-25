@@ -115,6 +115,15 @@ export const RESEARCH: readonly ResearchNode[] = [
     row: 1,
   },
   {
+    id: 'motor_vehicles',
+    name: 'Motor Vehicles',
+    cost: 200,
+    requires: ['petroleum'],
+    desc: 'The motor truck: 64 slots, fastest on roads, runs on fuel oil.',
+    col: 6,
+    row: 0,
+  },
+  {
     id: 'deep_mining',
     name: 'Deep Mining',
     cost: 90,

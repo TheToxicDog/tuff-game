@@ -22,6 +22,7 @@ import {
 } from '@ironwild/shared';
 import type { AmbitionSave } from '../persistence/storage';
 import { companyAccount, isCompanyAccount } from './companies';
+import { CART_ITEM } from './entities';
 import type { Game } from './game';
 import type { Player } from './player';
 import type { Structure } from './world';
@@ -30,7 +31,6 @@ type Tally = Omit<AmbitionSave, 'id'>;
 
 /** Seconds between ambition checks. */
 const CHECK_SECONDS = 5;
-const CART_ITEM = { hand: 'hand_cart', wagon: 'wagon', minecart: 'minecart' } as const;
 const BOARD_SIZE = 10;
 
 const article = (title: string) => (/^[AEIOU]/.test(title) ? 'an' : 'a');
