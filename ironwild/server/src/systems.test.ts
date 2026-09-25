@@ -939,8 +939,7 @@ describe('mechanical drills (§62)', () => {
       const x = Math.floor(n.x) - 1;
       const y = Math.floor(n.y) - 1;
       for (let ty = y - 2; ty <= y + 4; ty++)
-        for (let tx = x - 2; tx <= x + 3; tx++)
-          if (!TILES[w.tile(tx, ty)].land || w.structAt(tx, ty) || w.claimAt(tx, ty)) return false;
+        for (let tx = x - 2; tx <= x + 3; tx++) if (!TILES[w.tile(tx, ty)].land || w.structAt(tx, ty) || w.claimAt(tx, ty)) return false;
       return true;
     })!;
     expect(vein).toBeDefined();
