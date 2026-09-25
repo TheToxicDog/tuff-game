@@ -647,6 +647,24 @@ place('splitter', 'Splitter', 'machine', 70, 20, 0x3f6f9a, 'Alternates items bet
 place('filter', 'Filter', 'machine', 90, 20, 0x7a3f9a, 'Sends one item type straight on, everything else to the sides.');
 place('storage_crate', 'Storage Crate', 'machine', 40, 20, 0x8a6a45, 'Stores 24 stacks. Accepts conveyors.');
 place(
+  'storehouse',
+  'Storehouse',
+  'machine',
+  900,
+  2,
+  0x9a6b3f,
+  'A 3×3 store for 72 stacks: conveyors in on any side, hoppers and rail stations take from it.',
+);
+place(
+  'lubricator',
+  'Lubricator',
+  'machine',
+  260,
+  10,
+  0x3a3c40,
+  'Keeps the machines beside it oiled: one Lubricant each per day, so they never wear. Feed it lubricant by hand or conveyor.',
+);
+place(
   'shipping_crate',
   'Shipping Crate',
   'machine',

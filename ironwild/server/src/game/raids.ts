@@ -405,7 +405,7 @@ export class RaidSystem {
     for (const s of w.structures.values()) {
       if (Math.abs(s.x + 0.5 - raid.x) > r + 1 || Math.abs(s.y + 0.5 - raid.y) > r + 1) continue;
       let score = 0;
-      if (s.store && !s.def.tower) score = s.store.reduce((sum, it) => sum + (it ? (ITEM_BY_ID.get(it.id)?.value ?? 0) * it.n : 0), 0) * 2;
+      if (s.store && !s.def.only) score = s.store.reduce((sum, it) => sum + (it ? (ITEM_BY_ID.get(it.id)?.value ?? 0) * it.n : 0), 0) * 2;
       else if (s.machine && s.machine.wear < 0.9) score = 30 + (ITEM_BY_ID.get(s.def.item)?.value ?? 0) / 20;
       if (score <= 0) continue;
       score /= 1 + Math.hypot(s.x - c.x, s.y - c.y) / 12;

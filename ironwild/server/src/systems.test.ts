@@ -1049,3 +1049,31 @@ describe('power plants (§64)', () => {
     expect(ui.grid?.supply).toBe(supply);
   });
 });
+
+describe('storehouses and lubricators (§23, §61)', () => {
+  it('a storehouse holds 72 stacks; a lubricator oils its neighbours and takes nothing but lubricant', () => {
+    const spot = clearSpot(6, 3, 30);
+    const p = join('quartermaster', spot.x + 3, spot.y + 4);
+    const store = place(p, 'storehouse', spot.x, spot.y);
+    expect(store.store).toHaveLength(72);
+    expect(game.factory.insert(store, 1, { id: 'iron_ore', n: 1 })).toBe(true);
+
+    const furnace = place(p, 'furnace', spot.x + 4, spot.y);
+    const oiler = place(p, 'lubricator', spot.x + 5, spot.y);
+    // One item only, from conveyors and by hand.
+    expect(game.factory.insert(oiler, 1, { id: 'stone', n: 1 })).toBe(false);
+    expect(game.factory.insert(oiler, 1, { id: 'lubricant', n: 1 })).toBe(true);
+    oiler.store![0]!.n = 3;
+    furnace.machine!.wear = 0.5;
+    ticks(20 + 1);
+    expect(furnace.machine!.wear).toBe(0);
+    expect(furnace.machine!.lube).toBeGreaterThan(game.minutes);
+    expect(countItem(oiler.store!, 'lubricant')).toBe(2);
+    // Oiled machines are left alone until their day is up.
+    ticks(20 * 3);
+    expect(countItem(oiler.store!, 'lubricant')).toBe(2);
+    furnace.machine!.lube = game.minutes - 1;
+    ticks(20 + 1);
+    expect(countItem(oiler.store!, 'lubricant')).toBe(1);
+  });
+});

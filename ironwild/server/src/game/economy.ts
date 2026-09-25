@@ -664,7 +664,7 @@ export class Economy {
       t.items += items;
       totals.set(s.owner, t);
       this.addProsperity(def.id, value);
-      this.game.structVisual(s);
+      this.game.factory.fillChanged(s);
     }
     for (const [owner, t] of totals) {
       const value = roundCrests(t.value);

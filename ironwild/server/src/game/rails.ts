@@ -200,7 +200,7 @@ export class RailSystem {
   private load(c: Cart, s: Structure): number {
     let moved = 0;
     for (const [t] of this.beside(s)) {
-      const source = t.store && !t.def.shop && !t.def.tower ? t.store : t.machine?.out;
+      const source = t.store && !t.def.shop && !t.def.only ? t.store : t.machine?.out;
       if (!source) continue;
       for (let i = 0; i < source.length && moved < PER_TRANSFER; i++) {
         const st = source[i];

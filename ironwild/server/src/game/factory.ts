@@ -2,6 +2,7 @@
 // and logistics — conveyors carrying individual items, hoppers, splitters, filters and crates.
 
 import {
+  TICK_RATE,
   BASE_RPM,
   BELT_SPACING,
   DX,
@@ -36,6 +37,7 @@ import {
   type Slots,
 } from '@ironwild/shared';
 import type { StructureSave } from '../persistence/storage';
+import { perimeter } from './fluids';
 import type { Game } from './game';
 import type { Player } from './player';
 import type { BeltItem, MachineState, Structure } from './world';
@@ -137,6 +139,34 @@ export class Factory {
     }
     for (const s of this.beltOrder) this.stepBelt(s, dt);
     this.flushKeyframes();
+    if (this.game.tick % TICK_RATE === 0) this.stepLubricators();
+  }
+
+  // ——— Maintenance, automated (§61) ———
+
+  /** Each lubricator oils the machines beside it: one Lubricant keeps a machine from wearing for a day. */
+  private stepLubricators(): void {
+    const w = this.game.world;
+    for (const l of w.lubricators) {
+      const store = l.store;
+      if (!store) continue;
+      const seen = new Set<number>();
+      for (const [nx, ny] of perimeter(l)) {
+        const t = w.structAt(nx, ny);
+        if (!t?.machine || seen.has(t.id) || t.def.fluid) continue;
+        seen.add(t.id);
+        const m = t.machine;
+        if (m.lube !== undefined && this.game.minutes < m.lube) continue;
+        const k = store.findIndex((x) => x?.id === 'lubricant');
+        if (k < 0) break;
+        const x = store[k]!;
+        x.n -= 1;
+        if (x.n <= 0) store[k] = null;
+        m.wear = 0;
+        m.lube = this.game.minutes + 1440;
+        this.fillChanged(l);
+      }
+    }
   }
 
   private updateSources(now: number, dt: number): void {
@@ -460,7 +490,7 @@ export class Factory {
   private canReceive(t: Structure, dir: number, item: string): boolean {
     if (t.items) return t.rot !== opposite(dir);
     if (t.machine) return this.machineFace(t, dir) && (this.accepts(t, 'in', item) || this.accepts(t, 'fuel', item));
-    if (t.def.tower) return item === 'arrow';
+    if (t.def.only) return item === t.def.only;
     return !!t.store && !t.def.shop;
   }
 
@@ -492,10 +522,10 @@ export class Factory {
       return false;
     }
     if (t.store) {
-      if (t.def.tower && stack.id !== 'arrow') return false;
+      if (t.def.only && stack.id !== t.def.only) return false;
       if (roomFor(t.store, stack) <= 0) return false;
       addStack(t.store, stack);
-      if (t.def.shipping || t.def.shop) this.game.structVisual(t);
+      this.fillChanged(t);
       return true;
     }
     return false;
@@ -527,7 +557,18 @@ export class Factory {
 
   contentsChanged(s: Structure): void {
     if (s.machine) s.machine.recipe = null;
-    if (s.def.shipping || s.def.shop) this.game.structVisual(s);
+    if (s.def.shop) this.game.structVisual(s);
+    else this.fillChanged(s);
+  }
+
+  /** Tells clients how full a container is, when that changed — counted in slots, so a busy conveyor doesn't flood them. */
+  fillChanged(s: Structure): void {
+    if (!s.store) return;
+    let used = 0;
+    for (const x of s.store) if (x) used++;
+    if (used === s.fillSent) return;
+    s.fillSent = used;
+    this.game.structVisual(s);
   }
 
   // ——— Machines ———
@@ -733,14 +774,17 @@ export class Factory {
     const back = opposite(s.rot);
     const src = w.structAt(s.x + DX[back], s.y + DY[back]);
     if (src && src !== s) {
-      const from = src.machine ? src.machine.out : src.store && !src.def.shop ? src.store : null;
+      const from = src.machine ? src.machine.out : src.store && !src.def.shop && !src.def.only ? src.store : null;
       if (from) {
         const k = from.findIndex((x) => x && roomFor(store, { ...x, n: 1 }) > 0);
         if (k >= 0) {
           const x = from[k]!;
           addStack(store, x.q === undefined ? { id: x.id, n: 1 } : { id: x.id, n: 1, q: x.q });
           x.n -= 1;
-          if (x.n <= 0) from[k] = null;
+          if (x.n <= 0) {
+            from[k] = null;
+            if (!src.machine) this.fillChanged(src);
+          }
         }
       }
     }

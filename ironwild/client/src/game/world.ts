@@ -298,12 +298,16 @@ export class ClientWorld implements CollisionWorld {
     this.neighboursChanged(s);
   }
 
-  /** Conveyors and fences draw differently depending on their neighbours. */
+  /** Conveyors, fences, pipes, rails and lubricators draw differently depending on their neighbours. */
   private neighboursChanged(s: ClientStruct): void {
     for (let y = s.y - 1; y <= s.y + s.h; y++) {
       for (let x = s.x - 1; x <= s.x + s.w; x++) {
         const n = this.structAt(x, y);
-        if (n && n !== s && (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic || n.def.fluid || n.def.rail))
+        if (
+          n &&
+          n !== s &&
+          (n.def.logistics || n.type === 'fence' || n.type === 'pen_gate' || n.def.kinetic || n.def.fluid || n.def.rail || n.def.lubricator)
+        )
           this.listener?.structChanged(n);
       }
     }

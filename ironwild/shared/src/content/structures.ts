@@ -92,6 +92,10 @@ export interface StructureDef {
   monument?: { prestige: number; refresh?: number };
   /** Mechanical drills (§62): stand over a vein, seam or rock of at most this tier and mine it without end. */
   drill?: { tier: number };
+  /** Containers that take one item only (arrow towers: arrows; lubricators: lubricant). */
+  only?: string;
+  /** Lubricators (§61): keep the machines beside them oiled from their lubricant. */
+  lubricator?: boolean;
 }
 
 const axis = (group = 0): KineticPort[] => [
@@ -175,6 +179,7 @@ const S: StructureDef[] = [
     hp: 900,
     placement: 'land',
     container: 4,
+    only: 'arrow',
     tower: { range: 9, damage: 20, every: 1.3 },
   },
   { id: 'bed', name: 'Bed', item: 'bed', size: [1, 1], solid: false, layer: 'object', hp: 150, placement: 'land', bed: true, low: true },
@@ -825,6 +830,30 @@ const S: StructureDef[] = [
     hp: 300,
     placement: 'any',
     container: 24,
+  },
+  {
+    id: 'storehouse',
+    name: 'Storehouse',
+    item: 'storehouse',
+    size: [3, 3],
+    solid: true,
+    layer: 'object',
+    hp: 2000,
+    placement: 'land',
+    container: 72,
+  },
+  {
+    id: 'lubricator',
+    name: 'Lubricator',
+    item: 'lubricator',
+    size: [1, 1],
+    solid: true,
+    layer: 'object',
+    hp: 300,
+    placement: 'land',
+    container: 2,
+    only: 'lubricant',
+    lubricator: true,
   },
   {
     id: 'shipping_crate',

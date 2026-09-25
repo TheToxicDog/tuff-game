@@ -126,6 +126,8 @@ export interface Structure {
   raised?: number;
   /** Drills: the vein, seam or rock they stand over (it comes back when the drill is taken away). */
   node?: number;
+  /** Containers: used slots last sent to clients. */
+  fillSent?: number;
   /** Electric devices: share of the power they asked for this tick (0–1). */
   power?: number;
   /** Rail junctions: the way the switch sends carts; stations: what they do with them. */
@@ -158,6 +160,7 @@ export class World implements CollisionWorld {
   readonly claims = new Set<Structure>();
   readonly towers = new Set<Structure>();
   readonly monuments = new Set<Structure>();
+  readonly lubricators = new Set<Structure>();
 
   constructor(seed: number) {
     this.gen = generateWorld(seed);
@@ -294,6 +297,7 @@ export class World implements CollisionWorld {
     if (s.def.claimRadius) this.claims.add(s);
     if (s.def.tower) this.towers.add(s);
     if (s.def.monument) this.monuments.add(s);
+    if (s.def.lubricator) this.lubricators.add(s);
   }
 
   removeStructure(s: Structure): void {
@@ -305,6 +309,7 @@ export class World implements CollisionWorld {
     this.claims.delete(s);
     this.towers.delete(s);
     this.monuments.delete(s);
+    this.lubricators.delete(s);
   }
 
   makeStructure(id: number, type: string, x: number, y: number, rot: number, owner: string | null, ownerName: string): Structure {

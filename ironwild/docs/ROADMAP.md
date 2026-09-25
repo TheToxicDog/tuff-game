@@ -76,6 +76,11 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   10,000 items by rail, a 1,000-power grid, ₡250,000 sold in one town, ₡50,000 to town projects, a
   Masterwork. Worth counts Crests, what you carry and everything you own with its contents; a
   company's achievements count for its members. Standings (L) rank players and companies.
+- Storehouses and lubricators (§23, §61): a 3×3 storehouse holds 72 stacks, takes conveyors on
+  any side and feeds hoppers and rail stations; a lubricator keeps every machine beside it oiled —
+  one Lubricant each per game day — so they never wear ("maintenance, later automated"). Arrow
+  towers and lubricators only accept their one item, from conveyors or by hand. Every container
+  now shows how full it is as it fills.
 - Power plants (§64): research Power Plants; a 3×2 steam turbine takes one boiler's steam (20/s)
   through its back and sides and makes 2,000 power for the poles in reach — more than engines and
   generators get from the same steam, and no shafts, at the price of steel, gearbox units,
@@ -98,4 +103,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Hired guards, motor trucks, warehouses and automatic lubrication (§36, §42, §58–62).
+- Hired guards and motor trucks (§36, §42).

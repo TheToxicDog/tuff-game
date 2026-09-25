@@ -338,6 +338,8 @@ export class PlayerSystem {
       if (!s) return false;
       if (s.def.shop && s.owner !== p.accountId) return false;
       if (ref.s === 'out' && incoming) return false;
+      // Arrow towers take arrows, lubricators lubricant.
+      if (s.def.only && incoming && ref.s === 'store' && incoming.id !== s.def.only) return false;
       if (s.machine && incoming && (ref.s === 'in' || ref.s === 'fuel')) return this.game.factory.accepts(s, ref.s, incoming.id);
       return true;
     }

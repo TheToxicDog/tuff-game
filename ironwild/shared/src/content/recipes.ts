@@ -142,6 +142,14 @@ craft('hopper', 'workbench', [s('hopper')], [s('iron_plate', 3), s('plank', 2)],
 craft('splitter', 'workbench', [s('splitter')], [s('conveyor', 2), s('iron_gear', 1)], 'logistics');
 craft('filter', 'workbench', [s('filter')], [s('conveyor', 2), s('iron_gear', 1), s('iron_plate', 1)], 'logistics');
 craft('storage_crate', 'workbench', [s('storage_crate')], [s('plank', 12), s('iron_rod', 2)], 'logistics');
+craft(
+  'storehouse',
+  'workbench',
+  [s('storehouse')],
+  [s('plank', 80), s('stone_brick', 60), s('iron_plate', 10), s('iron_rod', 10)],
+  'railways',
+);
+craft('lubricator', 'workbench', [s('lubricator')], [s('iron_plate', 4), s('pipe', 4), s('valve', 1), s('copper_plate', 2)], 'petroleum');
 craft('shipping_crate', 'workbench', [s('shipping_crate')], [s('plank', 16), s('iron_plate', 2)], 'commerce');
 craft('shop_stand', 'workbench', [s('shop_stand')], [s('plank', 20), s('rope', 4), s('iron_rod', 2)], 'commerce');
 craft('oven', 'workbench', [s('oven')], [s('brick', 20), s('iron_plate', 2)], 'cooking');

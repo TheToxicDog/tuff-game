@@ -419,6 +419,61 @@ const DRAW: Record<string, (c: DrawCtx) => void> = {
   pen_gate(c) {
     fenceLike(c, true);
   },
+  storehouse(c) {
+    const { hw, hh } = half(c);
+    const g = c.g;
+    const roof = 0x7a5a3a;
+    g.roundRect(-hw - 3, -hh - 3, hw * 2 + 6, hh * 2 + 6, 6).fill({ color: 0x000000, alpha: 0.16 });
+    // A gabled roof seen from above: the two slopes, the ridge, the rafters.
+    g.rect(-hw + 6, -hh + 6, hw * 2 - 12, hh - 6).fill(roof);
+    g.rect(-hw + 6, 0, hw * 2 - 12, hh - 30).fill(shade(roof, 0.8));
+    g.rect(-hw + 6, -hh + 6, hw * 2 - 12, hh * 2 - 36).stroke({ width: 5, color: OUTLINE });
+    g.moveTo(-hw + 6, 0)
+      .lineTo(hw - 6, 0)
+      .stroke({ width: 5, color: shade(roof, 0.6) });
+    for (let x = -hw + 26; x < hw - 10; x += 20)
+      g.moveTo(x, -hh + 8)
+        .lineTo(x, hh - 32)
+        .stroke({ width: 1.5, color: shade(roof, 0.65), alpha: 0.7 });
+    // The loading dock along the south side, stacked as full as the store is.
+    g.rect(-hw + 6, hh - 30, hw * 2 - 12, 24)
+      .fill(0xa98357)
+      .stroke({ width: 3, color: OUTLINE });
+    g.rect(-18, hh - 36, 36, 10)
+      .fill(0x5a3f26)
+      .stroke({ width: 2, color: OUTLINE });
+    const crates = Math.round((c.s.st.fill ?? 0) * 8);
+    for (let i = 0; i < crates; i++) {
+      const x = (i % 4 < 2 ? -hw + 14 : hw - 50) + (i % 2) * 18;
+      const y = hh - 27 + (i >= 4 ? -2 : 0);
+      g.rect(x, y, 16, 16)
+        .fill(i >= 4 ? 0xc99a5b : 0xb8894f)
+        .stroke({ width: 2, color: OUTLINE });
+    }
+  },
+  lubricator(c) {
+    const g = c.g;
+    // Brass nozzles reach out to the machines beside it.
+    if (c.world)
+      for (let d = 0; d < 4; d++) {
+        const n = neighbour(c, d);
+        if (!n?.def.machine || n.def.fluid) continue;
+        const a = (d * Math.PI) / 2 - Math.PI / 2 - c.inner.rotation;
+        g.moveTo(Math.cos(a) * 14, Math.sin(a) * 14)
+          .lineTo(Math.cos(a) * 31, Math.sin(a) * 31)
+          .stroke({ width: 6, color: OUTLINE })
+          .moveTo(Math.cos(a) * 14, Math.sin(a) * 14)
+          .lineTo(Math.cos(a) * 31, Math.sin(a) * 31)
+          .stroke({ width: 3, color: 0xd9b23d });
+      }
+    // An oil drum with a level gauge.
+    g.circle(0, 0, 22).fill(0x2f3236).stroke({ width: 4, color: OUTLINE });
+    g.circle(0, 0, 16).stroke({ width: 2, color: 0x55595f });
+    g.circle(0, 0, 9).fill(0x1a1612);
+    const fill = c.s.st.fill ?? 0;
+    if (fill > 0) g.circle(0, 0, 3 + fill * 6).fill(0xd9b23d);
+    g.circle(12, -12, 5).fill(0xd9dde3).stroke({ width: 2, color: OUTLINE });
+  },
   steam_turbine(c) {
     const { hw, hh } = half(c);
     const g = c.g;
