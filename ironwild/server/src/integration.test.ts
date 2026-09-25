@@ -135,6 +135,9 @@ describe('IRONWILD server', () => {
       ['storage_crate', 1],
     ] as const)
       server.game.playerSystem.give(p, { id: item, n }, true);
+    // Wildlife wanders at random; clear it off the building site so it cannot block placement.
+    for (const e of [...server.game.entities.values()])
+      if (e.kind === 'creature' && Math.hypot(e.x - x, e.y - y) < 16) server.game.removeEntity(e.id);
     const place = (item: string, px: number, py: number, rot: number) => bot.send({ t: 'place', item, x: px, y: py, rot });
     place('water_wheel', x, y, 0);
     place('gearbox', x + 1, y, 0);
