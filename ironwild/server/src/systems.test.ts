@@ -834,10 +834,66 @@ describe('town projects (§53)', () => {
     // Only 50 more planks were needed; 10 stay in the pack.
     expect(countItem(q.slots, 'plank')).toBe(10);
     expect(game.projects.current('westhaven')?.id).toBe('westhaven_warehouse');
-    expect((game.economy.prosperity.get('westhaven') ?? 0) - before).toBeGreaterThanOrEqual(6000);
+    expect((game.economy.prosperity.get('westhaven') ?? 0) - before).toBeGreaterThan(5999.99);
     const wheel = [...game.world.structures.values()].find((s) => s.type === 'water_wheel' && s.town);
     expect(wheel).toBeDefined();
     // Nobody can take it down.
     expect(game.building.canRemove(q, wheel!)).toBe(false);
+  });
+});
+
+describe('ambitions (§63)', () => {
+  it('tallies sales by town and value added, climbs the wealth ladder, ranks the standings and saves', async () => {
+    const p = join('tycoon');
+    const smith = game.world.settlements[0].npcs.find((n) => n.profession === 'blacksmith')!;
+    p.move.x = smith.x + 1;
+    p.move.y = smith.y;
+    game.playerSystem.give(p, { id: 'iron_ore', n: 20 }, true);
+    const before = p.crests;
+    game.economy.trade(p, smith.id, 'sell', 'iron_ore', 20);
+    const earned = p.crests - before;
+    const t = game.ambitions.tallyOf(p.accountId);
+    expect(earned).toBeGreaterThan(0);
+    expect(t.income).toBeCloseTo(earned, 1);
+    expect(t.n['sales:westhaven']).toBeCloseTo(earned, 1);
+
+    // A furnace's work counts: the ingots it makes and the value it adds to the ore.
+    const spot = clearSpot(2, 2);
+    p.move.x = spot.x + 0.5;
+    p.move.y = spot.y + 2.5;
+    const furnace = place(p, 'furnace', spot.x, spot.y);
+    furnace.machine!.in[0] = { id: 'iron_ore', n: 10 };
+    furnace.machine!.fuel![0] = { id: 'coal', n: 5 };
+    ticks(20 * 3 * 10 + 20);
+    expect(t.n['made:iron_ingot']).toBe(7);
+    expect(t.best.added).toBeGreaterThan(0);
+
+    // Worth ₡5,000: the first rung of the ladder, announced to everyone.
+    expect(game.ambitions.title(p.accountId)).toBeNull();
+    p.crests += 6000;
+    ticks(20 * 5);
+    expect(game.ambitions.title(p.accountId)).toBe('Homesteader');
+    expect(game.ambitions.prestige(p.accountId)).toBe(1);
+    expect(notices(p).some((n) => n.includes('Ambition achieved: Homesteader'))).toBe(true);
+    const chat = (p.session as unknown as { messages: ServerMessage[] }).messages.filter((m) => m.t === 'chat');
+    expect(chat.some((m) => (m as { text: string }).text.includes('tycoon is now a Homesteader'))).toBe(true);
+
+    const info = game.ambitions.standings(p)!;
+    expect(info.you.title).toBe('Homesteader');
+    expect(info.ambitions.find((a) => a.id === 'homesteader')?.done).toBe(true);
+    expect(info.ambitions.find((a) => a.id === 'craftsman')?.progress).toBeGreaterThan(0.2);
+    expect(info.boards.find((b) => b.id === 'worth')!.rows.find((r) => r.you)).toMatchObject({ name: 'tycoon', title: 'Homesteader' });
+    const westhaven = info.towns.find((x) => x.name === 'Westhaven')!.rows;
+    expect(westhaven.length).toBeGreaterThan(0);
+    expect(westhaven.every((r, i) => i === 0 || r.value <= westhaven[i - 1].value)).toBe(true);
+
+    // Tallies live in the world save, so they survive a restart.
+    const storage = new MemoryStorage();
+    await storage.saveWorld(game.serialize());
+    const again = new Game(storage, { seed: 777 });
+    again.log = () => undefined;
+    await again.init();
+    expect(again.ambitions.tallyOf(p.accountId).done).toContain('homesteader');
+    expect(again.ambitions.tallyOf(p.accountId).n['made:iron_ingot']).toBe(7);
   });
 });

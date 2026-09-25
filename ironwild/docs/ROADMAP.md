@@ -70,6 +70,12 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
   crates pay into the treasury; the Company window (C) shows members, property and a day's income.
 - Port Meridian (§14): a harbour town with a pier and a moored ship; a fishmonger, an importer
   (spices, silk, tea, steel, glass) and an export agent who pays best for finished goods.
+- Ambitions and standings (§47–50, §63): a wealth ladder (Homesteader ₡5,000 → Craftsman →
+  Workshop Owner → Factory Owner ₡1,000,000 → Industrialist ₡10,000,000; the highest rung is your
+  title) and endgame feats — a ₡100,000 day, machines adding ₡100,000 of value in a day, 1,000 steel,
+  10,000 items by rail, a 1,000-power grid, ₡250,000 sold in one town, ₡50,000 to town projects, a
+  Masterwork. Worth counts Crests, what you carry and everything you own with its contents; a
+  company's achievements count for its members. Standings (L) rank players and companies.
 - Town projects (§53): every settlement works through a list — Westhaven's mill wheel, warehouse
   and clock tower; Stonehaven's mine lift and food store; Greenfield's granary and windmill; Port
   Meridian's lighthouse and bonded warehouse. Anyone delivers the goods at the contract board for a
@@ -79,4 +85,4 @@ press with shafts, gearboxes and conveyors, and sell gears for considerably more
 ## Next up
 
 - Salvage quests in ruins and wrecks, and economic quests beyond contracts (§11, §53).
-- Tier 3–4 technology and prestige projects (§64).
+- Tier 3–4 technology and monuments as late money sinks (§64).

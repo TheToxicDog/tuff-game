@@ -134,6 +134,25 @@ export interface ProjectSave {
   helpers: Record<string, { name: string; value: number }>;
 }
 
+/** Ambition tallies of a player or a company (§63). */
+export interface AmbitionSave {
+  /** Account id, or co:<company id>. */
+  id: string;
+  name: string;
+  done: string[];
+  /** All-time counters: made:<item>, sales:<settlement>, projects, freight, masterwork, monument. */
+  n: Record<string, number>;
+  /** Game day the day counters are for, and those counters. */
+  day: number;
+  income: number;
+  added: number;
+  best: { income: number; added: number };
+  /** Crests plus what they carried when last seen (players). */
+  carried: number;
+  /** Game minute last seen. */
+  seen: number;
+}
+
 export interface WorldSave {
   version: 1;
   seed: number;
@@ -155,6 +174,7 @@ export interface WorldSave {
   companies: CompanySave[];
   /** Town projects under way and finished. */
   projects?: ProjectSave[];
+  ambitions?: AmbitionSave[];
 }
 
 export class DuplicateUsernameError extends Error {

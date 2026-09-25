@@ -179,8 +179,10 @@ export class RailSystem {
     r.dwell += dt;
     if (r.transferT <= 0) {
       r.transferT = TRANSFER_EVERY;
-      const moved = (s.rmode ?? 'load') === 'unload' ? this.unload(c, s) : this.load(c, s);
+      const unloading = (s.rmode ?? 'load') === 'unload';
+      const moved = unloading ? this.unload(c, s) : this.load(c, s);
       if (moved > 0) r.dwell = 0;
+      if (unloading) this.game.ambitions.count(c.owner, 'freight', moved);
     }
     if (r.dwell >= STATION_IDLE) r.atStation = false;
   }

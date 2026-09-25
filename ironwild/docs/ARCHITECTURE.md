@@ -71,6 +71,8 @@ the systems in a fixed order each 50 ms tick:
 | `raids.ts`       | Raids on wealthy claims (raider AI: bash, rob, sabotage, flee), structure damage and mending, spike traps, arrow towers |
 | `economy.ts`     | Markets, NPC trade, contracts, shipping crates, the Exchange, shop stands                                               |
 | `progression.ts` | Knowledge, research, discoveries and the guided first fifteen minutes                                                   |
+| `projects.ts`    | Town projects: deliveries at the contract board, completion bonuses, putting the new building up in town                |
+| `ambitions.ts`   | Ambitions and standings: tallies per account and company, net worth, the wealth ladder, prestige, leader boards         |
 | `companies.ts`   | Companies and their treasuries                                                                                          |
 | `replication.ts` | What each client sees                                                                                                   |
 

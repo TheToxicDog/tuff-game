@@ -23,6 +23,8 @@ export interface EntityView {
   n?: number;
   owner?: string;
   tag?: string;
+  /** Rank title under a player's name. */
+  title?: string;
   samples: Sample[];
   x: number;
   y: number;
@@ -102,6 +104,7 @@ export class EntityStore {
       existing.name = sp.name;
       existing.n = sp.n;
       existing.tag = sp.tag;
+      existing.title = sp.title;
       existing.owner = sp.owner;
       existing.dirty = true;
       return;
@@ -116,6 +119,7 @@ export class EntityStore {
       n: sp.n,
       owner: sp.owner,
       tag: sp.tag,
+      title: sp.title,
       samples: [{ k, x: sp.x, y: sp.y, a: sp.a ?? 0, hp: 100, flags: 0 }],
       x: sp.x,
       y: sp.y,

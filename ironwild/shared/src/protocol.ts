@@ -39,6 +39,7 @@ export type ClientMessage =
   | { t: 'machine'; id: number; op: 'oc'; level: number }
   | { t: 'machine'; id: number; op: 'repair' }
   | { t: 'stats' }
+  | { t: 'standings' }
   | { t: 'crank'; id: number; on: boolean }
   | { t: 'research'; node: string }
   | { t: 'contract'; op: 'accept' | 'deliver' | 'abandon'; id: string }
@@ -123,6 +124,8 @@ export interface EntitySpawn {
   a?: number;
   /** Company tag. */
   tag?: string;
+  /** Rank title shown under a player's name (§63). */
+  title?: string;
 }
 
 /** [id, type, x × 100, y × 100, remaining 0–100 (0 = depleted)]. */
@@ -282,6 +285,34 @@ export interface FactoryStats {
   networks: NetSummary[];
   valuePerMin: number;
   hints: string[];
+}
+
+/** Progress on one ambition (§63); the rest of it is in the shared AMBITIONS list. */
+export interface AmbitionInfo {
+  id: string;
+  /** 0–1, and a readable count ("₡12,400 / ₡25,000"). */
+  progress: number;
+  text: string;
+  done: boolean;
+}
+
+export interface StandingRow {
+  name: string;
+  value: number;
+  /** Rank title, company tag. */
+  title?: string;
+  company?: string;
+  online?: boolean;
+  you?: boolean;
+}
+
+/** The Standings window (L): your ambitions and the server's leaders. */
+export interface StandingsInfo {
+  you: { worth: number; prestige: number; title: string | null; today: number; best: number };
+  ambitions: AmbitionInfo[];
+  boards: { id: string; title: string; unit: 'crests' | 'points'; rows: StandingRow[] }[];
+  /** Who sells the most in each settlement. */
+  towns: { name: string; rows: StandingRow[] }[];
 }
 
 export interface HouseInfo {
@@ -530,6 +561,7 @@ export type ServerMessage =
   | { t: 'alive' }
   | { t: 'markets'; list: { settlement: string; items: [string, number, number][] }[] }
   | ({ t: 'stats' } & FactoryStats)
+  | ({ t: 'standings' } & StandingsInfo)
   | { t: 'towns'; list: TownInfo[] }
   /** Fluid networks; `of` maps pipes and tanks to networks and comes when the pipes change. */
   | { t: 'fluids'; nets: FluidNetTuple[]; of?: [number, number][] }

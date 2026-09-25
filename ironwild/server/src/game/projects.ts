@@ -103,6 +103,8 @@ export class TownProjects {
     const pay = roundCrests(n * this.price(settlement, item));
     p.crests = roundCrests(p.crests + pay);
     p.stats.earned += pay;
+    this.game.ambitions.earned(p.accountId, pay, settlement);
+    this.game.ambitions.count(p.accountId, 'projects', pay);
     p.invDirty = p.statusDirty = true;
     st.delivered[item] = (st.delivered[item] ?? 0) + n;
     const h = (st.helpers[p.accountId] ??= { name: p.name, value: 0 });
@@ -121,7 +123,7 @@ export class TownProjects {
     const total = helpers.reduce((a, [, h]) => a + h.value, 0);
     for (const [id, h] of helpers) {
       const bonus = roundCrests(total * COMPLETION_BONUS * (h.value / Math.max(1, total)));
-      this.game.economy.credit(id, bonus, 'Town project');
+      this.game.economy.credit(id, bonus, 'Town project', settlement);
       const p = this.game.byAccount.get(id);
       if (p) this.game.notice(p, `${town.name} thanks you: ${formatCrests(bonus)} for your part in "${project.title}".`, 'money');
     }

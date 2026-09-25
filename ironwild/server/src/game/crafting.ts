@@ -127,6 +127,7 @@ export class CraftingSystem {
     p.addXp('smithing', 3);
     const out = recipe.outputs[0];
     const def = ITEM_BY_ID.get(out.item);
+    if (def?.quality && quality === 4) this.game.ambitions.count(p.accountId, 'masterwork', 1);
     const qName = def?.quality ? ['Crude', 'Standard', 'Fine', 'Excellent', 'Masterwork'][quality] + ' ' : '';
     this.game.emit(['sfx', 'anvil', Math.round(p.x * 100), Math.round(p.y * 100)], p.x, p.y, { r: 16 });
     this.game.notice(p, `Forged ${out.n}× ${qName}${def?.name ?? out.item}.`, quality >= 3 ? 'money' : 'good');

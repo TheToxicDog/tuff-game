@@ -1251,3 +1251,98 @@ select:focus {
   font-size: 15px;
   color: #f2d27a;
 }
+
+/* ——— Standings (§63) ——— */
+
+.standing-you {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.standing-you > div {
+  background: var(--panel-3);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.standing-you b {
+  font-size: 16px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ambition {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 5px 6px;
+  border-radius: 8px;
+  margin-bottom: 3px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ambition .mark {
+  width: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.ambition.done .mark {
+  color: #8fd45a;
+}
+
+.ambition.done b {
+  color: #f2d27a;
+}
+
+.ambition .pill {
+  color: #f2d27a;
+}
+
+.boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.leader {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 0;
+}
+
+.leader.you {
+  color: #f2d27a;
+}
+
+.leader .place {
+  width: 20px;
+  color: var(--muted);
+}
+
+.leader .who {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leader .rank {
+  color: #f2c53d;
+  font-size: 11px;
+}
+
+@media (max-width: 560px) {
+  .standing-you {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

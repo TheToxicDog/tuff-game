@@ -53,6 +53,7 @@ import { setStructureIcon } from '../ui/icons';
 import { InventoryWindow } from '../ui/inventory';
 import { showDeath, showMessage } from '../ui/login';
 import { companyWindow } from '../ui/company';
+import { standingsWindow, type StandingsTab } from '../ui/standings';
 import { Smithing, buildWindow, factoryWindow, helpWindow, mapWindow, researchWindow } from '../ui/menus';
 import { contractsWindow, panelFor } from '../ui/panels';
 import { initSlots, isDragging } from '../ui/slots';
@@ -125,6 +126,8 @@ export class ClientGame {
   /** The inventory was opened automatically alongside a server panel. */
   private autoInventory = false;
   private lastStats = 0;
+  private lastStandings = 0;
+  private readonly standingsTab: { value: StandingsTab } = { value: 'ambitions' };
   private running = true;
 
   constructor(
@@ -232,6 +235,7 @@ export class ClientGame {
       { label: 'Contracts', key: 'J', action: () => this.toggle('contracts') },
       { label: 'Factory', key: 'O', action: () => this.toggle('factory') },
       { label: 'Company', key: 'C', action: () => this.toggle('company') },
+      { label: 'Standings', key: 'L', action: () => this.toggle('standings') },
       { label: 'Help', key: 'H', action: () => this.toggle('help') },
     ]);
     this.chat = new Chat(this.ui, (text) => this.send({ t: 'chat', text }));
@@ -286,6 +290,11 @@ export class ClientGame {
       case 'company':
         this.send({ t: 'company', op: 'info' });
         this.windows.show('company', companyWindow(this.ctx));
+        break;
+      case 'standings':
+        this.send({ t: 'standings' });
+        this.lastStandings = performance.now();
+        this.windows.show('standings', standingsWindow(this.ctx, this.standingsTab));
         break;
     }
   }
@@ -456,6 +465,10 @@ export class ClientGame {
       case 'stats':
         this.state.stats = msg;
         if (this.windows.isOpen('factory')) this.windows.refresh('factory');
+        break;
+      case 'standings':
+        this.state.standings = msg;
+        if (this.windows.isOpen('standings')) this.windows.refresh('standings');
         break;
     }
   }
@@ -637,6 +650,10 @@ export class ClientGame {
       this.lastStats = now;
       this.send({ t: 'stats' });
     }
+    if (this.windows.isOpen('standings') && now - this.lastStandings > 3000) {
+      this.lastStandings = now;
+      this.send({ t: 'standings' });
+    }
     this.input.endFrame();
   }
 
@@ -734,6 +751,7 @@ export class ClientGame {
     if (inp.hit('KeyJ')) this.toggle('contracts');
     if (inp.hit('KeyO')) this.toggle('factory');
     if (inp.hit('KeyC')) this.toggle('company');
+    if (inp.hit('KeyL')) this.toggle('standings');
     if (inp.hit('KeyH') || inp.hit('F1')) this.toggle('help');
     for (let i = 0; i < 8; i++) {
       if (inp.hit(`Digit${i + 1}`)) {

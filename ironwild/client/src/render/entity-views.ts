@@ -13,6 +13,7 @@ import {
   makeCharacter,
   makeCreature,
   makeDrop,
+  setTitle,
   swingAngle,
   type CharacterParts,
 } from './characters';
@@ -75,7 +76,7 @@ export class EntityViews {
     let layer: 'entities' | 'drops' = 'entities';
     switch (e.kind) {
       case 'player':
-        parts = makeCharacter({ look: e.look ?? 0, name: e.name, tag: e.tag });
+        parts = makeCharacter({ look: e.look ?? 0, name: e.name, tag: e.tag, title: e.title });
         drawHeld(parts.arm, e.held, parts.skin);
         root = parts.root;
         body = parts.body;
@@ -147,6 +148,7 @@ export class EntityViews {
         if (v.parts) {
           drawHeld(v.parts.arm, held, v.parts.skin);
           if (v.parts.label && e.name) v.parts.label.text = e.tag ? `[${e.tag}] ${e.name}` : e.name;
+          setTitle(v.parts, e.title);
         } else if (e.kind === 'cart' && v.body) {
           // Cargo changed: redraw.
           const next = makeCart(e.type, e.n);

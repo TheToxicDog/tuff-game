@@ -657,12 +657,14 @@ export class Factory {
     }
     let made = 0;
     const now = Date.now();
+    const out: [string, number][] = [];
     for (const o of recipe.outputs) {
       const acc = (m.acc[o.item] ?? 0) + o.n;
       const whole = Math.floor(acc + 1e-9);
       m.acc[o.item] = acc - whole;
       if (whole <= 0) continue;
       m.made.push([now, o.item, whole]);
+      out.push([o.item, whole]);
       const def = ITEM_BY_ID.get(o.item);
       // Machines produce consistent Standard quality (§16), or keep the input's quality.
       addStack(m.out, { id: o.item, n: whole, ...(def?.quality ? { q: Math.min(quality ?? 1, 2) } : {}) });
@@ -675,6 +677,11 @@ export class Factory {
     if (s.owner && made > 0) {
       const owner = this.game.byAccount.get(s.owner);
       if (owner) this.game.progression.addKnowledge(owner, KNOWLEDGE.machineOutput * made, true);
+    }
+    // Value added counts expected outputs, so fractional yields even out (§63).
+    if (s.owner) {
+      const worth = (list: { item: string; n: number }[]) => list.reduce((v, x) => v + (ITEM_BY_ID.get(x.item)?.value ?? 0) * x.n, 0);
+      this.game.ambitions.job(s.owner, out, worth(recipe.outputs) - worth(recipe.inputs));
     }
   }
 

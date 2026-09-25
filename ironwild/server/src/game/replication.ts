@@ -264,7 +264,7 @@ export class Replication {
 
   /** Sends the spawn record for new entities and changed appearances; true if sent. */
   private track(session: ClientSession, sigs: Map<number, string>, out: EntitySpawn[], spawn: EntitySpawn): boolean {
-    const sig = `${spawn.held ?? ''}|${spawn.name ?? ''}|${spawn.n ?? ''}|${spawn.tag ?? ''}|${spawn.owner ?? ''}`;
+    const sig = `${spawn.held ?? ''}|${spawn.name ?? ''}|${spawn.n ?? ''}|${spawn.tag ?? ''}|${spawn.owner ?? ''}|${spawn.title ?? ''}`;
     if (session.known.has(spawn.id) && sigs.get(spawn.id) === sig) return false;
     const isNew = !session.known.has(spawn.id);
     session.known.add(spawn.id);
@@ -278,6 +278,8 @@ export class Replication {
     const spawn: EntitySpawn = { id: p.id, k: 'player', name: p.name, look: p.look, x: p.x, y: p.y, a: p.angle };
     if (held) spawn.held = held;
     if (p.company) spawn.tag = this.game.companies.name(p.company);
+    const title = this.game.ambitions.title(p.accountId);
+    if (title) spawn.title = title;
     return spawn;
   }
 

@@ -13,11 +13,15 @@ export const NAME_STYLE = {
   stroke: { color: 0x1a1612, width: 4 },
 } as const;
 
+const TITLE_STYLE = { ...NAME_STYLE, fontSize: 13, fill: 0xf2c53d } as const;
+
 export interface CharacterParts {
   root: Container;
   body: Container;
   arm: Container;
   label: Text | null;
+  /** Rank title under a player's name (§63). */
+  title: Text | null;
   hp: Graphics;
   bubble: Container | null;
   skin: number;
@@ -112,6 +116,7 @@ export function makeCharacter(opts: {
   look: number;
   name?: string;
   tag?: string;
+  title?: string;
   shirt?: number;
   hat?: number;
   npc?: string;
@@ -145,16 +150,29 @@ export function makeCharacter(opts: {
   root.addChild(body);
   drawHeld(arm, undefined, skin);
   let label: Text | null = null;
+  let title: Text | null = null;
   if (opts.name) {
     label = new Text({ text: opts.tag ? `[${opts.tag}] ${opts.name}` : opts.name, style: NAME_STYLE, resolution: 2 });
     label.anchor.set(0.5, 1);
-    label.position.set(0, -R - 12);
     root.addChild(label);
+    title = new Text({ text: '', style: TITLE_STYLE, resolution: 2 });
+    title.anchor.set(0.5, 1);
+    title.position.set(0, -R - 10);
+    root.addChild(title);
+    setTitle({ label, title }, opts.title);
   }
   const hp = new Graphics();
   hp.position.set(0, R + 14);
   root.addChild(hp);
-  return { root, body, arm, label, hp, bubble: null, skin };
+  return { root, body, arm, label, title, hp, bubble: null, skin };
+}
+
+/** Shows (or hides) the rank title under a player's name, lifting the name above it. */
+export function setTitle(parts: { label: Text | null; title: Text | null }, text: string | undefined): void {
+  if (!parts.label || !parts.title) return;
+  parts.title.text = text ?? '';
+  parts.title.visible = !!text;
+  parts.label.position.set(0, text ? -R - 26 : -R - 12);
 }
 
 export function drawHealth(g: Graphics, pct: number, friendly: boolean, width = 56): void {

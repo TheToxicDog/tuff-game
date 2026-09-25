@@ -44,8 +44,16 @@ export class CompanySystem {
     return this.companies.get(id)?.name;
   }
 
+  treasuryOf(id: string): number | undefined {
+    return this.companies.get(id)?.treasury;
+  }
+
+  all(): readonly CompanySave[] {
+    return [...this.companies.values()];
+  }
+
   /** The company behind an account or company owner id. */
-  private companyOf(owner: string): string | undefined {
+  companyOf(owner: string): string | undefined {
     return isCompanyAccount(owner) ? owner.slice(PREFIX.length) : this.memberOf.get(owner);
   }
 

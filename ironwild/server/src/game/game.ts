@@ -15,6 +15,7 @@ import {
   type WelcomeMessage,
 } from '@ironwild/shared';
 import type { AccountRecord, CharacterData, Storage, WorldSave } from '../persistence/storage';
+import { Ambitions } from './ambitions';
 import { BuildSystem } from './building';
 import { CombatSystem } from './combat';
 import { Commands } from './commands';
@@ -103,6 +104,7 @@ export class Game {
   readonly raids: RaidSystem;
   readonly rails: RailSystem;
   readonly projects: TownProjects;
+  readonly ambitions: Ambitions;
   readonly companies: CompanySystem;
   readonly commands: Commands;
 
@@ -137,6 +139,7 @@ export class Game {
     this.raids = new RaidSystem(this);
     this.rails = new RailSystem(this);
     this.projects = new TownProjects(this);
+    this.ambitions = new Ambitions(this);
     this.companies = new CompanySystem(this);
     this.commands = new Commands(this);
   }
@@ -235,6 +238,7 @@ export class Game {
       this.economy.stepSecond();
       this.regrowNodes();
       this.progression.stepSecond();
+      this.ambitions.stepSecond();
       this.combat.expireEntities();
     }
     if (this.day !== prevDay) this.economy.newDay();
@@ -301,6 +305,7 @@ export class Game {
     this.players.set(player.id, player);
     this.byAccount.set(account.id, player);
     this.companies.attach(player);
+    this.ambitions.joined(player);
     const welcome: WelcomeMessage = {
       t: 'welcome',
       you: { id: player.id, name: player.name, accountId: account.id, isAdmin: account.isAdmin },
@@ -348,6 +353,7 @@ export class Game {
     const player = session.player;
     if (!player || this.players.get(player.id) !== player) return;
     this.playerSystem.left(player);
+    this.ambitions.left(player);
     this.players.delete(player.id);
     if (this.byAccount.get(player.accountId) === player) this.byAccount.delete(player.accountId);
     void this.storage
@@ -448,6 +454,11 @@ export class Game {
       case 'stats':
         session.send({ t: 'stats', ...this.factory.stats(p) });
         break;
+      case 'standings': {
+        const info = this.ambitions.standings(p);
+        if (info) session.send({ t: 'standings', ...info });
+        break;
+      }
     }
   }
 
@@ -544,6 +555,7 @@ export class Game {
       entities: [...this.creatures.save(), ...this.combat.save()],
       companies: this.companies.save(),
       projects: this.projects.save(),
+      ambitions: this.ambitions.save(),
     };
   }
 
@@ -568,6 +580,7 @@ export class Game {
     this.creatures.load(save.entities);
     this.combat.load(save.entities);
     this.companies.load(save.companies ?? []);
+    this.ambitions.load(save.ambitions);
     this.log(`loaded world: day ${this.day}, ${save.structures.length} structures`);
   }
 }

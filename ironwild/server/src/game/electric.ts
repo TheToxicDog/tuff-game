@@ -169,6 +169,15 @@ export class PowerSystem {
       : undefined;
   }
 
+  /** The biggest grid supply each owner has a generator on (for ambitions). */
+  supplyByOwner(): Map<string, number> {
+    const out = new Map<string, number>();
+    for (const g of this.grids)
+      for (const d of g.devices)
+        if (d.owner && d.def.electric?.role === 'generator') out.set(d.owner, Math.max(out.get(d.owner) ?? 0, g.supply));
+    return out;
+  }
+
   broadcast(withMap: boolean, only?: { send(m: object): void }): void {
     const nets = this.grids.map((g) => [g.id, Math.round(g.supply), Math.round(g.demand)] as [number, number, number]);
     const key = JSON.stringify(nets);

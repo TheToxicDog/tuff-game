@@ -50,6 +50,7 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 | Build / rotate while building / cancel | B / R / right click           |
 | Research / contracts / map & prices    | K / J / M                     |
 | Factory overview / company             | O / C                         |
+| Standings: ambitions and leaders       | L                             |
 | Drop selected (Ctrl: whole stack)      | Q                             |
 | Chat (`/help` for commands) / help     | Enter / H                     |
 | Zoom                                   | Mouse wheel                   |
@@ -113,6 +114,11 @@ npm run ironwild:start   # serves the game and the client on http://localhost:77
 - **Build up the towns**: each settlement's contract board has a town project — a mill wheel, a
   warehouse, a clock tower, a lighthouse. Deliver the goods for a little over market; finish it and
   the building goes up in town, the town grows and its markets deepen.
+- **Make a name** (L): climb the wealth ladder from Homesteader (₡5,000) to Industrialist
+  (₡10,000,000) — your title shows under your name — and chase the endgame feats: a ₡100,000 day,
+  a steelworks, a freight network, a power company, a trade baron's hold on one town, and machines
+  that add ₡100,000 of value in a day. The standings rank everyone by worth, the day's takings and
+  prestige, and show who sells the most in each town.
 
 ## Running a server
 

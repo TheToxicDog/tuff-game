@@ -290,7 +290,7 @@ export class Economy {
       if (c.taker) {
         const def = ITEM_BY_ID.get(c.item)!;
         const partial = roundCrests(c.delivered * (c.pay / c.n) * 0.5);
-        this.credit(c.taker, partial);
+        this.credit(c.taker, partial, 'Contract', c.settlement);
         const p = this.game.byAccount.get(c.taker);
         if (p) {
           this.game.notice(
@@ -438,6 +438,7 @@ export class Economy {
       m.set(item, stock + count);
       p.crests = roundCrests(p.crests + value);
       p.stats.earned += value;
+      this.game.ambitions.earned(p.accountId, value, s.id);
       p.invDirty = p.statusDirty = true;
       p.addXp('trading', Math.max(1, value / 20));
       this.addProsperity(s.id, value);
@@ -614,6 +615,7 @@ export class Economy {
         const total = c.pay + (onTime ? c.bonus : 0);
         p.crests = roundCrests(p.crests + total);
         p.stats.earned += total;
+        this.game.ambitions.earned(p.accountId, total, c.settlement);
         p.statusDirty = true;
         this.addProsperity(c.settlement, total);
         this.contracts = this.contracts.filter((x) => x !== c);
@@ -635,7 +637,7 @@ export class Economy {
   // ——— Shipping crates (§35) ———
 
   private shipAll(): void {
-    const totals = new Map<string, { value: number; items: number; where: string }>();
+    const totals = new Map<string, { value: number; items: number; where: string; sid: string }>();
     for (const s of this.game.world.structures.values()) {
       if (!s.def.shipping || !s.store || !s.owner) continue;
       const g = this.game.world.nearestSettlement(s.x, s.y);
@@ -657,7 +659,7 @@ export class Economy {
         s.store[i] = null;
       }
       if (items === 0) continue;
-      const t = totals.get(s.owner) ?? { value: 0, items: 0, where: g.name };
+      const t = totals.get(s.owner) ?? { value: 0, items: 0, where: g.name, sid: g.id };
       t.value += value;
       t.items += items;
       totals.set(s.owner, t);
@@ -666,7 +668,7 @@ export class Economy {
     }
     for (const [owner, t] of totals) {
       const value = roundCrests(t.value);
-      this.credit(owner, value, 'Shipping');
+      this.credit(owner, value, 'Shipping', t.sid);
       if (isCompanyAccount(owner))
         this.game.companies.notify(owner, `The merchant wagon sold ${t.items} items in ${t.where} for ${formatCrests(value)}.`);
       const p = this.game.byAccount.get(owner);
@@ -681,9 +683,10 @@ export class Economy {
     }
   }
 
-  /** Adds Crests to an account (online or not) or to a company's treasury. */
-  credit(accountId: string, amount: number, source = 'Income'): void {
+  /** Adds Crests to an account (online or not) or to a company's treasury; `settlement` is where it was earned. */
+  credit(accountId: string, amount: number, source = 'Income', settlement?: string): void {
     if (amount <= 0) return;
+    this.game.ambitions.earned(accountId, amount, settlement);
     if (isCompanyAccount(accountId)) {
       this.game.companies.income(accountId, amount, source);
       return;
@@ -775,6 +778,7 @@ export class Economy {
         const pay = roundCrests(k * o.price);
         p.crests = roundCrests(p.crests + pay);
         p.stats.earned += pay;
+        this.game.ambitions.earned(p.accountId, pay);
         o.filled += k;
         o.waiting += k;
         p.invDirty = p.statusDirty = true;
@@ -857,7 +861,7 @@ export class Economy {
     p.crests = roundCrests(p.crests - cost);
     p.invDirty = p.statusDirty = true;
     if (s.owner) {
-      this.credit(s.owner, cost, 'Shop sales');
+      this.credit(s.owner, cost, 'Shop sales', this.game.world.nearestSettlement(s.x, s.y).id);
       if (isCompanyAccount(s.owner)) this.game.companies.notify(s.owner, `${p.name} bought ${k}× ${def.name} for ${formatCrests(cost)}.`);
       const owner = this.game.byAccount.get(s.owner);
       if (owner) {
