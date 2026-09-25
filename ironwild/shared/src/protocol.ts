@@ -251,6 +251,8 @@ export interface WelcomeMessage {
     seed: number;
     size: number;
     tiles: number[];
+    /** Region per tile, run-length encoded like the tiles. */
+    regions: number[];
     houses: HouseInfo[];
     settlements: SettlementInfo[];
     landmarks: LandmarkInfo[];

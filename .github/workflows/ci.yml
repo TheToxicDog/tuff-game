@@ -38,5 +38,7 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       - name: Build
         run: npm run build
+      - name: Build IRONWILD
+        run: npm run ironwild:build
       - name: Load test (10 bots, in-process server)
         run: npm run load-test -- --bots 10 --seconds 15

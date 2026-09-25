@@ -1,0 +1,1023 @@
+// The running game on the client: owns the connection, world copy, prediction, renderers and UI;
+// turns input into commands and server messages into pictures.
+
+import {
+  BUILD_RANGE,
+  CREATURE_BY_ID,
+  EntityFlags,
+  FIST,
+  INPUT_DT,
+  INTERACT_RANGE,
+  ITEM_BY_ID,
+  InputFlags,
+  PROFESSION_BY_ID,
+  STATION_STRUCTURES,
+  STRUCTURE_BY_ID,
+  TILES,
+  Tile,
+  rotatedSize,
+  type ClientMessage,
+  type GameEvent,
+  type InputTuple,
+  type ServerMessage,
+  type SlotRef,
+  type Snapshot,
+  type UiState,
+  type WelcomeMessage,
+} from '@ironwild/shared';
+import { Container } from 'pixi.js';
+import { Sfx } from '../audio/sfx';
+import { Input } from '../input/input';
+import type { Connection } from '../net/connection';
+import { BeltItems } from '../render/belt-items';
+import { TS } from '../render/draw';
+import { Effects } from '../render/effects';
+import { EntityViews } from '../render/entity-views';
+import { Lighting } from '../render/lighting';
+import { NodeRenderer } from '../render/nodes';
+import { Overlay } from '../render/overlay';
+import { Renderer } from '../render/renderer';
+import { StructureRenderer } from '../render/structures';
+import { TerrainRenderer } from '../render/terrain';
+import { TownRenderer } from '../render/town';
+import { Chat } from '../ui/chat';
+import { h } from '../ui/dom';
+import { Hud } from '../ui/hud';
+import { setStructureIcon } from '../ui/icons';
+import { InventoryWindow } from '../ui/inventory';
+import { showDeath, showMessage } from '../ui/login';
+import { Smithing, buildWindow, helpWindow, mapWindow, researchWindow } from '../ui/menus';
+import { contractsWindow, panelFor } from '../ui/panels';
+import { initSlots, isDragging } from '../ui/slots';
+import { Windows } from '../ui/windows';
+import { EntityStore, ServerClock } from './entities';
+import { Prediction } from './prediction';
+import { ClientState, type UiContext } from './state';
+import { ClientWorld, type ClientStruct } from './world';
+
+const MIN_ZOOM = 0.35;
+const MAX_ZOOM = 1.6;
+
+type Target =
+  | { kind: 'npc'; id: string; x: number; y: number; label: string }
+  | { kind: 'struct'; id: number; x: number; y: number; label: string; crank?: boolean }
+  | { kind: 'entity'; id: number; x: number; y: number; label: string; grab?: string };
+
+export class ClientGame {
+  private readonly r = new Renderer();
+  private readonly world: ClientWorld;
+  private readonly state: ClientState;
+  private readonly store = new EntityStore();
+  private readonly clock = new ServerClock();
+  private readonly prediction: Prediction;
+  private readonly input: Input;
+  private readonly sfx = new Sfx();
+  private terrain!: TerrainRenderer;
+  private nodes!: NodeRenderer;
+  private structures!: StructureRenderer;
+  private town!: TownRenderer;
+  private entities!: EntityViews;
+  private belts!: BeltItems;
+  private effects!: Effects;
+  private lighting!: Lighting;
+  private overlay!: Overlay;
+  private hud!: Hud;
+  private windows!: Windows;
+  private chat!: Chat;
+  private inventory!: InventoryWindow;
+  private smithing!: Smithing;
+  private readonly mapTab = { value: 'map' as 'map' | 'markets' };
+  private ctx!: UiContext;
+
+  private seq = 0;
+  private acc = 0;
+  private last = performance.now();
+  private angle = 0;
+  private dodgeQueued = false;
+  private swingCd = 0;
+  private chargeT = 0;
+  private drawT = 0;
+  private swingAt = 0;
+  private heavy = false;
+  private prevPrimary = false;
+  private placing: string | null = null;
+  private placeRot = 0;
+  private target: Target | null = null;
+  private cranking = 0;
+  private crankTimer = 0;
+  private deathEl: HTMLElement | null = null;
+  private lastSmoke = 0;
+  private currentSettlement: string | null = null;
+  private running = true;
+
+  constructor(
+    private readonly conn: Connection,
+    private readonly welcome: WelcomeMessage,
+    private readonly host: HTMLElement,
+    private readonly ui: HTMLElement,
+  ) {
+    this.world = new ClientWorld(welcome);
+    this.state = new ClientState(welcome);
+    const spawn = welcome.world.settlements[0];
+    this.prediction = new Prediction(spawn.x, spawn.y);
+    this.input = new Input(host);
+  }
+
+  async start(): Promise<void> {
+    await this.r.init(this.host);
+    this.terrain = new TerrainRenderer(this.r, this.world);
+    this.terrain.init();
+    this.nodes = new NodeRenderer(this.r);
+    this.structures = new StructureRenderer(this.r, this.world);
+    this.town = new TownRenderer(this.r, this.world);
+    this.town.init();
+    this.entities = new EntityViews(this.r, this.store);
+    this.belts = new BeltItems(this.r, this.world);
+    this.effects = new Effects(this.r);
+    this.lighting = new Lighting(this.r);
+    this.overlay = new Overlay(this.r, this.world);
+    this.renderStructureIcons();
+    this.world.listener = {
+      chunkAdded: (k) => this.terrain.chunkAdded(k),
+      chunkRemoved: (k) => {
+        this.terrain.chunkRemoved(k);
+        this.r.dropChunk(k);
+      },
+      nodeAdded: (n) => this.nodes.add(n),
+      nodeChanged: (n) => this.nodes.changed(n),
+      nodeRemoved: (n) => this.nodes.remove(n),
+      structAdded: (s) => {
+        this.structures.add(s);
+        this.lighting.structAdded(s);
+      },
+      structRemoved: (s) => {
+        this.structures.remove(s);
+        this.lighting.structRemoved(s);
+      },
+      structChanged: (s) => {
+        this.structures.changed(s);
+        this.lighting.structChanged(s);
+      },
+      tilesChanged: (c) => this.terrain.tilesChanged(c),
+    };
+    this.setupUi();
+    const unlock = () => this.sfx.start();
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    this.conn.attach({ message: (m, at) => this.onMessage(m, at), closed: (reason) => this.onClosed(reason) });
+    this.r.app.ticker.add(() => this.frame());
+  }
+
+  // ——— UI wiring ———
+
+  private setupUi(): void {
+    this.windows = new Windows(this.ui);
+    const ctx: UiContext = {
+      state: this.state,
+      world: this.world,
+      sfx: this.sfx,
+      send: (m) => this.send(m),
+      nearStations: () => this.nearStations(),
+      startPlacement: (item) => this.startPlacement(item),
+      startSmith: (recipe) => this.windows.show('smith', this.smithing.begin(recipe)),
+      toggle: (w) => this.toggle(w),
+      refresh: (w) => this.windows.refresh(w),
+      close: (w) => this.windows.hide(w),
+      isOpen: (w) => this.windows.isOpen(w),
+      terrainCanvas: () => this.terrain.minimapCanvas(),
+      notice: (t, k) => this.hud.notice(t, k),
+    };
+    this.ctx = ctx;
+    this.inventory = new InventoryWindow(ctx);
+    this.smithing = new Smithing(ctx);
+    this.hud = new Hud(this.ui, ctx, [
+      { label: 'Inventory', key: 'Tab', action: () => this.toggle('inventory') },
+      { label: 'Build', key: 'B', action: () => this.toggle('build') },
+      { label: 'Research', key: 'K', action: () => this.toggle('research') },
+      { label: 'Map', key: 'M', action: () => this.toggle('map') },
+      { label: 'Contracts', key: 'J', action: () => this.toggle('contracts') },
+      { label: 'Help', key: 'H', action: () => this.toggle('help') },
+    ]);
+    this.chat = new Chat(this.ui, (text) => this.send({ t: 'chat', text }));
+    initSlots({
+      move: (from, to, n) => this.send({ t: 'move', from, to, ...(n ? { n } : {}) }),
+      quick: (from) => this.send({ t: 'quick', from }),
+      dropOut: (from) => {
+        if (from.s === 'inv') this.send({ t: 'drop', slot: from.i });
+      },
+      click: (ref) => this.slotClicked(ref),
+    });
+    this.hud.renderStatus();
+    this.hud.renderHotbar();
+    this.chat.add('', `Welcome to ${this.welcome.server.name}. ${this.welcome.server.motd} Press H for help.`, 'system');
+  }
+
+  private slotClicked(ref: SlotRef): void {
+    if (ref.s === 'inv' && ref.i < 8 && !isDragging()) {
+      this.send({ t: 'slot', slot: ref.i });
+    }
+  }
+
+  private toggle(id: string): void {
+    if (this.windows.isOpen(id)) {
+      this.windows.hide(id);
+      return;
+    }
+    switch (id) {
+      case 'inventory':
+        this.windows.show('inventory', this.inventory.def());
+        break;
+      case 'build':
+        this.windows.show('build', buildWindow(this.ctx));
+        break;
+      case 'research':
+        this.windows.show('research', researchWindow(this.ctx));
+        break;
+      case 'map':
+        if (this.mapTab.value === 'markets') this.send({ t: 'markets' });
+        this.windows.show('map', mapWindow(this.ctx, this.mapTab));
+        break;
+      case 'contracts':
+        this.windows.show('contracts', contractsWindow(this.ctx));
+        break;
+      case 'help':
+        this.windows.show('help', helpWindow());
+        break;
+    }
+  }
+
+  private send(msg: ClientMessage): void {
+    this.conn.send(msg);
+  }
+
+  /** Renders every structure item's icon from the real structure drawing. */
+  private renderStructureIcons(): void {
+    for (const def of STRUCTURE_BY_ID.values()) {
+      if (def.id === 'crop') continue;
+      const item = ITEM_BY_ID.get(def.item);
+      if (!item?.place) continue;
+      try {
+        const view = this.structures.preview(def.id, 0, def);
+        const holder = new Container();
+        holder.addChild(view);
+        const [w, hgt] = def.size;
+        const size = Math.max(w, hgt) * TS;
+        const extra = def.id === 'windmill' ? 3.6 : def.id === 'water_wheel' ? 1.6 : 1.25;
+        const scale = 64 / (size * extra);
+        view.scale.set(scale);
+        view.position.set((64 - w * TS * scale) / 2, (64 - hgt * TS * scale) / 2);
+        const canvas = this.r.app.renderer.extract.canvas({
+          target: holder,
+          frame: undefined,
+          resolution: 1,
+          clearColor: '#00000000',
+        }) as HTMLCanvasElement;
+        const out = document.createElement('canvas');
+        out.width = out.height = 64;
+        out
+          .getContext('2d')!
+          .drawImage(
+            canvas,
+            0,
+            0,
+            Math.min(64, canvas.width),
+            Math.min(64, canvas.height),
+            (64 - Math.min(64, canvas.width)) / 2,
+            (64 - Math.min(64, canvas.height)) / 2,
+            Math.min(64, canvas.width),
+            Math.min(64, canvas.height),
+          );
+        setStructureIcon(item.id, out);
+        holder.destroy({ children: true });
+      } catch (err) {
+        console.warn('icon render failed', def.id, err);
+      }
+    }
+  }
+
+  // ——— Messages ———
+
+  private onMessage(msg: ServerMessage, at: number): void {
+    switch (msg.t) {
+      case 's':
+        this.onSnapshot(msg, at);
+        break;
+      case 'chunk':
+        this.world.addChunk(msg.cx, msg.cy, msg.n, msg.st);
+        break;
+      case 'unchunk':
+        this.world.removeChunk(msg.cx, msg.cy);
+        break;
+      case 'node':
+        this.world.setNode(msg.id, msg.a);
+        break;
+      case 'sa':
+        for (const s of msg.s) this.world.addStruct(s);
+        break;
+      case 'sr':
+        for (const id of msg.ids) this.world.removeStruct(id);
+        break;
+      case 'su':
+        for (const u of msg.s) this.world.updateStruct(u.id, u.st);
+        break;
+      case 'kin':
+        for (const [id, ...spin] of msg.s) this.world.setSpin(id, spin);
+        for (const [id, net] of msg.of) this.world.setNet(id, net);
+        this.world.networks = new Map(msg.nets.map((n) => [n.id, n]));
+        break;
+      case 'belt':
+        this.world.beltKeyframes(msg.k);
+        break;
+      case 'tiles':
+        this.world.applyTiles(msg.c);
+        break;
+      case 'inv':
+        this.state.slots = msg.slots;
+        this.state.sel = msg.sel;
+        this.state.cap = msg.cap;
+        this.hud.renderHotbar();
+        this.windows.refresh(...this.windows.ids().filter((w) => ['inventory', 'build', 'server', 'contracts'].includes(w)));
+        if (this.placing && this.state.count(this.placing) === 0) this.stopPlacement();
+        break;
+      case 'status':
+        this.state.status = msg;
+        this.hud.renderStatus();
+        if (this.windows.isOpen('server') && this.state.ui?.kind === 'trade') this.windows.refresh('server');
+        break;
+      case 'research':
+        this.state.research = { kp: msg.kp, unlocked: msg.unlocked, blueprints: msg.blueprints };
+        this.windows.refresh(...this.windows.ids().filter((w) => ['research', 'inventory', 'build'].includes(w)));
+        break;
+      case 'tutorial':
+        this.state.tutorial = msg;
+        this.hud.renderObjective();
+        break;
+      case 'contracts':
+        this.state.contracts = msg.list;
+        this.hud.renderContracts();
+        if (this.windows.isOpen('contracts')) this.windows.refresh('contracts');
+        break;
+      case 'ui':
+        this.openServerUi(msg.ui);
+        break;
+      case 'uiclose':
+        this.state.ui = null;
+        this.windows.hide('server');
+        break;
+      case 'notice':
+        this.hud.notice(msg.text, msg.kind);
+        if (msg.kind === 'bad') this.sfx.play('miss');
+        break;
+      case 'chat':
+        this.chat.add(msg.from, msg.text, msg.kind);
+        break;
+      case 'dead':
+        this.state.dead = msg;
+        this.deathEl?.remove();
+        this.deathEl = showDeath(this.ui, msg.by, msg.crests, msg.items, () => this.send({ t: 'respawn' }));
+        this.sfx.play('hurt');
+        this.windows.closeAll();
+        this.stopPlacement();
+        break;
+      case 'alive':
+        this.state.dead = null;
+        this.deathEl?.remove();
+        this.deathEl = null;
+        break;
+      case 'markets':
+        this.state.markets = msg.list;
+        if (this.windows.isOpen('map')) this.windows.refresh('map');
+        break;
+    }
+  }
+
+  private openServerUi(ui: UiState): void {
+    const wasOpen =
+      this.windows.isOpen('server') &&
+      this.state.ui?.kind === ui.kind &&
+      (this.state.ui as { id?: unknown; npc?: unknown }).id === (ui as { id?: unknown }).id;
+    this.state.ui = ui;
+    if (ui.kind === 'station') {
+      this.inventory.forced = ui.station;
+      if (!this.windows.isOpen('inventory')) this.windows.show('inventory', this.inventory.def());
+      else this.windows.refresh('inventory');
+      return;
+    }
+    const def = panelFor(ui, this.ctx);
+    if (!def) return;
+    def.onClose = () => {
+      if (this.state.ui === ui || this.state.ui?.kind === ui.kind) {
+        this.state.ui = null;
+        this.send({ t: 'close' });
+      }
+    };
+    if (wasOpen) {
+      // Keep the window; just re-render with the new data.
+      this.windows.show('server', def);
+      return;
+    }
+    this.windows.show('server', def);
+    if (['container', 'machine', 'shop'].includes(ui.kind) && !this.windows.isOpen('inventory'))
+      this.windows.show('inventory', this.inventory.def());
+  }
+
+  private onSnapshot(snap: Snapshot, at: number): void {
+    this.clock.onSnapshot(snap.k, at);
+    this.state.minutes = snap.tm;
+    this.store.applySnapshot(snap);
+    if (snap.me) this.prediction.reconcile(snap.me, this.world);
+    for (const ev of snap.ev ?? []) this.onEvent(ev);
+  }
+
+  private onEvent(ev: GameEvent): void {
+    const now = performance.now();
+    switch (ev[0]) {
+      case 'sw': {
+        const e = this.store.map.get(ev[1]);
+        if (e) {
+          e.swingAt = now;
+          e.heavy = ev[2] === 1;
+          this.sfx.play('swing', e.x, e.y);
+        }
+        break;
+      }
+      case 'hit': {
+        const x = ev[1] / 100;
+        const y = ev[2] / 100;
+        this.effects.burst(x, y, ev[3]);
+        this.sfx.play(ev[3], x, y);
+        break;
+      }
+      case 'nd':
+        this.nodes.wiggle(ev[1], ev[2] / 100, ev[3] / 100);
+        break;
+      case 'pop':
+        this.effects.text(ev[1] / 100, ev[2] / 100, ev[3], ev[4]);
+        break;
+      case 'dmg': {
+        const e = this.store.map.get(ev[1]);
+        if (e) {
+          e.hurtAt = now;
+          this.effects.text(e.x, e.y, String(ev[2]), ev[3] ? 0xf2c53d : 0xff6a5a, ev[3] ? 22 : 17);
+          this.effects.burst(e.x, e.y, 'flesh', 5, 90);
+          if (ev[1] === this.welcome.you.id) this.sfx.play('hurt');
+        }
+        break;
+      }
+      case 'sfx':
+        this.sfx.play(ev[1], ev[2] / 100, ev[3] / 100);
+        break;
+      case 'atk': {
+        const e = this.store.map.get(ev[1]);
+        if (e) e.attackAt = now;
+        break;
+      }
+      case 'die': {
+        const e = this.store.map.get(ev[1]);
+        if (e) {
+          this.effects.burst(e.x, e.y, 'flesh', 12, 140);
+          this.sfx.play('die', e.x, e.y);
+        }
+        break;
+      }
+    }
+  }
+
+  private onClosed(reason: string): void {
+    if (!this.running) return;
+    this.running = false;
+    showMessage(this.ui, reason, { label: 'Reconnect', run: () => location.reload() });
+  }
+
+  // ——— Frame ———
+
+  private frame(): void {
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - this.last) / 1000);
+    this.last = now;
+    const mouse = this.r.screenToWorld(this.input.mouseX, this.input.mouseY);
+    this.handleKeys(mouse);
+
+    // Fixed-rate input steps with prediction.
+    this.acc += dt;
+    const sent: InputTuple[] = [];
+    while (this.acc >= INPUT_DT) {
+      this.acc -= INPUT_DT;
+      const input = this.sampleInput(mouse);
+      this.prediction.apply(input, this.world);
+      this.localActions(INPUT_DT, input[1], now);
+      sent.push(input);
+    }
+    if (sent.length && !this.state.dead) this.conn.sendInputs(sent);
+
+    this.clock.advance(dt);
+    const renderTick = this.clock.renderTick;
+    this.store.sample(renderTick);
+    const pos = this.prediction.renderPosition(this.acc / INPUT_DT, dt);
+    this.state.playerX = pos.x;
+    this.state.playerY = pos.y;
+    this.sfx.listenerX = pos.x;
+    this.sfx.listenerY = pos.y;
+    this.entities.local = {
+      id: this.welcome.you.id,
+      x: pos.x,
+      y: pos.y,
+      a: this.angle,
+      swingAt: this.swingAt,
+      heavy: this.heavy,
+      held: this.state.held(),
+      draw: this.drawT,
+      charge: this.chargeT,
+    };
+    this.r.applyCamera(pos.x, pos.y, dt);
+
+    this.terrain.animate(dt);
+    this.nodes.animate(dt, pos.x, pos.y);
+    this.structures.animate(dt);
+    this.town.animate(dt, pos.x, pos.y);
+    this.entities.update(now);
+    this.belts.update(renderTick);
+    this.effects.update(dt);
+    this.lighting.update(dt, (this.state.minutes / 60) % 24);
+    this.ambientEffects(now);
+    this.updateOverlay(mouse, pos);
+    this.hud.renderStamina(this.prediction.state.stamina);
+    this.hud.update(now, pos.x, pos.y, this.angle, this.state.minutes);
+    this.checkSettlement(pos.x, pos.y);
+    this.input.endFrame();
+  }
+
+  private sampleInput(mouse: { x: number; y: number }): InputTuple {
+    const inp = this.input;
+    const typing = this.chat.typing;
+    const dead = !!this.state.dead;
+    let mx = 0;
+    let my = 0;
+    if (!typing && !dead) {
+      if (inp.down('KeyW') || inp.down('ArrowUp')) my -= 1;
+      if (inp.down('KeyS') || inp.down('ArrowDown')) my += 1;
+      if (inp.down('KeyA') || inp.down('ArrowLeft')) mx -= 1;
+      if (inp.down('KeyD') || inp.down('ArrowRight')) mx += 1;
+    }
+    const p = this.prediction.state;
+    this.angle = Math.atan2(mouse.y - p.y, mouse.x - p.x);
+    let flags = 0;
+    if (!typing && (inp.down('ShiftLeft') || inp.down('ShiftRight'))) flags |= InputFlags.Sprint;
+    const overUi = inp.overUi || isDragging();
+    const held = this.state.held();
+    const def = held ? ITEM_BY_ID.get(held) : undefined;
+    if (inp.mouseLeft && !overUi && !this.placing && !def?.place && !dead) flags |= InputFlags.Primary;
+    if (inp.mouseRight && !overUi && !this.placing && !dead) flags |= InputFlags.Secondary;
+    if (this.dodgeQueued) {
+      flags |= InputFlags.Dodge;
+      this.dodgeQueued = false;
+    }
+    const kind = def?.tool?.kind;
+    const blocking = (flags & InputFlags.Secondary) !== 0 && (kind === 'sword' || kind === 'club' || kind === 'spear' || kind === 'axe');
+    if (blocking || (kind === 'bow' && (flags & InputFlags.Primary) !== 0)) flags |= InputFlags.Slow;
+    return [++this.seq, flags, mx, my, Math.round(this.angle * 1000)];
+  }
+
+  /** Mirrors the server's swing timing so our own swings animate without delay. */
+  private localActions(dt: number, flags: number, now: number): void {
+    if (this.swingCd > 0) this.swingCd -= dt;
+    const held = this.state.held();
+    const tool = (held ? ITEM_BY_ID.get(held)?.tool : undefined) ?? FIST;
+    const primary = (flags & InputFlags.Primary) !== 0;
+    const was = this.prevPrimary;
+    this.prevPrimary = primary;
+    const swing = (heavy: boolean) => {
+      this.swingCd = (1 / tool.rate) * (heavy ? 1.3 : 1);
+      this.swingAt = now;
+      this.heavy = heavy;
+      this.sfx.play('swing');
+    };
+    if (tool.kind === 'bow') {
+      if (primary) this.drawT += dt;
+      else this.drawT = 0;
+      return;
+    }
+    if (tool.kind === 'sword' || tool.kind === 'club' || tool.kind === 'spear') {
+      if (primary && !was && this.swingCd <= 0) swing(false);
+      if (primary) this.chargeT += dt;
+      else if (was) {
+        if (this.chargeT >= 0.5 && this.swingCd <= 0.15 && this.prediction.state.stamina >= 14) swing(true);
+        this.chargeT = 0;
+      }
+      return;
+    }
+    if (primary && this.swingCd <= 0) swing(false);
+  }
+
+  // ——— Keys ———
+
+  private handleKeys(mouse: { x: number; y: number }): void {
+    const inp = this.input;
+    if (this.chat.typing) return;
+    if (this.smithing.active && (inp.hit('Space') || (inp.leftPressed && !inp.overUi))) {
+      this.smithing.strike();
+      return;
+    }
+    if (inp.hit('Enter')) {
+      this.chat.open();
+      return;
+    }
+    if (inp.hit('Slash')) {
+      this.chat.open('/');
+      return;
+    }
+    if (inp.hit('Escape')) {
+      if (this.placing) this.stopPlacement();
+      else this.windows.closeAll();
+    }
+    if (inp.hit('Tab') || inp.hit('KeyI')) this.toggle('inventory');
+    if (inp.hit('KeyB')) this.toggle('build');
+    if (inp.hit('KeyK')) this.toggle('research');
+    if (inp.hit('KeyM')) this.toggle('map');
+    if (inp.hit('KeyJ')) this.toggle('contracts');
+    if (inp.hit('KeyH') || inp.hit('F1')) this.toggle('help');
+    for (let i = 0; i < 8; i++) {
+      if (inp.hit(`Digit${i + 1}`)) {
+        this.send({ t: 'slot', slot: i });
+        this.state.sel = i;
+        this.hud.renderHotbar();
+        const id = this.state.slots[i]?.id;
+        if (id && ITEM_BY_ID.get(id)?.place) this.startPlacement(id);
+        else this.stopPlacement();
+      }
+    }
+    if (inp.wheel !== 0 && !inp.overUi) {
+      this.r.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.r.targetZoom * (inp.wheel > 0 ? 0.88 : 1.14)));
+    }
+    if (inp.hit('Space')) this.dodgeQueued = true;
+    if (this.state.dead) return;
+    if (inp.hit('KeyQ')) {
+      const s = this.state.slots[this.state.sel];
+      if (s) this.send({ t: 'drop', slot: this.state.sel, n: inp.down('ControlLeft') ? s.n : 1 });
+    }
+    if (inp.hit('KeyF')) this.send({ t: 'pickup' });
+    if (inp.hit('KeyR')) {
+      if (this.placing) this.placeRot = (this.placeRot + 1) % 4;
+      else {
+        const s = this.world.structAt(Math.floor(mouse.x), Math.floor(mouse.y));
+        if (s && s.owner === this.welcome.you.name) this.send({ t: 'rotate', id: s.id });
+      }
+    }
+    // Placement.
+    if (this.placing) {
+      if (inp.rightPressed && !inp.overUi) this.stopPlacement();
+      else if (inp.leftPressed && !inp.overUi) this.placeAt(mouse);
+      else if (inp.mouseLeft && !inp.overUi && this.isDragPlaceable()) this.placeAt(mouse, true);
+    } else if (inp.rightPressed && !inp.overUi) {
+      this.useHeld(mouse);
+    }
+    // Interaction.
+    if (inp.hit('KeyE') && this.target) {
+      const t = this.target;
+      if (t.kind === 'struct' && t.crank) {
+        this.cranking = t.id;
+        this.crankTimer = 0;
+        this.send({ t: 'crank', id: t.id, on: true });
+      } else this.send({ t: 'interact', kind: t.kind, id: t.id });
+    }
+    if (this.cranking) {
+      if (!inp.down('KeyE')) {
+        this.send({ t: 'crank', id: this.cranking, on: false });
+        this.cranking = 0;
+      } else if ((this.crankTimer += 1 / 60) > 0.8) {
+        this.crankTimer = 0;
+        this.send({ t: 'crank', id: this.cranking, on: true });
+      }
+    }
+    if (inp.hit('KeyG') && this.target?.kind === 'entity' && this.target.grab)
+      this.send({ t: 'interact', kind: 'entity', id: this.target.id, op: 'grab' });
+  }
+
+  private useHeld(mouse: { x: number; y: number }): void {
+    const held = this.state.held();
+    const def = held ? ITEM_BY_ID.get(held) : undefined;
+    if (!def) return;
+    if (def.food) return; // eating goes through the secondary input flag
+    if (def.tool?.kind === 'hoe' || def.plant || def.animal || def.vehicle || def.backpack || def.teaches) {
+      this.send({ t: 'use', slot: this.state.sel, x: mouse.x, y: mouse.y });
+    }
+  }
+
+  // ——— Building ———
+
+  private startPlacement(item: string): void {
+    const def = ITEM_BY_ID.get(item);
+    if (!def?.place) return;
+    this.placing = item;
+    this.windows.hide('build');
+  }
+
+  private stopPlacement(): void {
+    this.placing = null;
+    this.overlay.hideGhost();
+  }
+
+  private isDragPlaceable(): boolean {
+    const t = this.placing;
+    return !!t && ['conveyor', 'shaft', 'wood_wall', 'stone_wall', 'fence', 'wood_floor', 'stone_floor'].includes(t);
+  }
+
+  private lastPlaced = '';
+
+  private placeAt(mouse: { x: number; y: number }, drag = false): void {
+    const def = STRUCTURE_BY_ID.get(ITEM_BY_ID.get(this.placing!)!.place!)!;
+    const [w, hgt] = rotatedSize(def, this.placeRot);
+    const x = Math.floor(mouse.x - w / 2 + 0.5);
+    const y = Math.floor(mouse.y - hgt / 2 + 0.5);
+    const key = `${x},${y}`;
+    if (drag && key === this.lastPlaced) return;
+    this.lastPlaced = key;
+    this.send({ t: 'place', item: this.placing!, x, y, rot: this.placeRot });
+    this.sfx.play('build');
+  }
+
+  /** Approximate client-side check for the ghost colour (the server has the final say). */
+  private canPlace(type: string, x: number, y: number, rot: number): boolean {
+    const def = STRUCTURE_BY_ID.get(type)!;
+    const [w, hgt] = rotatedSize(def, rot);
+    const p = this.prediction.state;
+    if (Math.hypot(x + w / 2 - p.x, y + hgt / 2 - p.y) > BUILD_RANGE) return false;
+    if (this.world.settlementAt(x + w / 2, y + hgt / 2, 3)) return false;
+    for (let ty = y; ty < y + hgt; ty++) {
+      for (let tx = x; tx < x + w; tx++) {
+        const t = this.world.tile(tx, ty);
+        const info = TILES[t];
+        if (def.placement === 'land' && !info.land) return false;
+        if (def.placement === 'water' && !info.flowing) return false;
+        if (def.placement === 'farmland' && t !== Tile.Farmland) return false;
+        if (def.placement === 'any' && (t === Tile.DeepWater || t === Tile.Cliff || t === Tile.House || t === Tile.Plaza)) return false;
+        if (def.layer === 'floor' ? this.world.floorAtTile(tx, ty) : this.world.structAt(tx, ty)) return false;
+      }
+    }
+    for (const n of this.world.nodesNear(x + w / 2, y + hgt / 2, Math.max(w, hgt))) {
+      if (!n.def.solid || n.state === 0) continue;
+      const nx = Math.max(x, Math.min(n.x, x + w));
+      const ny = Math.max(y, Math.min(n.y, y + hgt));
+      if (Math.hypot(n.x - nx, n.y - ny) < n.def.radius) return false;
+    }
+    return true;
+  }
+
+  // ——— Targets, hover and overlay ———
+
+  private nearStations(): Set<string> {
+    const out = new Set<string>();
+    const p = this.prediction.state;
+    for (const [station, types] of Object.entries(STATION_STRUCTURES)) {
+      for (let ty = Math.floor(p.y) - 4; ty <= Math.floor(p.y) + 4; ty++) {
+        for (let tx = Math.floor(p.x) - 4; tx <= Math.floor(p.x) + 4; tx++) {
+          const s = this.world.structAt(tx, ty);
+          if (!s || !types.includes(s.type)) continue;
+          const nx = Math.max(s.x, Math.min(p.x, s.x + s.w));
+          const ny = Math.max(s.y, Math.min(p.y, s.y + s.h));
+          if (Math.hypot(nx - p.x, ny - p.y) <= 3.5) out.add(station);
+        }
+      }
+    }
+    return out;
+  }
+
+  private findTarget(mouse: { x: number; y: number }, px: number, py: number): Target | null {
+    const range = INTERACT_RANGE;
+    const candidates: (Target & { d: number; m: number })[] = [];
+    const add = (t: Target, dist: number) => {
+      if (dist > range + 0.6) return;
+      candidates.push({ ...t, d: dist, m: Math.hypot(t.x - mouse.x, t.y - mouse.y) });
+    };
+    for (const s of this.world.settlements) {
+      if (Math.hypot(s.x - px, s.y - py) > s.radius + 4) continue;
+      for (const n of s.npcs) {
+        const title = PROFESSION_BY_ID.get(n.profession)?.title ?? n.title;
+        const verb =
+          n.profession === 'board'
+            ? 'Read the contract board'
+            : n.profession === 'exchange'
+              ? 'Use the Exchange'
+              : `Trade with ${n.name} (${title})`;
+        add({ kind: 'npc', id: n.id, x: n.x, y: n.y, label: verb }, Math.hypot(n.x - px, n.y - py));
+      }
+    }
+    const seen = new Set<number>();
+    for (let ty = Math.floor(py) - 3; ty <= Math.floor(py) + 3; ty++) {
+      for (let tx = Math.floor(px) - 3; tx <= Math.floor(px) + 3; tx++) {
+        const s = this.world.structAt(tx, ty);
+        if (!s || seen.has(s.id)) continue;
+        seen.add(s.id);
+        const label = this.structLabel(s);
+        if (!label) continue;
+        const nx = Math.max(s.x, Math.min(px, s.x + s.w));
+        const ny = Math.max(s.y, Math.min(py, s.y + s.h));
+        add(
+          { kind: 'struct', id: s.id, x: s.x + s.w / 2, y: s.y + s.h / 2, label, crank: s.type === 'hand_crank' },
+          Math.hypot(nx - px, ny - py),
+        );
+      }
+    }
+    for (const e of this.store.map.values()) {
+      if (e.kind === 'bag')
+        add(
+          { kind: 'entity', id: e.id, x: e.x, y: e.y, label: `Search ${e.owner ?? 'a'}'s bag (F takes all)` },
+          Math.hypot(e.x - px, e.y - py),
+        );
+      if (e.kind === 'cart')
+        add(
+          { kind: 'entity', id: e.id, x: e.x, y: e.y, label: `Open ${e.owner ?? ''}'s cart`, grab: 'Pull' },
+          Math.hypot(e.x - px, e.y - py),
+        );
+      if (e.kind === 'creature' && e.owner) {
+        const def = CREATURE_BY_ID.get(e.type ?? '');
+        const ready = (e.flags & EntityFlags.Product) !== 0;
+        add(
+          {
+            kind: 'entity',
+            id: e.id,
+            x: e.x,
+            y: e.y,
+            label: ready ? `Collect from ${def?.name.toLowerCase()}` : `${e.owner}'s ${def?.name.toLowerCase()}`,
+            grab: e.type === 'horse' ? 'Ride' : undefined,
+          },
+          Math.hypot(e.x - px, e.y - py) - (def?.radius ?? 0.5),
+        );
+      }
+    }
+    if (candidates.length === 0) return null;
+    // Prefer what the mouse points at, then what is closest.
+    candidates.sort((a, b) => (a.m < 1.2 ? a.m - 10 : a.d) - (b.m < 1.2 ? b.m - 10 : b.d));
+    return candidates[0];
+  }
+
+  private structLabel(s: ClientStruct): string | null {
+    const d = s.def;
+    if (d.door) return s.st.open ? 'Close door' : 'Open door';
+    if (d.bed) return 'Set your respawn point';
+    if (s.type === 'hand_crank') return 'Hold to turn the crank';
+    if (s.type === 'crop') return (s.st.stage ?? 0) >= 4 ? 'Harvest' : null;
+    if (d.claimRadius) return 'Manage land claim';
+    if (d.shop) return `Browse ${s.owner ?? ''}'s shop`;
+    if (d.machine || d.logistics === 'filter') return `Open ${d.name}`;
+    if (d.container) return `Open ${d.name}`;
+    if (d.station) return `Use ${d.name}`;
+    return null;
+  }
+
+  private updateOverlay(mouse: { x: number; y: number }, pos: { x: number; y: number }): void {
+    this.overlay.clear();
+    const prompt = this.hud.prompt;
+    // Build mode.
+    const held = this.state.held();
+    if (!this.placing && held && ITEM_BY_ID.get(held)?.place && !this.input.overUi) this.placing = held;
+    if (this.placing) {
+      const def = STRUCTURE_BY_ID.get(ITEM_BY_ID.get(this.placing)!.place!)!;
+      const [w, hgt] = rotatedSize(def, this.placeRot);
+      const x = Math.floor(mouse.x - w / 2 + 0.5);
+      const y = Math.floor(mouse.y - hgt / 2 + 0.5);
+      this.overlay.grid(mouse.x, mouse.y);
+      const ok = this.canPlace(def.id, x, y, this.placeRot);
+      this.overlay.setGhost(`${def.id}:${this.placeRot}`, () => this.structures.preview(def.id, this.placeRot, def), x, y, w, hgt, ok);
+      if (def.claimRadius) this.overlay.claimArea(x, y, def.claimRadius, true);
+      prompt.style.display = 'block';
+      prompt.replaceChildren(
+        h('kbd', null, 'Click'),
+        `Place ${def.name} (${this.state.count(this.placing)})`,
+        '  ',
+        h('kbd', null, 'R'),
+        'Rotate  ',
+        h('kbd', null, 'Right click'),
+        'Cancel',
+      );
+      this.hideHover();
+      return;
+    }
+    this.target = this.state.dead ? null : this.findTarget(mouse, pos.x, pos.y);
+    if (this.target) {
+      prompt.style.display = 'block';
+      const t = this.target;
+      prompt.replaceChildren(h('kbd', null, 'E'), t.label, ...(t.kind === 'entity' && t.grab ? ['  ', h('kbd', null, 'G'), t.grab] : []));
+      if (t.kind === 'struct') {
+        const s = this.world.structs.get(t.id);
+        if (s) this.overlay.outlineStruct(s);
+      } else this.overlay.outlineCircle(t.x, t.y, 0.7);
+    } else prompt.style.display = 'none';
+    this.hoverInfo(mouse);
+  }
+
+  private hoverInfo(mouse: { x: number; y: number }): void {
+    if (this.input.overUi) {
+      this.hideHover();
+      return;
+    }
+    const el = this.hud.hover;
+    const tx = Math.floor(mouse.x);
+    const ty = Math.floor(mouse.y);
+    const s = this.world.structAt(tx, ty) ?? this.world.floorAtTile(tx, ty);
+    let content: HTMLElement | null = null;
+    if (s) {
+      content = h('div', null, h('b', null, s.def.name));
+      if (s.owner) content.append(h('div', { class: 'muted' }, `Owner: ${s.owner}`));
+      if (s.def.kinetic || s.def.logistics === 'conveyor' || s.def.logistics === 'splitter' || s.def.logistics === 'filter') {
+        const net = s.net !== undefined ? this.world.networks.get(s.net) : undefined;
+        const speed = s.spin[0] ?? 0;
+        if (s.def.logistics)
+          content.append(
+            h(
+              'div',
+              null,
+              speed > 0
+                ? `Moving ${speed.toFixed(1)} tiles/s`
+                : h('span', { class: 'bad' }, 'Not moving — needs rotation from a shaft or gearbox'),
+            ),
+          );
+        else content.append(h('div', null, `${(s.spin[s.spin.length - 1] ?? 0).toFixed(1)} RPM`));
+        if (net) {
+          const pct = net.cap > 0 ? Math.min(100, (net.load / net.cap) * 100) : 100;
+          content.append(
+            h(
+              'div',
+              { class: net.stalled ? 'bad' : '' },
+              `Stress ${net.load} / ${net.cap}${net.stalled ? ' — OVERLOADED' : ''}${net.conflict ? ' — gears locked' : ''}`,
+            ),
+            h(
+              'div',
+              { class: 'stress' },
+              h('div', { style: `width:${pct}%;background:${net.stalled ? '#e8645a' : pct > 85 ? '#f0a13c' : '#8fd45a'}` }),
+            ),
+          );
+          this.overlay.network(net.id, net.stalled || net.conflict);
+        } else if (s.def.kinetic?.role === 'consumer')
+          content.append(h('div', { class: 'bad' }, 'No power — connect it to a water wheel with shafts'));
+      }
+      if (s.def.machine && s.st.on !== undefined)
+        content.append(h('div', { class: s.st.on ? 'good' : 'muted' }, s.st.on ? 'Working' : 'Idle'));
+      if (s.st.fill !== undefined) content.append(h('div', { class: 'muted' }, `${Math.round(s.st.fill * 100)}% full`));
+      if (s.def.claimRadius) this.overlay.claimArea(s.x, s.y, s.def.claimRadius, s.owner === this.welcome.you.name);
+    } else {
+      const node = this.world
+        .nodesNear(mouse.x, mouse.y, 0.1)
+        .find((n) => Math.hypot(n.x - mouse.x, n.y - mouse.y) < Math.max(0.6, n.def.radius));
+      if (node) {
+        const toolName =
+          node.def.tool === 'hand' ? 'any tool' : `${['', 'stone', 'iron', 'steel'][node.def.tier] ?? ''} ${node.def.tool}`.trim();
+        content = h(
+          'div',
+          null,
+          h('b', null, node.def.name),
+          h('div', { class: 'muted' }, node.state === 0 ? 'Regrowing…' : `${node.state}% left · ${toolName}`),
+        );
+      } else {
+        for (const e of this.store.map.values()) {
+          if (e.kind !== 'creature' && e.kind !== 'player') continue;
+          if (Math.hypot(e.x - mouse.x, e.y - mouse.y) > 0.7) continue;
+          const def = e.kind === 'creature' ? CREATURE_BY_ID.get(e.type ?? '') : undefined;
+          content = h(
+            'div',
+            null,
+            h('b', null, def ? def.name : (e.name ?? 'Player')),
+            def?.temperament === 'aggressive' ? h('div', { class: 'bad' }, 'Hostile') : null,
+            e.owner ? h('div', { class: 'muted' }, `Owned by ${e.owner}`) : null,
+          );
+          break;
+        }
+      }
+    }
+    if (!content) {
+      this.hideHover();
+      return;
+    }
+    el.replaceChildren(content);
+    el.style.display = 'block';
+    el.style.left = `${Math.min(window.innerWidth - 290, this.input.mouseX + 18)}px`;
+    el.style.top = `${Math.min(window.innerHeight - 120, this.input.mouseY + 18)}px`;
+  }
+
+  private hideHover(): void {
+    this.hud.hover.style.display = 'none';
+  }
+
+  /** Smoke from working furnaces and engines, sparks from crushers. */
+  private ambientEffects(now: number): void {
+    if (now - this.lastSmoke < 180) return;
+    this.lastSmoke = now;
+    const v = this.r.view(1);
+    for (const s of this.world.structs.values()) {
+      if (!s.st.on) continue;
+      if (s.x < v.x0 || s.x > v.x1 || s.y < v.y0 || s.y > v.y1) continue;
+      if (s.type === 'furnace' || s.type === 'blast_furnace' || s.type === 'oven' || s.type === 'steam_engine') {
+        if (Math.random() < 0.5) this.effects.smoke(s.x + s.w / 2, s.y + 0.2, s.type === 'steam_engine');
+      } else if (s.type === 'crusher' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'stone', 2, 60);
+      else if (s.type === 'saw' && Math.random() < 0.3) this.effects.burst(s.x + 0.5, s.y + 0.5, 'wood', 2, 70);
+    }
+  }
+
+  private checkSettlement(x: number, y: number): void {
+    const s = this.world.settlementAt(x, y);
+    const id = s?.id ?? null;
+    if (id === this.currentSettlement) return;
+    this.currentSettlement = id;
+    if (s) this.hud.notice(`Entering ${s.name}`, 'info');
+  }
+}

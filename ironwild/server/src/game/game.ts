@@ -285,6 +285,7 @@ export class Game {
         seed: this.config.seed,
         size: this.world.size,
         tiles: encodeTiles(this.world.tiles),
+        regions: encodeTiles(this.world.regions),
         houses: this.world.gen.houses,
         settlements: this.world.settlements.map((s) => ({
           id: s.id,
