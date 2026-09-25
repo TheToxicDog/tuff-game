@@ -999,5 +999,10 @@ describe('interaction reach', () => {
     horse.y = p.y;
     game.playerSystem.interact(p, 'entity', horse.id, 'grab');
     expect(p.mounted).toBe(horse.id);
+    // G in the saddle: the ridden horse isn't sent to the client, so it just asks to get down.
+    (p.session as unknown as { player: Player }).player = p;
+    game.handleMessage(p.session, { t: 'dismount' });
+    expect(p.mounted).toBe(0);
+    expect((horse as { rider?: number }).rider).toBeUndefined();
   });
 });

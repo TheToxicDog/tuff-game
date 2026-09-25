@@ -816,8 +816,22 @@ export class ClientGame {
         this.send({ t: 'crank', id: this.cranking, on: true });
       }
     }
-    if (inp.hit('KeyG') && this.target?.kind === 'entity' && this.target.grab)
-      this.send({ t: 'interact', kind: 'entity', id: this.target.id, op: 'grab' });
+    if (inp.hit('KeyG')) {
+      const t = this.target;
+      // In the saddle G gets you down, unless you are hitching a wagon.
+      if (this.riding() && !this.hitching(t)) this.send({ t: 'dismount' });
+      else if (t?.kind === 'entity' && t.grab) this.send({ t: 'interact', kind: 'entity', id: t.id, op: 'grab' });
+    }
+  }
+
+  /** Whether you are on a horse (your own entity carries the flag; the horse itself is not sent while ridden). */
+  private riding(): boolean {
+    const me = this.store.map.get(this.welcome.you.id);
+    return !!me && (me.flags & EntityFlags.Mounted) !== 0;
+  }
+
+  private hitching(t: Target | null): boolean {
+    return t?.kind === 'entity' && !!t.grab?.startsWith('Hitch');
   }
 
   private useHeld(mouse: { x: number; y: number }): void {
@@ -1042,14 +1056,21 @@ export class ClientGame {
       return;
     }
     this.target = this.state.dead ? null : this.findTarget(mouse, pos.x, pos.y);
+    // In the saddle G dismounts, unless it hitches the wagon you ride up to.
+    const riding = !this.state.dead && this.riding();
+    const g = (t: Target | null) => (riding && !this.hitching(t) ? 'Dismount' : t?.kind === 'entity' && t.grab ? t.grab : null);
     if (this.target) {
       prompt.style.display = 'block';
       const t = this.target;
-      prompt.replaceChildren(h('kbd', null, 'E'), t.label, ...(t.kind === 'entity' && t.grab ? ['  ', h('kbd', null, 'G'), t.grab] : []));
+      const grab = g(t);
+      prompt.replaceChildren(h('kbd', null, 'E'), t.label, ...(grab ? ['  ', h('kbd', null, 'G'), grab] : []));
       if (t.kind === 'struct') {
         const s = this.world.structs.get(t.id);
         if (s) this.overlay.outlineStruct(s);
       } else this.overlay.outlineCircle(t.x, t.y, 0.7);
+    } else if (riding) {
+      prompt.style.display = 'block';
+      prompt.replaceChildren(h('kbd', null, 'G'), 'Dismount');
     } else prompt.style.display = 'none';
     this.hoverInfo(mouse);
   }

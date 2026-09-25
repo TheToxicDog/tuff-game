@@ -26,6 +26,8 @@ export type ClientMessage =
   | { t: 'quick'; from: SlotRef }
   | { t: 'drop'; slot: number; n?: number }
   | { t: 'pickup' }
+  /** Get off your horse. */
+  | { t: 'dismount' }
   | { t: 'use'; slot: number; x?: number; y?: number }
   | { t: 'craft'; recipe: string; n: number }
   | { t: 'smith'; recipe: string; hits: number[] }

@@ -397,6 +397,9 @@ export class Game {
       case 'pickup':
         this.playerSystem.pickup(p);
         break;
+      case 'dismount':
+        this.playerSystem.dismount(p);
+        break;
       case 'use':
         this.playerSystem.useItem(p, msg.slot, msg.x, msg.y);
         break;
