@@ -27,7 +27,7 @@ jobs:
               "set -e",
               "cd /opt/tuff-game",
               "sudo -u tuff env HOME=/opt/tuff-game git fetch origin claude/beautiful-goodall-yxw3gj",
-              "sudo -u tuff env HOME=/opt/tuff-game git reset --hard origin/claude/beautiful-goodall-yxw3gj",
+              "sudo -u tuff env HOME=/opt/tuff-game git reset --hard FETCH_HEAD",
               "bash scripts/deploy-ec2.sh"
             ]' \
             --query 'Command.CommandId' --output text)
